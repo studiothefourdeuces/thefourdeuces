@@ -15,6 +15,8 @@ import {
   Instagram,
   ArrowUpRight,
   ArrowLeft,
+  ChevronDown,
+  Download,
 } from "lucide-react";
 import dariaImg from "./img/artists/daria.png";
 import eugeneImg from "./img/artists/eugene.png";
@@ -91,6 +93,7 @@ const MENU: { label: string; target: string }[] = [
   { label: "Artists", target: "#artists" },
   { label: "Reviews", target: "#reviews" },
   { label: "Sponsors", target: "#sponsors" },
+  { label: "FAQ", target: "/faq" },
   { label: "Contact", target: "/contact" },
 ];
 
@@ -1460,7 +1463,11 @@ function BackButton({ onClick }: { onClick: () => void }) {
   );
 }
 
-function ContactPage({ onNavigateHome }: { onNavigateHome: () => void }) {
+function ContactPage({
+  onNavigate,
+}: {
+  onNavigate: (path: string) => void;
+}) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
@@ -1502,7 +1509,7 @@ function ContactPage({ onNavigateHome }: { onNavigateHome: () => void }) {
         <p className="mt-6 max-w-lg text-[15px] leading-relaxed text-white/60">
           Looking to book a tattoo? Appointments are requested on the{" "}
           <button
-            onClick={onNavigateHome}
+            onClick={() => onNavigate("/")}
             data-cursor="pointer"
             className="text-white underline underline-offset-4 transition hover:text-white/70"
           >
@@ -1586,6 +1593,300 @@ function ContactPage({ onNavigateHome }: { onNavigateHome: () => void }) {
             studio@thefourdeuces.nl
           </a>
         </div>
+
+        <p className="mt-8 text-[13px] text-white/40">
+          By contacting us you agree to our{" "}
+          <button
+            onClick={() => onNavigate("/terms")}
+            data-cursor="pointer"
+            className="text-white/70 underline underline-offset-4 transition hover:text-white"
+          >
+            Terms &amp; Conditions
+          </button>
+          .
+        </p>
+      </div>
+    </main>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* FAQ PAGE — /faq route                                                      */
+/* -------------------------------------------------------------------------- */
+
+const FAQ_ITEMS: { q: string; a: string }[] = [
+  {
+    q: "How do I book an appointment?",
+    a: "By appointment only — in person, by email, via Instagram, or through this website. We don't take walk-ins. Our official addresses are booking@thefourdeuces.nl and studio@thefourdeuces.nl.",
+  },
+  {
+    q: "Is a deposit required?",
+    a: "Yes. A non-refundable deposit is required to secure your appointment, and it goes towards the final price of your tattoo.",
+  },
+  {
+    q: "What is your cancellation policy?",
+    a: "We ask for at least 48 hours' notice to cancel or reschedule. Arriving more than 30 minutes late without letting us know may result in cancellation or rescheduling and loss of your deposit.",
+  },
+  {
+    q: "How much does a tattoo cost?",
+    a: "Pricing depends on size, complexity and placement, and is discussed during your consultation. Cover-ups and reworks are quoted separately.",
+  },
+  {
+    q: "How can I pay?",
+    a: "We accept cash and credit/debit cards, and PayPal may be available by prior agreement. Tips are appreciated but never expected.",
+  },
+  {
+    q: "What is the minimum age?",
+    a: "You must be 18 or older, or accompanied by an adult.",
+  },
+  {
+    q: "Do you use numbing cream or anesthetic?",
+    a: "No local anesthetics are used.",
+  },
+  {
+    q: "Do you offer touch-ups?",
+    a: "One complimentary touch-up is offered within 6 months, subject to the conditions in our Terms & Conditions. This does not apply to guest artists.",
+  },
+  {
+    q: "Can I bring someone with me?",
+    a: "Yes, but accompanying persons must remain on the ground floor during your session.",
+  },
+  {
+    q: "How do I take care of my new tattoo?",
+    a: "Follow the aftercare instructions carefully — you can download our full aftercare guide below.",
+  },
+];
+
+function DownloadCard({
+  href,
+  title,
+  sub,
+}: {
+  href: string;
+  title: string;
+  sub: string;
+}) {
+  return (
+    <a
+      href={href}
+      download
+      data-cursor="pointer"
+      className="group flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-5 transition hover:border-white/25 hover:bg-white/[0.06]"
+    >
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10 transition group-hover:bg-white/20">
+        <Download className="h-5 w-5 text-white/80" strokeWidth={2} />
+      </span>
+      <span className="min-w-0">
+        <span className="block text-[15px] text-white/90">{title}</span>
+        <span className="block text-[12px] text-white/40">{sub}</span>
+      </span>
+    </a>
+  );
+}
+
+function FaqPage({ onNavigate }: { onNavigate: (path: string) => void }) {
+  return (
+    <main className="relative z-10 min-h-screen px-6 pb-24 pt-28 md:px-16 md:pt-32">
+      <div className="mx-auto w-full max-w-3xl">
+        <p className="mb-4 text-[12px] uppercase tracking-[0.3em] text-white/40">
+          Good to know
+        </p>
+        <h1 className="font-serif text-[3rem] leading-[0.95] tracking-tight md:text-[4.5rem]">
+          FAQ
+        </h1>
+
+        <div className="mt-10 divide-y divide-white/10 border-y border-white/10">
+          {FAQ_ITEMS.map((item, i) => (
+            <details key={i} className="group py-5">
+              <summary
+                data-cursor="pointer"
+                className="flex cursor-pointer list-none items-center justify-between gap-4 text-[16px] text-white/90 md:text-[18px] [&::-webkit-details-marker]:hidden"
+              >
+                {item.q}
+                <ChevronDown
+                  className="h-5 w-5 shrink-0 text-white/40 transition-transform duration-300 group-open:rotate-180"
+                  strokeWidth={2}
+                />
+              </summary>
+              <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-white/55">
+                {item.a}
+              </p>
+            </details>
+          ))}
+        </div>
+
+        <div className="mt-14">
+          <h2 className="mb-1 text-[12px] uppercase tracking-[0.25em] text-white/40">
+            Downloads
+          </h2>
+          <p className="mb-5 text-[13px] text-white/40">
+            Available in Dutch (Nederlands) only.
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <DownloadCard
+              href="/docs/nazorginstructie-tatoeage.pdf"
+              title="Aftercare instructions"
+              sub="Nazorginstructie · PDF · NL"
+            />
+            <DownloadCard
+              href="/docs/informatie-risicos-tatoeage-pmu.pdf"
+              title="Information about risks"
+              sub="Risico-informatie (PMU) · PDF · NL"
+            />
+          </div>
+        </div>
+
+        <p className="mt-14 border-t border-white/10 pt-6 text-[14px] text-white/50">
+          For full details, please read our{" "}
+          <button
+            onClick={() => onNavigate("/terms")}
+            data-cursor="pointer"
+            className="text-white underline underline-offset-4 transition hover:text-white/70"
+          >
+            Terms &amp; Conditions
+          </button>
+          .
+        </p>
+      </div>
+    </main>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* TERMS & CONDITIONS PAGE — /terms route (not in the menu)                   */
+/* -------------------------------------------------------------------------- */
+
+const TERMS: { title: string; items: string[] }[] = [
+  {
+    title: "1. Introduction",
+    items: [
+      "These Terms apply to clients receiving services from The Four Deuces B.V. and its resident and guest artists.",
+      "Booking an appointment or receiving services constitutes agreement to these Terms.",
+    ],
+  },
+  {
+    title: "2. Appointments",
+    items: [
+      "Booking is available in person, by email, via Instagram, or through the website; we do not accept walk-ins.",
+      "Official email addresses: booking@thefourdeuces.nl and studio@thefourdeuces.nl.",
+      "A non-refundable deposit is required.",
+      "At least 48 hours' notice is required to cancel or reschedule.",
+      "Arriving more than 30 minutes late without notice can result in cancellation or rescheduling and loss of the deposit.",
+    ],
+  },
+  {
+    title: "3. Pricing and Payment",
+    items: [
+      "Price depends on size, complexity, placement, and consultation.",
+      "Separate provisions apply for standard tattoos, cover-ups, and reworks.",
+      "Payment methods: cash, credit/debit cards, and potentially PayPal by agreement.",
+      "Tips are appreciated but optional.",
+      "Additional work or changes can incur extra charges.",
+    ],
+  },
+  {
+    title: "4. Health and Safety",
+    items: [
+      "The minimum age is 18, or the client must be accompanied by an adult.",
+      "Clients must disclose medical conditions, allergies, and skin sensitivities.",
+      "The studio follows NEN-EN 17169 hygiene protocols.",
+      "Pregnant or nursing clients may be refused; written doctor confirmation may be required.",
+      "No local anesthetics are used.",
+      "An artist may refuse a tattoo where risks are high or difficult to assess.",
+    ],
+  },
+  {
+    title: "5. Tattoo Process",
+    items: [
+      "The final design and placement must be approved before tattooing begins.",
+      "Once approved, complaints about design or placement are void.",
+      "Verbal approval has the same legal force as written approval.",
+      "Clients are responsible for following the aftercare instructions.",
+      "One complimentary touch-up is offered within 6 months, subject to the stated conditions.",
+    ],
+  },
+  {
+    title: "6. Liability",
+    items: [
+      "The client acknowledges risks including allergic reactions, infections, and dissatisfaction.",
+      "The client must disclose relevant health issues.",
+      "The studio is not liable for health complications, including infections or allergic reactions.",
+      "Clients may be asked to sign a liability waiver.",
+    ],
+  },
+  {
+    title: "7. Photography and Intellectual Property",
+    items: [
+      "The studio may photograph or video tattoos for promotional purposes, with an opt-out available.",
+      "The studio retains the rights to custom designs.",
+      "Studio artwork may not be used commercially without permission.",
+      "These Terms are subject to the Dutch Copyright Act (Auteurswet).",
+    ],
+  },
+  {
+    title: "8. Conduct",
+    items: [
+      "Harassment, discrimination, and inappropriate behaviour may result in refusal of service.",
+      "Accompanying persons must remain on the ground floor.",
+      "Service may be refused if the client is sick, intoxicated, or under the influence of alcohol or drugs.",
+      "Clients must follow the artist's instructions.",
+    ],
+  },
+  {
+    title: "9. Guest Artists",
+    items: [
+      "Guest artists are independent and not studio employees or representatives.",
+      "Separate booking and payment arrangements may apply.",
+      "The studio touch-up policy does not apply to guest artists.",
+      "The studio disclaims liability for issues arising from guest-artist services.",
+      "Studio conduct, hygiene, and safety rules still apply.",
+    ],
+  },
+  {
+    title: "10. Modifications to Terms",
+    items: [
+      "The studio reserves the right to modify these Terms at any time and will notify clients of significant changes.",
+    ],
+  },
+  {
+    title: "11. Contact Information",
+    items: [
+      "Questions regarding these Terms should be directed to studio@thefourdeuces.nl.",
+    ],
+  },
+];
+
+function TermsPage() {
+  return (
+    <main className="relative z-10 min-h-screen px-6 pb-24 pt-28 md:px-16 md:pt-32">
+      <div className="mx-auto w-full max-w-3xl">
+        <p className="mb-4 text-[12px] uppercase tracking-[0.3em] text-white/40">
+          Legal
+        </p>
+        <h1 className="font-serif text-[2.6rem] leading-[0.95] tracking-tight md:text-[4rem]">
+          Terms &amp; Conditions
+        </h1>
+
+        <div className="mt-10 space-y-9">
+          {TERMS.map((s) => (
+            <section key={s.title}>
+              <h2 className="mb-3 font-display text-[18px] font-medium text-white/90 md:text-[20px]">
+                {s.title}
+              </h2>
+              <ul className="space-y-2">
+                {s.items.map((it, i) => (
+                  <li
+                    key={i}
+                    className="flex gap-3 text-[15px] leading-relaxed text-white/60"
+                  >
+                    <span className="mt-[9px] h-[3px] w-[3px] shrink-0 rounded-full bg-white/30" />
+                    <span>{it}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
       </div>
     </main>
   );
@@ -1616,7 +1917,16 @@ export default function App() {
     window.scrollTo(0, 0);
   };
 
-  const isContact = route.replace(/\/+$/, "") === "/contact";
+  const path = route.replace(/\/+$/, "") || "/";
+  const page =
+    path === "/contact"
+      ? "contact"
+      : path === "/faq"
+        ? "faq"
+        : path === "/terms"
+          ? "terms"
+          : "home";
+  const isHome = page === "home";
 
   const openProfile = (i: number) => {
     setActiveArtist(i);
@@ -1663,9 +1973,7 @@ export default function App() {
 
       </header>
 
-      {isContact ? (
-        <BackButton onClick={() => navigate("/")} />
-      ) : (
+      {isHome ? (
         <>
           <MenuButton open={menuOpen} onClick={() => setMenuOpen((o) => !o)} />
           <Menu
@@ -1674,11 +1982,11 @@ export default function App() {
             onNavigate={navigate}
           />
         </>
+      ) : (
+        <BackButton onClick={() => navigate("/")} />
       )}
 
-      {isContact ? (
-        <ContactPage onNavigateHome={() => navigate("/")} />
-      ) : (
+      {isHome ? (
         <>
           {/* ============ FIRST SCREEN: hero + carousel ============ */}
           <section className="relative min-h-screen overflow-hidden">
@@ -1697,6 +2005,12 @@ export default function App() {
           {/* ============ SPONSORS ============ */}
           <Sponsors />
         </>
+      ) : page === "contact" ? (
+        <ContactPage onNavigate={navigate} />
+      ) : page === "faq" ? (
+        <FaqPage onNavigate={navigate} />
+      ) : (
+        <TermsPage />
       )}
 
       {/* ===================== COOKIE BANNER ===================== */}
