@@ -728,7 +728,7 @@ function Hero() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-        className="absolute inset-0 flex flex-col items-center justify-center px-6 pb-[26vh] text-center"
+        className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-6 pb-[26vh] text-center"
       >
           <span className="mb-6 flex h-12 w-12 items-center justify-center rounded-full bg-white text-black">
             <Check className="h-6 w-6" strokeWidth={2.5} />
@@ -762,7 +762,7 @@ function Hero() {
 
   return (
     <div
-      className="absolute inset-0"
+      className="pointer-events-none absolute inset-0"
       style={{
         opacity: loaded ? 1 : 0,
         transform: loaded ? "translateY(0)" : "translateY(26px)",
@@ -804,7 +804,7 @@ function Hero() {
       {/* Icon + input — anchored at the EXACT vertical + horizontal centre of
           the page; shifts up when a field is active. */}
       <div
-        className="absolute left-1/2 top-1/2"
+        className="pointer-events-auto absolute left-1/2 top-1/2"
         style={{
           transform: engaged
             ? "translate(-50%, calc(-50% - 40px))"
@@ -887,7 +887,7 @@ function Hero() {
       </div>
 
       {/* Button — anchored below the centre so it never shifts the input */}
-      <div className="absolute left-1/2 top-[calc(50%+52px)] flex -translate-x-1/2 justify-center">
+      <div className="pointer-events-auto absolute left-1/2 top-[calc(50%+52px)] flex -translate-x-1/2 justify-center">
         <AnimatePresence mode="wait">
           {step === "budget" && (
             <motion.button
@@ -1982,7 +1982,7 @@ export default function App() {
         <>
           {/* ============ FIRST SCREEN: hero + carousel ============ */}
           <section className="relative min-h-screen overflow-hidden">
-            <main className="relative z-10 min-h-screen">
+            <main className="pointer-events-none relative z-30 min-h-screen">
               <Hero />
             </main>
             <Carousel onOpenProfile={openProfile} />
