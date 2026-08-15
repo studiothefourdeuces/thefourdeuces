@@ -499,7 +499,6 @@ function Carousel({
     let last = performance.now();
     let lastCardW = -1;
     let lastActivity = performance.now();
-    let selectedIdx = -1; // card centred by the last click (2nd click → navigate)
 
     const dims = () => {
       const vw = window.innerWidth;
@@ -563,9 +562,10 @@ function Carousel({
       }
     };
 
-    // Only interaction: click a card → it rotates to the centre. Pick the
-    // visible card nearest the click (3D-transformed side cards don't hit-test
-    // reliably at their painted pixels, so match on screen position instead).
+    // Only interaction: click a card → it centres and opens that artist's
+    // profile. Pick the visible card nearest the click (3D-transformed side
+    // cards don't hit-test reliably at their painted pixels, so match on screen
+    // position instead).
     const onClick = (e: MouseEvent) => {
       let best = -1;
       let bestDist = Infinity;
@@ -582,18 +582,8 @@ function Carousel({
       }
       if (best < 0) return;
 
-      // First click on a card centres it; clicking that same (centred) card
-      // again navigates to its profile. rel guards against navigating when the
-      // card has since drifted well off-centre.
-      let rel = best - progress;
-      rel = ((rel % N) + N) % N;
-      if (rel > N / 2) rel -= N;
-      if (best === selectedIdx && Math.abs(rel) < 0.5) {
-        openRef.current(best % ARTISTS.length); // 2nd click → open that profile
-      } else {
-        centerOn(best);
-        selectedIdx = best;
-      }
+      centerOn(best);
+      openRef.current(best % ARTISTS.length); // single click → open profile
     };
 
     // "Inactivity" means no interaction WITH THE CAROUSEL — the pointer moving
