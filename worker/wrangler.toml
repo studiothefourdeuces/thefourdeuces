@@ -1,0 +1,15 @@
+name = "tfd-leads"
+main = "src/index.js"
+compatibility_date = "2024-11-01"
+
+# Non-secret config. Edit these to your domain / inboxes.
+[vars]
+ALLOWED_ORIGIN = "https://thefourdeuces.nl"
+MAIL_TO = "booking@thefourdeuces.nl"
+MAIL_FROM = "leads@thefourdeuces.nl"
+
+# Secrets are NOT stored here. Set them with:
+#   wrangler secret put TG_TOKEN
+#   wrangler secret put TG_CHAT_ID
+#   wrangler secret put RESEND_KEY   (optional)
+#   wrangler secret put SHEET_URL    (optional)

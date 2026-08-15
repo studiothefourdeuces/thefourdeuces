@@ -1,0 +1,113 @@
+// Cloudflare Worker — receives hero-form leads from the static site and fans
+// them out to Telegram (instant alert), email (Resend), and a Google Sheet
+// (durable record). Secrets live here, never in the public frontend/repo.
+//
+// Secrets (set with `wrangler secret put NAME`):
+//   TG_TOKEN     Telegram bot token from @BotFather
+//   TG_CHAT_ID   your chat / group id (see README)
+//   RESEND_KEY   Resend API key            (optional — email skipped if unset)
+//   SHEET_URL    Apps Script web-app URL   (optional — sheet skipped if unset)
+//
+// Plain vars (in wrangler.toml [vars]):
+//   ALLOWED_ORIGIN   e.g. https://thefourdeuces.nl   ("*" allows any origin)
+//   MAIL_TO          inbox that receives the email copy
+//   MAIL_FROM        verified Resend sender, e.g. leads@thefourdeuces.nl
+
+const corsHeaders = (origin) => ({
+  "access-control-allow-origin": origin || "*",
+  "access-control-allow-methods": "POST, OPTIONS",
+  "access-control-allow-headers": "content-type",
+  "access-control-max-age": "86400",
+});
+
+const json = (body, status, origin) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders(origin), "content-type": "application/json" },
+  });
+
+export default {
+  async fetch(req, env) {
+    const allow = env.ALLOWED_ORIGIN || "*";
+
+    if (req.method === "OPTIONS")
+      return new Response(null, { headers: corsHeaders(allow) });
+    if (req.method !== "POST")
+      return json({ ok: false, error: "method not allowed" }, 405, allow);
+
+    let data;
+    try {
+      data = await req.json();
+    } catch {
+      return json({ ok: false, error: "bad request" }, 400, allow);
+    }
+
+    // Honeypot — a real user never fills this. Pretend success, do nothing.
+    if (data.hp) return json({ ok: true }, 200, allow);
+
+    const budget = String(data.budget || "").slice(0, 20);
+    const email = String(data.email || "").slice(0, 120);
+    const source = String(data.source || "hero").slice(0, 40);
+
+    if (!/.+@.+\..+/.test(email))
+      return json({ ok: false, error: "invalid email" }, 422, allow);
+
+    const when = new Date().toISOString();
+
+    // Fan out. Promise.allSettled so one dead channel never breaks the others
+    // and every failure still surfaces in `wrangler tail` logs.
+    const tasks = [];
+
+    if (env.TG_TOKEN && env.TG_CHAT_ID) {
+      const text =
+        `🖤 New booking lead\n` +
+        `Budget: €${budget || "—"}\n` +
+        `Email: ${email}\n` +
+        `Source: ${source}\n` +
+        `Time: ${when}`;
+      tasks.push(
+        fetch(`https://api.telegram.org/bot${env.TG_TOKEN}/sendMessage`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            chat_id: env.TG_CHAT_ID,
+            text,
+            disable_web_page_preview: true,
+          }),
+        }),
+      );
+    }
+
+    if (env.RESEND_KEY && env.MAIL_TO && env.MAIL_FROM) {
+      tasks.push(
+        fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${env.RESEND_KEY}`,
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            from: env.MAIL_FROM,
+            to: env.MAIL_TO,
+            reply_to: email,
+            subject: `New lead — €${budget || "—"}`,
+            text: `Budget: €${budget || "—"}\nEmail: ${email}\nSource: ${source}\nTime: ${when}`,
+          }),
+        }),
+      );
+    }
+
+    if (env.SHEET_URL) {
+      tasks.push(
+        fetch(env.SHEET_URL, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ when, budget, email, source }),
+        }),
+      );
+    }
+
+    await Promise.allSettled(tasks);
+    return json({ ok: true }, 200, allow);
+  },
+};
