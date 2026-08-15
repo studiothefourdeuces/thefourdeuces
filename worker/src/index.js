@@ -48,13 +48,21 @@ export default {
 
     const budget = String(data.budget || "").replace(/\D/g, "").slice(0, 20);
     const email = String(data.email || "").slice(0, 120);
+    const instagram = String(data.instagram || "")
+      .replace(/^@+/, "")
+      .slice(0, 60);
     const source = String(data.source || "hero").slice(0, 40);
     const name = String(data.name || "").slice(0, 120);
     const message = String(data.message || "").slice(0, 2000);
     const isContact = source === "contact" || Boolean(message);
 
-    if (!/.+@.+\..+/.test(email))
-      return json({ ok: false, error: "invalid email" }, 422, allow);
+    // The contact form collects an email; the hero booking collects an Instagram.
+    if (isContact) {
+      if (!/.+@.+\..+/.test(email))
+        return json({ ok: false, error: "invalid email" }, 422, allow);
+    } else if (!instagram) {
+      return json({ ok: false, error: "missing instagram" }, 422, allow);
+    }
 
     const when = new Date().toISOString();
 
@@ -71,7 +79,7 @@ export default {
           (message ? `\n\n💬 ${message}` : "")
         : `Hi ${handle} 🖤 There's a new Booking Request:\n\n` +
           `💸 Budget: €${budget || "—"}\n` +
-          `📧 Email: ${email}`;
+          `📸 Instagram: https://instagram.com/${instagram}`;
       tasks.push(
         fetch(`https://api.telegram.org/bot${env.TG_TOKEN}/sendMessage`, {
           method: "POST",
@@ -96,13 +104,13 @@ export default {
           body: JSON.stringify({
             from: env.MAIL_FROM,
             to: env.MAIL_TO,
-            reply_to: email,
+            reply_to: email || undefined,
             subject: isContact
               ? `New contact message${name ? ` — ${name}` : ""}`
               : `New lead — €${budget || "—"}`,
             text: isContact
               ? `Name: ${name}\nEmail: ${email}\nMessage:\n${message}\nTime: ${when}`
-              : `Budget: €${budget || "—"}\nEmail: ${email}\nSource: ${source}\nTime: ${when}`,
+              : `Budget: €${budget || "—"}\nInstagram: @${instagram} (https://instagram.com/${instagram})\nSource: ${source}\nTime: ${when}`,
           }),
         }),
       );
@@ -113,7 +121,7 @@ export default {
         fetch(env.SHEET_URL, {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ when, budget, email, source }),
+          body: JSON.stringify({ when, budget, email, instagram, source }),
         }),
       );
     }

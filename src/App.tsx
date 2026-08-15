@@ -9,7 +9,6 @@ import {
 import { AnimatePresence, motion, useAnimationControls } from "motion/react";
 import {
   Euro,
-  Mail,
   Check,
   Cookie,
   Instagram,
@@ -648,7 +647,7 @@ function Carousel({
 /* field is active, and the input shakes on invalid submit.                   */
 /* -------------------------------------------------------------------------- */
 
-type Step = "idle" | "budget" | "email" | "done";
+type Step = "idle" | "budget" | "instagram" | "done";
 
 // Lead endpoint — the Cloudflare Worker URL. Set VITE_FORM_ENDPOINT at build
 // time. If unset, the form still works locally; it just doesn't ship the lead.
@@ -657,7 +656,7 @@ const FORM_ENDPOINT = import.meta.env.VITE_FORM_ENDPOINT as string | undefined;
 function Hero() {
   const [step, setStep] = useState<Step>("idle");
   const [budget, setBudget] = useState("");
-  const [email, setEmail] = useState("");
+  const [instagram, setInstagram] = useState("");
   const [idleIdx, setIdleIdx] = useState(0);
   const [focused, setFocused] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -679,11 +678,12 @@ function Hero() {
   }, [step]);
 
   useEffect(() => {
-    if (step === "email") inputRef.current?.focus();
+    if (step === "instagram") inputRef.current?.focus();
   }, [step]);
 
-  const emailValid = /.+@.+\..+/.test(email);
-  const engaged = step === "budget" || step === "email";
+  const igHandle = instagram.trim().replace(/^@+/, "");
+  const igValid = /^[a-zA-Z0-9._]{1,30}$/.test(igHandle);
+  const engaged = step === "budget" || step === "instagram";
 
   const doShake = () =>
     shake.start({
@@ -691,7 +691,7 @@ function Hero() {
       transition: { duration: 0.45, ease: "easeInOut" },
     });
 
-  const next = () => (budget ? setStep("email") : doShake());
+  const next = () => (budget ? setStep("instagram") : doShake());
 
   // Fire-and-forget: show the success state immediately, ship the lead in the
   // background. A failed request must never cost us the visitor's confirmation.
@@ -700,12 +700,12 @@ function Hero() {
     fetch(FORM_ENDPOINT, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ budget, email, hp, source: "hero" }),
+      body: JSON.stringify({ budget, instagram: igHandle, hp, source: "hero" }),
     }).catch(() => {});
   };
 
   const submit = () => {
-    if (!emailValid) return doShake();
+    if (!igValid) return doShake();
     setStep("done");
     sendLead();
   };
@@ -713,14 +713,14 @@ function Hero() {
   const big =
     "font-display font-normal text-[2.4rem] leading-none tracking-tight md:text-[4rem]";
 
-  const isEmail = step === "email";
-  const value = isEmail ? email : fmtBudget(budget);
-  const placeholder = isEmail
-    ? "your email"
+  const isIg = step === "instagram";
+  const value = isIg ? instagram : fmtBudget(budget);
+  const placeholder = isIg
+    ? "your instagram"
     : step === "idle" && idleIdx === 1
-      ? "your email"
+      ? "your instagram"
       : "your budget";
-  const Icon = isEmail || (step === "idle" && idleIdx === 1) ? Mail : Euro;
+  const Icon = isIg || (step === "idle" && idleIdx === 1) ? Instagram : Euro;
 
   if (step === "done") {
     return (
@@ -745,14 +745,16 @@ function Hero() {
               <span className="text-white/90">€{fmtBudget(budget) || "—"}</span>
             </div>
             <div>
-              <span className="text-white/40">email</span>{" "}
-              <span className="text-white/90">{email || "—"}</span>
+              <span className="text-white/40">instagram</span>{" "}
+              <span className="text-white/90">
+                {igHandle ? "@" + igHandle : "—"}
+              </span>
             </div>
           </div>
           <p className="mt-5 max-w-sm text-[13px] leading-relaxed text-white/40">
-            We only use your email to get in touch about your request. It isn't
-            stored anywhere and is deleted from our records as soon as we've
-            contacted you.
+            We only use your Instagram to get in touch about your request. It
+            isn't stored anywhere and is deleted from our records as soon as
+            we've contacted you.
           </p>
       </motion.div>
     );
@@ -837,8 +839,8 @@ function Hero() {
           <input
             ref={inputRef}
             value={value}
-            type={isEmail ? "email" : "text"}
-            inputMode={isEmail ? "email" : "numeric"}
+            type="text"
+            inputMode={isIg ? "text" : "numeric"}
             placeholder={placeholder}
             data-cursor="text"
             onFocus={() => {
@@ -850,13 +852,13 @@ function Hero() {
               if (step === "budget" && !budget) setStep("idle");
             }}
             onChange={(e) =>
-              isEmail
-                ? setEmail(e.target.value)
+              isIg
+                ? setInstagram(e.target.value.replace(/\s/g, "").slice(0, 31))
                 : setBudget(e.target.value.replace(/\D/g, "").slice(0, 5))
             }
             onKeyDown={(e) => {
               if (e.key !== "Enter") return;
-              isEmail ? submit() : next();
+              isIg ? submit() : next();
             }}
             size={1}
             className={`${big} col-start-1 row-start-1 w-full min-w-0 bg-transparent text-left text-white outline-none placeholder:text-transparent ${value ? "caret-white" : "caret-transparent"}`}
@@ -901,7 +903,7 @@ function Hero() {
               Okay, next
             </motion.button>
           )}
-          {step === "email" && (
+          {step === "instagram" && (
             <motion.button
               key="submit"
               initial={{ opacity: 0, y: 6 }}
