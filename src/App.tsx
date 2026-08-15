@@ -3,10 +3,19 @@ import {
   useMemo,
   useRef,
   useState,
+  type FormEvent,
   type ReactNode,
 } from "react";
 import { AnimatePresence, motion, useAnimationControls } from "motion/react";
-import { Euro, Mail, Check, Cookie, Instagram, ArrowUpRight } from "lucide-react";
+import {
+  Euro,
+  Mail,
+  Check,
+  Cookie,
+  Instagram,
+  ArrowUpRight,
+  ArrowLeft,
+} from "lucide-react";
 import dariaImg from "./img/artists/daria.png";
 import eugeneImg from "./img/artists/eugene.png";
 import maxImg from "./img/artists/max.png";
@@ -82,6 +91,7 @@ const MENU: { label: string; target: string }[] = [
   { label: "Artists", target: "#artists" },
   { label: "Reviews", target: "#reviews" },
   { label: "Sponsors", target: "#sponsors" },
+  { label: "Contact", target: "/contact" },
 ];
 
 type ChatMsg = { from: "me" | "them"; text: string; timestamp?: string };
@@ -746,6 +756,11 @@ function Hero() {
               <span className="text-white/90">{email || "—"}</span>
             </div>
           </div>
+          <p className="mt-5 max-w-sm text-[13px] leading-relaxed text-white/40">
+            We only use your email to get in touch about your request. It isn't
+            stored anywhere and is deleted from our records as soon as we've
+            contacted you.
+          </p>
       </motion.div>
     );
   }
@@ -944,7 +959,15 @@ function MenuButton({ open, onClick }: { open: boolean; onClick: () => void }) {
   );
 }
 
-function Menu({ open, onClose }: { open: boolean; onClose: () => void }) {
+function Menu({
+  open,
+  onClose,
+  onNavigate,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onNavigate: (path: string) => void;
+}) {
   const [hovered, setHovered] = useState<number | null>(null);
   const anyActive = hovered !== null;
   const reveal = { type: "spring", stiffness: 400, damping: 40, mass: 1 } as const;
@@ -956,6 +979,8 @@ function Menu({ open, onClose }: { open: boolean; onClose: () => void }) {
     onClose();
     if (item.target === "top") {
       window.scrollTo({ top: 0, behavior: "smooth" });
+    } else if (item.target.startsWith("/")) {
+      onNavigate(item.target);
     } else {
       document
         .querySelector(item.target)
@@ -1018,45 +1043,6 @@ function Menu({ open, onClose }: { open: boolean; onClose: () => void }) {
               );
             })}
           </nav>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{
-              duration: 0.5,
-              delay: open ? 0.08 + sections.length * 0.06 : 0,
-              ease: [0.22, 1, 0.36, 1],
-            }}
-            className="mt-10 w-full max-w-md border-t border-white/15 pt-6 md:mt-14"
-          >
-            <div className="flex flex-col items-center gap-5 sm:flex-row sm:justify-center sm:gap-14">
-              <div className="text-center">
-                <p className="mb-1 text-[11px] uppercase tracking-[0.25em] text-white/40">
-                  Booking
-                </p>
-                <a
-                  href="mailto:booking@thefourdeuces.nl"
-                  data-cursor="pointer"
-                  className="text-[15px] text-white/80 transition hover:text-white"
-                >
-                  booking@thefourdeuces.nl
-                </a>
-              </div>
-              <div className="text-center">
-                <p className="mb-1 text-[11px] uppercase tracking-[0.25em] text-white/40">
-                  Partnership
-                </p>
-                <a
-                  href="mailto:studio@thefourdeuces.nl"
-                  data-cursor="pointer"
-                  className="text-[15px] text-white/80 transition hover:text-white"
-                >
-                  studio@thefourdeuces.nl
-                </a>
-              </div>
-            </div>
-          </motion.div>
         </motion.div>
       )}
     </AnimatePresence>
@@ -1457,10 +1443,180 @@ function Sponsors() {
   );
 }
 
+/* -------------------------------------------------------------------------- */
+/* CONTACT PAGE — /contact route                                              */
+/* -------------------------------------------------------------------------- */
+
+function BackButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      data-cursor="pointer"
+      aria-label="Back to home"
+      className="fixed right-4 top-[9px] z-[60] flex h-12 w-12 items-center justify-center md:right-6 md:h-14 md:w-14"
+    >
+      <ArrowLeft className="h-6 w-6 text-white md:h-7 md:w-7" strokeWidth={2} />
+    </button>
+  );
+}
+
+function ContactPage({ onNavigateHome }: { onNavigateHome: () => void }) {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+  const [hp, setHp] = useState(""); // honeypot
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState("");
+
+  const emailValid = /.+@.+\..+/.test(email);
+
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    if (!name.trim() || !emailValid || !message.trim()) {
+      setError("Please add your name, a valid email and a message.");
+      return;
+    }
+    setError("");
+    setSent(true);
+    if (FORM_ENDPOINT) {
+      fetch(FORM_ENDPOINT, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name, email, message, hp, source: "contact" }),
+      }).catch(() => {});
+    }
+  };
+
+  const field =
+    "w-full rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 text-[15px] text-white placeholder:text-white/30 outline-none transition focus:border-white/40";
+
+  return (
+    <main className="relative z-10 min-h-screen px-6 pb-24 pt-28 md:px-16 md:pt-32">
+      <div className="mx-auto w-full max-w-2xl">
+        <p className="mb-4 text-[12px] uppercase tracking-[0.3em] text-white/40">
+          Get in touch
+        </p>
+        <h1 className="font-serif text-[3rem] leading-[0.95] tracking-tight md:text-[4.5rem]">
+          Contact
+        </h1>
+        <p className="mt-6 max-w-lg text-[15px] leading-relaxed text-white/60">
+          Looking to book a tattoo? Appointments are requested on the{" "}
+          <button
+            onClick={onNavigateHome}
+            data-cursor="pointer"
+            className="text-white underline underline-offset-4 transition hover:text-white/70"
+          >
+            home page
+          </button>
+          . For everything else — collaborations, press or general questions —
+          drop us a line below.
+        </p>
+
+        {sent ? (
+          <div className="mt-10 rounded-3xl border border-white/10 bg-white/[0.03] p-8 text-center">
+            <span className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-white text-black">
+              <Check className="h-6 w-6" strokeWidth={2.5} />
+            </span>
+            <h2 className="font-serif text-[2rem] leading-[1.05] md:text-[2.6rem]">
+              Message <span className="italic">sent.</span>
+            </h2>
+            <p className="mx-auto mt-3 max-w-sm text-[13px] leading-relaxed text-white/40">
+              We only use your email to reply to your message. It isn't stored
+              anywhere and is deleted from our records as soon as we've been in
+              touch.
+            </p>
+          </div>
+        ) : (
+          <form onSubmit={submit} className="mt-10 flex flex-col gap-4">
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Your name"
+              data-cursor="text"
+              className={field}
+            />
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Your email"
+              data-cursor="text"
+              className={field}
+            />
+            <textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Your message"
+              rows={5}
+              data-cursor="text"
+              className={`${field} resize-none`}
+            />
+            {/* Honeypot — hidden from users; bots that fill it are dropped. */}
+            <input
+              type="text"
+              name="company"
+              tabIndex={-1}
+              autoComplete="off"
+              aria-hidden="true"
+              value={hp}
+              onChange={(e) => setHp(e.target.value)}
+              className="absolute left-[-9999px] h-0 w-0 opacity-0"
+            />
+            {error && <p className="text-[13px] text-red-400">{error}</p>}
+            <button
+              type="submit"
+              data-cursor="pointer"
+              className="mt-2 self-start rounded-full bg-white px-8 py-3 text-[14px] font-medium text-black transition hover:bg-white/90"
+            >
+              Send message
+            </button>
+          </form>
+        )}
+
+        <div className="mt-14 border-t border-white/10 pt-6">
+          <p className="mb-1 text-[11px] uppercase tracking-[0.25em] text-white/40">
+            Partnerships & collaborations
+          </p>
+          <a
+            href="mailto:studio@thefourdeuces.nl"
+            data-cursor="pointer"
+            className="text-[15px] text-white/80 transition hover:text-white"
+          >
+            studio@thefourdeuces.nl
+          </a>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* APP                                                                        */
+/* -------------------------------------------------------------------------- */
+
 export default function App() {
   const [cookie, setCookie] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeArtist, setActiveArtist] = useState(0);
+  const [route, setRoute] = useState(() => window.location.pathname);
+
+  useEffect(() => {
+    const onPop = () => setRoute(window.location.pathname);
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
+  const navigate = (path: string) => {
+    setMenuOpen(false);
+    if (path !== window.location.pathname) {
+      window.history.pushState({}, "", path);
+      setRoute(path);
+    }
+    window.scrollTo(0, 0);
+  };
+
+  const isContact = route.replace(/\/+$/, "") === "/contact";
 
   const openProfile = (i: number) => {
     setActiveArtist(i);
@@ -1507,25 +1663,41 @@ export default function App() {
 
       </header>
 
-      <MenuButton open={menuOpen} onClick={() => setMenuOpen((o) => !o)} />
-      <Menu open={menuOpen} onClose={() => setMenuOpen(false)} />
+      {isContact ? (
+        <BackButton onClick={() => navigate("/")} />
+      ) : (
+        <>
+          <MenuButton open={menuOpen} onClick={() => setMenuOpen((o) => !o)} />
+          <Menu
+            open={menuOpen}
+            onClose={() => setMenuOpen(false)}
+            onNavigate={navigate}
+          />
+        </>
+      )}
 
-      {/* ============ FIRST SCREEN: hero + carousel ============ */}
-      <section className="relative min-h-screen overflow-hidden">
-        <main className="relative z-10 min-h-screen">
-          <Hero />
-        </main>
-        <Carousel onOpenProfile={openProfile} />
-      </section>
+      {isContact ? (
+        <ContactPage onNavigateHome={() => navigate("/")} />
+      ) : (
+        <>
+          {/* ============ FIRST SCREEN: hero + carousel ============ */}
+          <section className="relative min-h-screen overflow-hidden">
+            <main className="relative z-10 min-h-screen">
+              <Hero />
+            </main>
+            <Carousel onOpenProfile={openProfile} />
+          </section>
 
-      {/* ============ ARTIST SHOWCASE ============ */}
-      <ArtistShowcase active={activeArtist} onSelect={setActiveArtist} />
+          {/* ============ ARTIST SHOWCASE ============ */}
+          <ArtistShowcase active={activeArtist} onSelect={setActiveArtist} />
 
-      {/* ============ REVIEWS ============ */}
-      <Reviews />
+          {/* ============ REVIEWS ============ */}
+          <Reviews />
 
-      {/* ============ SPONSORS ============ */}
-      <Sponsors />
+          {/* ============ SPONSORS ============ */}
+          <Sponsors />
+        </>
+      )}
 
       {/* ===================== COOKIE BANNER ===================== */}
       <AnimatePresence>
