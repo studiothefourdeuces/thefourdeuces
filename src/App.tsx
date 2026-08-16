@@ -27,7 +27,6 @@ import daria1Img from "./img/artists/daria1.png";
 import tattoolandLogo from "./img/partners/tattooland.png";
 import killerinkLogo from "./img/partners/killerink.png";
 import dashaLogo from "./img/partners/tattoodasha.png";
-import kwadronLogo from "./img/partners/kwadron.png";
 
 /* -------------------------------------------------------------------------- */
 /* DATA                                                                       */
@@ -1395,12 +1394,6 @@ const SPONSORS = [
     logo: dashaLogo,
     tag: "Supply partner",
     url: "https://dashatattoo.com/",
-  },
-  {
-    name: "Kwadron",
-    logo: kwadronLogo,
-    tag: "Supply partner",
-    url: "https://www.kwadron.pl/",
   },
 ];
 
