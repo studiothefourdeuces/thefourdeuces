@@ -655,7 +655,7 @@ function Carousel({
             ref={(el) => {
               cardRefs.current[i] = el;
             }}
-            className="absolute left-1/2 top-1/2 overflow-hidden rounded-2xl ring-1 ring-white/10 shadow-2xl shadow-black/60"
+            className="group absolute left-1/2 top-1/2 overflow-hidden rounded-2xl ring-1 ring-white/10 shadow-2xl shadow-black/60"
             style={{
               backfaceVisibility: "hidden",
               willChange: "transform, opacity",
@@ -665,7 +665,7 @@ function Carousel({
               src={a.img}
               alt={ARTISTS[a.artistIdx].name}
               draggable={false}
-              className="pointer-events-none h-full w-full select-none object-cover"
+              className="pointer-events-none h-full w-full select-none object-cover grayscale transition duration-500 group-hover:grayscale-0"
             />
           </div>
         ))}
