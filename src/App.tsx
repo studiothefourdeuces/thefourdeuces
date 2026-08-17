@@ -15,6 +15,7 @@ import {
   ArrowLeft,
   ChevronDown,
   Download,
+  Smartphone,
 } from "lucide-react";
 import dariaImg from "./img/artists/daria.png";
 import eugeneImg from "./img/artists/eugene.png";
@@ -2129,6 +2130,45 @@ function smoothScrollToId(id: string, duration = 950) {
   requestAnimationFrame(step);
 }
 
+// Fullscreen, non-dismissable notice shown when a phone is held in landscape.
+// It clears itself the moment the device returns to portrait.
+function RotateNotice() {
+  const [landscape, setLandscape] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia(
+      "(orientation: landscape) and (max-height: 500px)",
+    );
+    const update = () => setLandscape(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    window.addEventListener("resize", update);
+    window.addEventListener("orientationchange", update);
+    return () => {
+      mq.removeEventListener("change", update);
+      window.removeEventListener("resize", update);
+      window.removeEventListener("orientationchange", update);
+    };
+  }, []);
+
+  if (!landscape) return null;
+
+  return (
+    <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center gap-6 bg-[#050505] px-10 text-center">
+      <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white/10">
+        <Smartphone className="h-7 w-7 text-white" strokeWidth={1.75} />
+      </span>
+      <h2 className="font-serif text-[2rem] leading-[1.05]">
+        Please rotate your <span className="italic">device.</span>
+      </h2>
+      <p className="max-w-sm text-[14px] leading-relaxed text-white/60">
+        The Four Deuces is best experienced in portrait. Turn your phone upright
+        to continue.
+      </p>
+    </div>
+  );
+}
+
 export default function App() {
   const [cookie, setCookie] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -2287,6 +2327,7 @@ export default function App() {
       </AnimatePresence>
 
       <Cursor />
+      <RotateNotice />
     </div>
   );
 }
