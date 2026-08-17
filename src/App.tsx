@@ -532,6 +532,10 @@ function Carousel({
     let last = performance.now();
     let lastCardW = -1;
     let lastActivity = performance.now();
+    let dragging = false;
+    let dragStartX = 0;
+    let dragStartProgress = 0;
+    let dragMoved = 0;
 
     const dims = () => {
       const vw = window.innerWidth;
@@ -600,6 +604,10 @@ function Carousel({
     // cards don't hit-test reliably at their painted pixels, so match on screen
     // position instead).
     const onClick = (e: MouseEvent) => {
+      if (dragMoved > 8) {
+        dragMoved = 0;
+        return; // a drag, not a tap — don't open a profile
+      }
       let best = -1;
       let bestDist = Infinity;
       for (let i = 0; i < N; i++) {
@@ -619,21 +627,51 @@ function Carousel({
       openRef.current(items[best].artistIdx); // single click → open artist
     };
 
-    // "Inactivity" means no interaction WITH THE CAROUSEL — the pointer moving
-    // over it or pressing on it. Auto-scroll resumes 3s after the pointer last
-    // touched the carousel (moving the mouse elsewhere doesn't keep it paused).
-    const bump = () => {
+    // Drag to scroll the carousel (touch + mouse). A tap with no real movement
+    // still opens a profile (see onClick). Any pointer interaction counts as
+    // activity, which pauses the auto-scroll for a moment.
+    const onPointerDown = (e: PointerEvent) => {
+      dragging = true;
+      dragStartX = e.clientX;
+      dragStartProgress = progress;
+      dragMoved = 0;
+      target = null; // cancel any in-flight glide
       lastActivity = performance.now();
+      try {
+        wrap.setPointerCapture(e.pointerId);
+      } catch {
+        /* ignore */
+      }
     };
+    const onPointerMove = (e: PointerEvent) => {
+      lastActivity = performance.now();
+      if (!dragging) return;
+      const dx = e.clientX - dragStartX;
+      dragMoved = Math.max(dragMoved, Math.abs(dx));
+      progress = dragStartProgress - dx / dims().spacing;
+    };
+    const onPointerUp = (e: PointerEvent) => {
+      dragging = false;
+      try {
+        wrap.releasePointerCapture(e.pointerId);
+      } catch {
+        /* ignore */
+      }
+    };
+
     wrap.addEventListener("click", onClick);
-    wrap.addEventListener("pointermove", bump, { passive: true });
-    wrap.addEventListener("pointerdown", bump, { passive: true });
+    wrap.addEventListener("pointerdown", onPointerDown);
+    wrap.addEventListener("pointermove", onPointerMove, { passive: true });
+    wrap.addEventListener("pointerup", onPointerUp);
+    wrap.addEventListener("pointercancel", onPointerUp);
     raf = requestAnimationFrame(tick);
     return () => {
       cancelAnimationFrame(raf);
       wrap.removeEventListener("click", onClick);
-      wrap.removeEventListener("pointermove", bump);
-      wrap.removeEventListener("pointerdown", bump);
+      wrap.removeEventListener("pointerdown", onPointerDown);
+      wrap.removeEventListener("pointermove", onPointerMove);
+      wrap.removeEventListener("pointerup", onPointerUp);
+      wrap.removeEventListener("pointercancel", onPointerUp);
     };
   }, [N]);
 
@@ -645,7 +683,7 @@ function Carousel({
       <div
         ref={wrapRef}
         className="pointer-events-auto relative mx-auto h-full w-full"
-        style={{ transformStyle: "preserve-3d" }}
+        style={{ transformStyle: "preserve-3d", touchAction: "pan-y" }}
       >
         {items.map((a, i) => (
           <div
@@ -655,7 +693,7 @@ function Carousel({
             ref={(el) => {
               cardRefs.current[i] = el;
             }}
-            className="group absolute left-1/2 top-1/2 overflow-hidden rounded-2xl ring-1 ring-white/10 shadow-2xl shadow-black/60"
+            className="absolute left-1/2 top-1/2 overflow-hidden rounded-2xl ring-1 ring-white/10 shadow-2xl shadow-black/60"
             style={{
               backfaceVisibility: "hidden",
               willChange: "transform, opacity",
@@ -665,7 +703,7 @@ function Carousel({
               src={a.img}
               alt={ARTISTS[a.artistIdx].name}
               draggable={false}
-              className="pointer-events-none h-full w-full select-none object-cover grayscale transition duration-500 group-hover:grayscale-0"
+              className="pointer-events-none h-full w-full select-none object-cover grayscale"
             />
           </div>
         ))}
@@ -1185,6 +1223,45 @@ function ArtistButtons({
   );
 }
 
+// Mobile-only horizontal avatar row (desktop uses the vertical ArtistButtons).
+function ArtistRow({
+  active,
+  onSelect,
+}: {
+  active: number;
+  onSelect: (i: number) => void;
+}) {
+  return (
+    <div className="flex items-center justify-center gap-2">
+      {ARTISTS.map((a, i) => {
+        const isActive = i === active;
+        return (
+          <button
+            key={i}
+            onClick={() => onSelect(i)}
+            data-cursor="pointer"
+            aria-label={a.name}
+            className="h-9 w-9 shrink-0 overflow-hidden rounded-full outline-none transition"
+            style={{
+              boxShadow: isActive
+                ? "0 0 0 2px #fff"
+                : "0 0 0 1px rgba(255,255,255,0.2)",
+              opacity: isActive ? 1 : 0.5,
+            }}
+          >
+            <img
+              src={a.img}
+              alt=""
+              draggable={false}
+              className="h-full w-full object-cover"
+            />
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function ArtistShowcase({
   active,
   onSelect,
@@ -1232,6 +1309,11 @@ function ArtistShowcase({
               className="absolute inset-0 h-full w-full object-cover"
             />
           </div>
+        </Reveal>
+
+        {/* Mobile-only: horizontal artist selector under the photo */}
+        <Reveal className="md:hidden" delay={0.18} y={20}>
+          <ArtistRow active={active} onSelect={onSelect} />
         </Reveal>
 
         {/* Text */}
@@ -1358,6 +1440,125 @@ function FloatingColumn({
   );
 }
 
+// Mobile reviews — a single floating column (like the desktop marquee) that the
+// user can also drag up/down. Auto-float pauses on touch and resumes 1s later.
+function MobileReviews() {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const wrap = wrapRef.current;
+    const track = trackRef.current;
+    if (!wrap || !track) return;
+
+    const DRIFT = 0.04; // px per ms — gentle upward float
+    const IDLE_MS = 1000; // resume floating 1s after the last interaction
+
+    let raf = 0;
+    let last = performance.now();
+    let lastActivity = 0; // float straight away
+    let offset = 0;
+    const secondCopy = () => track.children[1] as HTMLElement | undefined;
+    let half = secondCopy()?.offsetTop || 0; // height of one full copy
+    let dragging = false;
+    let dragStartY = 0;
+    let dragStartOffset = 0;
+
+    const ro = new ResizeObserver(() => {
+      half = secondCopy()?.offsetTop || half;
+    });
+    ro.observe(track);
+
+    const wrapOffset = () => {
+      if (half <= 0) return;
+      while (offset <= -half) offset += half;
+      while (offset > 0) offset -= half;
+    };
+
+    const tick = (t: number) => {
+      raf = requestAnimationFrame(tick);
+      const dt = Math.min(50, t - last);
+      last = t;
+      if (!dragging && performance.now() - lastActivity > IDLE_MS) {
+        offset -= DRIFT * dt; // float upward
+      }
+      wrapOffset();
+      track.style.transform = `translateY(${offset}px)`;
+    };
+
+    const onPointerDown = (e: PointerEvent) => {
+      dragging = true;
+      dragStartY = e.clientY;
+      dragStartOffset = offset;
+      lastActivity = performance.now();
+      try {
+        wrap.setPointerCapture(e.pointerId);
+      } catch {
+        /* ignore */
+      }
+    };
+    const onPointerMove = (e: PointerEvent) => {
+      lastActivity = performance.now();
+      if (!dragging) return;
+      offset = dragStartOffset + (e.clientY - dragStartY);
+      wrapOffset();
+      track.style.transform = `translateY(${offset}px)`; // immediate feedback
+    };
+    const onPointerUp = (e: PointerEvent) => {
+      dragging = false;
+      lastActivity = performance.now();
+      try {
+        wrap.releasePointerCapture(e.pointerId);
+      } catch {
+        /* ignore */
+      }
+    };
+
+    wrap.addEventListener("pointerdown", onPointerDown);
+    wrap.addEventListener("pointermove", onPointerMove, { passive: true });
+    wrap.addEventListener("pointerup", onPointerUp);
+    wrap.addEventListener("pointercancel", onPointerUp);
+    raf = requestAnimationFrame(tick);
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+      wrap.removeEventListener("pointerdown", onPointerDown);
+      wrap.removeEventListener("pointermove", onPointerMove);
+      wrap.removeEventListener("pointerup", onPointerUp);
+      wrap.removeEventListener("pointercancel", onPointerUp);
+    };
+  }, []);
+
+  return (
+    <div
+      ref={wrapRef}
+      className="relative h-[60vh] overflow-hidden md:hidden"
+      style={{
+        WebkitMaskImage: REVIEW_MASK,
+        maskImage: REVIEW_MASK,
+        touchAction: "none",
+      }}
+    >
+      <div
+        ref={trackRef}
+        className="absolute inset-x-0 top-0 flex flex-col will-change-transform"
+      >
+        {/* rendered twice for a seamless loop */}
+        <div className="flex flex-col">
+          {CHATS.map((c, i) => (
+            <ChatCard key={i} chat={c} />
+          ))}
+        </div>
+        <div className="flex flex-col">
+          {CHATS.map((c, i) => (
+            <ChatCard key={`b${i}`} chat={c} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Reviews() {
   const left = CHATS.filter((_, i) => i % 2 === 0);
   const right = CHATS.filter((_, i) => i % 2 === 1);
@@ -1378,27 +1579,13 @@ function Reviews() {
         </Reveal>
 
         <Reveal delay={0.1}>
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            {/* Mobile: a single bottom-to-top column with every review. */}
-            <FloatingColumn
-              items={CHATS}
-              dir="up"
-              duration={60}
-              className="md:hidden"
-            />
-            {/* Desktop: two columns, split. */}
-            <FloatingColumn
-              items={left}
-              dir="down"
-              duration={60}
-              className="hidden md:block"
-            />
-            <FloatingColumn
-              items={right}
-              dir="up"
-              duration={60}
-              className="hidden md:block"
-            />
+          {/* Mobile: one floating, draggable column with every review. */}
+          <MobileReviews />
+
+          {/* Desktop: two auto-scrolling columns, split. */}
+          <div className="hidden gap-6 md:grid md:grid-cols-2">
+            <FloatingColumn items={left} dir="down" duration={60} />
+            <FloatingColumn items={right} dir="up" duration={60} />
           </div>
         </Reveal>
       </div>
