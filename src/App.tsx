@@ -1,6 +1,5 @@
 import {
   useEffect,
-  useMemo,
   useRef,
   useState,
   type FormEvent,
@@ -23,7 +22,7 @@ import maxImg from "./img/artists/max.png";
 import milaImg from "./img/artists/mila.png";
 import selcukImg from "./img/artists/selcuk.png";
 import gianlucaImg from "./img/artists/gianluca.png";
-import daria1Img from "./img/artists/daria1.png";
+import daryaImg from "./img/artists/darya.png";
 import tattoolandLogo from "./img/partners/tattooland.png";
 import killerinkLogo from "./img/partners/killerink.png";
 import dashaLogo from "./img/partners/tattoodasha.png";
@@ -70,7 +69,7 @@ const ARTISTS = [
   },
   {
     name: "Darya",
-    img: daria1Img,
+    img: daryaImg,
     ig: "https://www.instagram.com/bazhina_tatoonl/",
     role: "Anime, Manga, Realism",
     bio: "Anime and manga brought to skin — bold graphic linework and colour alongside detailed black-and-grey realism and illustrative graphic art.",
@@ -83,6 +82,44 @@ const ARTISTS = [
     bio: "Minimal fine-line and botanical designs — restrained, elegant, and built to last.",
   },
 ];
+
+// Carousel works — each photo in src/img/works is named after its artist
+// (e.g. max1.jpg). Map every work to its artist so clicking a work opens that
+// artist's profile. Files that don't match an artist (e.g. guest*) are skipped.
+const workUrls = import.meta.glob("./img/works/*.jpg", {
+  eager: true,
+  query: "?url",
+  import: "default",
+}) as Record<string, string>;
+
+const WORK_ARTIST_INDEX: Record<string, number> = {
+  max: 0,
+  eugene: 1,
+  daria: 2,
+  mila: 3,
+  gianluca: 4,
+  darya: 5,
+  selcuk: 6,
+};
+
+type Work = { img: string; artistIdx: number };
+
+const WORKS: Work[] = (() => {
+  const byArtist: Work[][] = ARTISTS.map(() => []);
+  for (const [path, url] of Object.entries(workUrls)) {
+    const file = path.split("/").pop() || "";
+    const slug = file.replace(/\d+\.jpg$/i, "").toLowerCase();
+    const idx = WORK_ARTIST_INDEX[slug];
+    if (idx === undefined) continue; // unmapped (e.g. guest*)
+    byArtist[idx].push({ img: url, artistIdx: idx });
+  }
+  // Interleave round-robin so consecutive cards aren't the same artist.
+  const out: Work[] = [];
+  const maxLen = Math.max(0, ...byArtist.map((a) => a.length));
+  for (let r = 0; r < maxLen; r++)
+    for (const arr of byArtist) if (arr[r]) out.push(arr[r]);
+  return out;
+})();
 
 const TICKER =
   "Follow @the.four.deuces on Instagram — Fresh ink, flash drops, and behind-the-chair moments — Tap through to see our latest work — ";
@@ -474,10 +511,7 @@ function Carousel({
 }: {
   onOpenProfile: (artistIdx: number) => void;
 }) {
-  const items = useMemo(
-    () => Array.from({ length: 3 }).flatMap(() => ARTISTS),
-    []
-  );
+  const items = WORKS;
   const N = items.length;
   const cardRefs = useRef<Array<HTMLDivElement | null>>([]);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -502,7 +536,7 @@ function Carousel({
     const dims = () => {
       const vw = window.innerWidth;
       const cardW = vw < 640 ? 168 : vw < 1024 ? 216 : 264;
-      return { cardW, spacing: cardW * 1.12 }; // >cardW → visible gaps
+      return { cardW, spacing: cardW * 1.04 }; // >cardW → visible gaps
     };
 
     // Step the clicked card to the centre along the shortest wrapped path.
@@ -582,7 +616,7 @@ function Carousel({
       if (best < 0) return;
 
       centerOn(best);
-      openRef.current(best % ARTISTS.length); // single click → open profile
+      openRef.current(items[best].artistIdx); // single click → open artist
     };
 
     // "Inactivity" means no interaction WITH THE CAROUSEL — the pointer moving
@@ -629,7 +663,7 @@ function Carousel({
           >
             <img
               src={a.img}
-              alt={a.name}
+              alt={ARTISTS[a.artistIdx].name}
               draggable={false}
               className="pointer-events-none h-full w-full select-none object-cover"
             />
@@ -1888,6 +1922,26 @@ function TermsPage() {
 /* APP                                                                        */
 /* -------------------------------------------------------------------------- */
 
+// Eased scroll to a section — a longer, gentler glide than the browser's
+// native smooth scroll (easeInOutCubic).
+function smoothScrollToId(id: string, duration = 950) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const startY = window.scrollY;
+  const dist = el.getBoundingClientRect().top; // distance to bring it to the top
+  if (Math.abs(dist) < 2) return;
+  let startT: number | null = null;
+  const ease = (t: number) =>
+    t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  const step = (now: number) => {
+    if (startT === null) startT = now;
+    const p = Math.min(1, (now - startT) / duration);
+    window.scrollTo(0, startY + dist * ease(p));
+    if (p < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
 export default function App() {
   const [cookie, setCookie] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -1922,9 +1976,7 @@ export default function App() {
 
   const openProfile = (i: number) => {
     setActiveArtist(i);
-    document
-      .getElementById("artists")
-      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    smoothScrollToId("artists", 950);
   };
 
   return (
