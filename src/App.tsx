@@ -2456,8 +2456,36 @@ function RotateNotice() {
   );
 }
 
+const CONSENT_KEY = "tfd-consent";
+type Consent = "accepted" | "declined";
+
+// Microsoft Clarity — loaded ONLY after the visitor accepts. Set the project id
+// as VITE_CLARITY_ID at build time; without it this is a no-op.
+let clarityStarted = false;
+function loadClarity() {
+  const id = import.meta.env.VITE_CLARITY_ID as string | undefined;
+  if (!id || clarityStarted) return;
+  clarityStarted = true;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const w = window as any;
+  w.clarity =
+    w.clarity ||
+    function () {
+      (w.clarity.q = w.clarity.q || []).push(arguments);
+    };
+  const s = document.createElement("script");
+  s.async = true;
+  s.src = "https://www.clarity.ms/tag/" + id;
+  const first = document.getElementsByTagName("script")[0];
+  if (first && first.parentNode) first.parentNode.insertBefore(s, first);
+}
+
 export default function App() {
-  const [cookie, setCookie] = useState(true);
+  const [consent, setConsent] = useState<Consent | null>(() =>
+    typeof localStorage !== "undefined"
+      ? (localStorage.getItem(CONSENT_KEY) as Consent | null)
+      : null,
+  );
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeArtist, setActiveArtist] = useState(0);
   const [route, setRoute] = useState(() => window.location.pathname);
@@ -2467,6 +2495,22 @@ export default function App() {
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, []);
+
+  // Returning visitor who already accepted → start analytics on load.
+  useEffect(() => {
+    if (consent === "accepted") loadClarity();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const decideConsent = (choice: Consent) => {
+    setConsent(choice);
+    try {
+      localStorage.setItem(CONSENT_KEY, choice);
+    } catch {
+      /* ignore */
+    }
+    if (choice === "accepted") loadClarity();
+  };
 
   const navigate = (path: string) => {
     setMenuOpen(false);
@@ -2573,7 +2617,7 @@ export default function App() {
 
       {/* ===================== COOKIE BANNER ===================== */}
       <AnimatePresence>
-        {cookie && (
+        {consent === null && (
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
@@ -2588,22 +2632,22 @@ export default function App() {
               <p className="flex-1 text-[11px] leading-tight text-white/60">
                 We use cookies to understand how you use our site. Accept to
                 help us improve.{" "}
-                <a
-                  href="#"
-                  onClick={(e) => e.preventDefault()}
+                <button
+                  onClick={() => navigate("/terms")}
+                  data-cursor="pointer"
                   className="text-white/80 underline underline-offset-2"
                 >
                   Privacy Policy
-                </a>
+                </button>
               </p>
               <button
-                onClick={() => setCookie(false)}
+                onClick={() => decideConsent("declined")}
                 className="rounded-full px-4 py-2 text-[12px] text-white/70 transition hover:text-white"
               >
                 Decline
               </button>
               <button
-                onClick={() => setCookie(false)}
+                onClick={() => decideConsent("accepted")}
                 className="rounded-full bg-white px-5 py-2 text-[12px] font-medium text-black transition hover:bg-white/90"
               >
                 Accept
