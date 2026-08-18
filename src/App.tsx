@@ -2468,7 +2468,7 @@ function TermsPage() {
           Legal
         </p>
         <h1 className="font-serif text-[3rem] leading-[0.95] tracking-tight md:text-[4.5rem]">
-          Terms &amp; <span className="italic">Privacy.</span>
+          Terms &amp; <span className="italic">Privacy</span>
         </h1>
         <p className="mt-5 max-w-lg text-[15px] leading-relaxed text-white/55">
           The rules of the studio, and how we look after your data.
@@ -2701,6 +2701,38 @@ export default function App() {
 
           {/* ============ SPONSORS ============ */}
           <Sponsors />
+
+          {/* ===================== FOOTER ===================== */}
+          <footer className="px-6 py-14 md:px-16">
+            <div className="mx-auto flex max-w-md flex-col items-center gap-5 text-center">
+              <p className="font-serif text-[24px] leading-none tracking-tight text-white/70">
+                The Four <span className="italic">Deuces</span>
+              </p>
+              <p className="text-[13px] leading-relaxed text-white/40">
+                Designed &amp; developed by{" "}
+                <a
+                  href="https://aerdt.xyz/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-cursor="pointer"
+                  className="text-white/70 underline underline-offset-4 transition hover:text-white"
+                >
+                  aerdt
+                </a>
+              </p>
+              <div className="flex items-center gap-3 text-[11px] uppercase tracking-[0.2em] text-white/30">
+                <button
+                  onClick={() => navigate("/terms")}
+                  data-cursor="pointer"
+                  className="transition hover:text-white/70"
+                >
+                  Terms &amp; Privacy
+                </button>
+                <span className="text-white/15">·</span>
+                <span>© {new Date().getFullYear()} The Four Deuces</span>
+              </div>
+            </div>
+          </footer>
         </>
       ) : page === "contact" ? (
         <ContactPage onNavigate={navigate} />
