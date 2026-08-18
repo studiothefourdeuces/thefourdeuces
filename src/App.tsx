@@ -869,9 +869,9 @@ function Hero() {
         }}
         className="pointer-events-none absolute left-1/2 w-full px-6 text-center font-serif text-[2rem] leading-[1.15] tracking-tight md:text-[2.8rem]"
       >
-        Ink With Intent.
+        Ink with Intent
         <br />
-        <span className="italic">Made to Last.</span>
+        <span className="italic">Book Below</span>
       </h1>
 
       {/* Icon + input — anchored at the EXACT vertical + horizontal centre of
