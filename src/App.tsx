@@ -2357,37 +2357,132 @@ const TERMS: { title: string; items: string[] }[] = [
   },
 ];
 
+const PRIVACY: { title: string; items: string[] }[] = [
+  {
+    title: "1. Who we are",
+    items: [
+      "The Four Deuces B.V. is the controller responsible for any personal data collected through thefourdeuces.nl.",
+      "For any privacy question or request, contact us at studio@thefourdeuces.nl.",
+    ],
+  },
+  {
+    title: "2. Cookies & analytics",
+    items: [
+      "We only place analytics cookies after you accept them in the cookie banner. If you decline, no analytics cookies are set and no usage data is collected.",
+      "With your consent, we use Microsoft Clarity to understand how visitors experience the site so we can improve it. Clarity records general usage and behaviour — pages viewed, clicks and taps, scrolling, and mouse movement (aggregated into heatmaps) — and may capture anonymised replays of on-site interactions, together with basic device, browser, and approximate location information.",
+      "This data is used only to analyse and improve the website. We do not use it to identify you personally, we do not use it for advertising, and we do not sell it.",
+      "Microsoft Clarity processes this data on our behalf as a processor, under Microsoft's own privacy terms.",
+      "You can withdraw your consent at any time by clearing this site's cookies and data in your browser; the banner will then appear again on your next visit.",
+    ],
+  },
+  {
+    title: "3. Booking requests",
+    items: [
+      "When you send a booking request from the home page, we receive the budget you enter and your Instagram handle.",
+      "We use this information once, for the sole purpose of contacting you about your enquiry. Your Instagram handle is never stored in a database, never added to any mailing list, and never used for anything else — the request is deleted as soon as we have made contact.",
+    ],
+  },
+  {
+    title: "4. Contact form",
+    items: [
+      "When you use the contact form, we receive the name, email address, and message you provide.",
+      "We do not store your personal information. It is used a single time to reply to you and is then permanently deleted. It is never shared with anyone else and never used for marketing.",
+    ],
+  },
+  {
+    title: "5. Legal basis for processing",
+    items: [
+      "For analytics cookies we rely on your consent, which you can withdraw at any time.",
+      "For enquiries you send us (booking or contact form) we process your data solely to take the step you have asked us to take — getting back to you.",
+    ],
+  },
+  {
+    title: "6. Data retention",
+    items: [
+      "Enquiry details (booking or contact) are kept only for as long as needed to respond, and are deleted once your enquiry is resolved.",
+      "Analytics data is retained by Microsoft Clarity in line with its standard retention period.",
+    ],
+  },
+  {
+    title: "7. Sharing & processors",
+    items: [
+      "We do not sell your personal data and do not share it with third parties for their own purposes.",
+      "Enquiry details are seen only by The Four Deuces staff. Website analytics are processed by Microsoft Clarity, as described above.",
+    ],
+  },
+  {
+    title: "8. Your rights",
+    items: [
+      "Under the GDPR you have the right to access, correct, delete, restrict, or object to the processing of your personal data, the right to data portability, and the right to withdraw consent at any time.",
+      "To exercise any of these rights, email studio@thefourdeuces.nl. You also have the right to lodge a complaint with the Dutch Data Protection Authority (Autoriteit Persoonsgegevens).",
+    ],
+  },
+  {
+    title: "9. Changes to this policy",
+    items: [
+      "We may update this Privacy Policy from time to time. Any significant changes will be published on this page.",
+    ],
+  },
+  {
+    title: "10. Contact",
+    items: [
+      "Questions about this Privacy Policy or about your data can be sent to studio@thefourdeuces.nl.",
+    ],
+  },
+];
+
+function LegalGroup({ data }: { data: { title: string; items: string[] }[] }) {
+  return (
+    <div className="mt-8 divide-y divide-white/10 border-y border-white/10">
+      {data.map((s) => (
+        <div
+          key={s.title}
+          className="grid gap-2 py-7 md:grid-cols-[190px_1fr] md:gap-10"
+        >
+          <h3 className="font-display text-[15px] font-medium leading-snug text-white/90">
+            {s.title}
+          </h3>
+          <div className="space-y-3">
+            {s.items.map((it, i) => (
+              <p
+                key={i}
+                className="text-[15px] leading-relaxed text-white/55"
+              >
+                {it}
+              </p>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function TermsPage() {
+  const sectionHead =
+    "font-serif text-[2rem] leading-[1] tracking-tight md:text-[2.8rem]";
   return (
     <main className="relative z-10 min-h-screen px-6 pb-24 pt-28 md:px-16 md:pt-32">
       <div className="mx-auto w-full max-w-3xl">
         <p className="mb-4 text-[12px] uppercase tracking-[0.3em] text-white/40">
           Legal
         </p>
-        <h1 className="font-serif text-[2.6rem] leading-[0.95] tracking-tight md:text-[4rem]">
-          Terms &amp; Conditions
+        <h1 className="font-serif text-[3rem] leading-[0.95] tracking-tight md:text-[4.5rem]">
+          Terms &amp; <span className="italic">Privacy.</span>
         </h1>
+        <p className="mt-5 max-w-lg text-[15px] leading-relaxed text-white/55">
+          The rules of the studio, and how we look after your data.
+        </p>
 
-        <div className="mt-10 space-y-9">
-          {TERMS.map((s) => (
-            <section key={s.title}>
-              <h2 className="mb-3 font-display text-[18px] font-medium text-white/90 md:text-[20px]">
-                {s.title}
-              </h2>
-              <ul className="space-y-2">
-                {s.items.map((it, i) => (
-                  <li
-                    key={i}
-                    className="flex gap-3 text-[15px] leading-relaxed text-white/60"
-                  >
-                    <span className="mt-[9px] h-[3px] w-[3px] shrink-0 rounded-full bg-white/30" />
-                    <span>{it}</span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ))}
-        </div>
+        <section className="mt-16">
+          <h2 className={sectionHead}>Terms &amp; Conditions</h2>
+          <LegalGroup data={TERMS} />
+        </section>
+
+        <section className="mt-24">
+          <h2 className={sectionHead}>Privacy Policy</h2>
+          <LegalGroup data={PRIVACY} />
+        </section>
       </div>
     </main>
   );
