@@ -16,6 +16,7 @@ import {
   ChevronDown,
   Download,
   Smartphone,
+  X,
 } from "lucide-react";
 import dariaImg from "./img/artists/daria.png";
 import eugeneImg from "./img/artists/eugene.png";
@@ -121,6 +122,11 @@ const WORKS: Work[] = (() => {
     for (const arr of byArtist) if (arr[r]) out.push(arr[r]);
   return out;
 })();
+
+// Every work grouped by its artist (used by the mobile works lightbox).
+const WORKS_BY_ARTIST: string[][] = ARTISTS.map((_, i) =>
+  WORKS.filter((w) => w.artistIdx === i).map((w) => w.img),
+);
 
 const TICKER =
   "Follow @the.four.deuces on Instagram — Fresh ink, flash drops, and behind-the-chair moments — Tap through to see our latest work — ";
@@ -784,15 +790,15 @@ function Hero() {
   };
 
   const big =
-    "font-display font-normal text-[2.4rem] leading-none tracking-tight md:text-[4rem]";
+    "font-display font-normal text-[1.5rem] leading-none tracking-tight sm:text-[2.4rem] md:text-[4rem]";
 
   const isIg = step === "instagram";
   const value = isIg ? instagram : fmtBudget(budget);
   const placeholder = isIg
-    ? "your instagram"
+    ? "enter your instagram"
     : step === "idle" && idleIdx === 1
-      ? "your instagram"
-      : "your budget";
+      ? "enter your instagram"
+      : "enter your budget";
   const Icon = isIg || (step === "idle" && idleIdx === 1) ? Instagram : Euro;
 
   if (step === "done") {
@@ -869,9 +875,9 @@ function Hero() {
         }}
         className="pointer-events-none absolute left-1/2 w-full px-6 text-center font-serif text-[2rem] leading-[1.15] tracking-tight md:text-[2.8rem]"
       >
-        Ink with Intent
+        Ink With Intent.
         <br />
-        <span className="italic">Book Below</span>
+        <span className="italic">Made to Last.</span>
       </h1>
 
       {/* Icon + input — anchored at the EXACT vertical + horizontal centre of
@@ -898,7 +904,7 @@ function Hero() {
         </span>
         <div
           className="relative grid items-center"
-          style={{ maxWidth: "66vw" }}
+          style={{ maxWidth: "80vw" }}
         >
           {/* Invisible sizer — the field width tracks the text EXACTLY. (ch
               units over-measure and leave dead space on the right, which shifts
@@ -1263,12 +1269,149 @@ function ArtistRow({
   );
 }
 
+/* Full-screen, swipeable gallery of a single artist's works. Opened by tapping
+   an artist's photo (primarily on mobile). Uses native horizontal scroll-snap
+   so swiping feels native and needs no drag maths. */
+function WorksLightbox({
+  artistIdx,
+  onClose,
+}: {
+  artistIdx: number | null;
+  onClose: () => void;
+}) {
+  const trackRef = useRef<HTMLDivElement | null>(null);
+  const [idx, setIdx] = useState(0);
+  const open = artistIdx !== null;
+
+  // Reset to the first work whenever a different artist is opened.
+  useEffect(() => {
+    if (!open) return;
+    setIdx(0);
+    requestAnimationFrame(() => {
+      if (trackRef.current) trackRef.current.scrollLeft = 0;
+    });
+  }, [artistIdx, open]);
+
+  // Lock page scroll and close on Escape while open.
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open, onClose]);
+
+  const artist = artistIdx !== null ? ARTISTS[artistIdx] : null;
+  const works = artistIdx !== null ? WORKS_BY_ARTIST[artistIdx] : [];
+
+  const onScroll = () => {
+    const el = trackRef.current;
+    if (!el) return;
+    setIdx(Math.round(el.scrollLeft / el.clientWidth));
+  };
+
+  return (
+    <AnimatePresence>
+      {open && artist && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.25 }}
+          className="fixed inset-0 z-[100] flex flex-col bg-[#050505]"
+        >
+          {/* Top bar: artist + counter + close */}
+          <div className="flex items-center justify-between px-5 pb-3 pt-5">
+            <div className="flex items-center gap-3">
+              <span className="h-9 w-9 shrink-0 overflow-hidden rounded-full ring-1 ring-white/20">
+                <img
+                  src={artist.img}
+                  alt=""
+                  className="h-full w-full object-cover"
+                />
+              </span>
+              <div className="leading-tight">
+                <p className="text-[14px] font-medium">{artist.name}</p>
+                <p className="text-[11px] text-white/45">
+                  {idx + 1} / {works.length}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              aria-label="Close"
+              data-cursor="pointer"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 transition hover:bg-white/20"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          {/* Swipeable works */}
+          <div
+            ref={trackRef}
+            onScroll={onScroll}
+            className="flex flex-1 snap-x snap-mandatory overflow-y-hidden overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
+            {works.map((src, i) => (
+              <div
+                key={i}
+                className="flex h-full w-full shrink-0 snap-center items-center justify-center px-4 pb-4"
+              >
+                <img
+                  src={src}
+                  alt={`${artist.name} — work ${i + 1}`}
+                  draggable={false}
+                  className="max-h-full max-w-full rounded-2xl object-contain"
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* Dots + book CTA */}
+          <div className="flex flex-col items-center gap-4 pb-7 pt-1">
+            {works.length > 1 && (
+              <div className="flex items-center gap-1.5">
+                {works.map((_, i) => (
+                  <span
+                    key={i}
+                    className="h-1.5 rounded-full bg-white transition-all duration-300"
+                    style={{ width: i === idx ? 18 : 6, opacity: i === idx ? 1 : 0.35 }}
+                  />
+                ))}
+              </div>
+            )}
+            <a
+              href={artist.ig}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-cursor="pointer"
+              className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-2.5 text-[13px] font-medium text-black transition hover:bg-white/90"
+            >
+              <Instagram className="h-4 w-4" strokeWidth={2} />
+              {artist.name}'s Instagram
+            </a>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 function ArtistShowcase({
   active,
   onSelect,
+  onOpenWorks,
 }: {
   active: number;
   onSelect: (i: number) => void;
+  onOpenWorks: (i: number) => void;
 }) {
   const M = ARTISTS.length;
   const artist = ARTISTS[active];
@@ -1282,6 +1425,16 @@ function ArtistShowcase({
     prevRef.current = active;
   }, [active, M]);
 
+  // The tap-to-view-works gallery is a mobile-only feature.
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const sync = () => setIsMobile(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
   return (
     <section
       id="artists"
@@ -1292,24 +1445,41 @@ function ArtistShowcase({
           <ArtistButtons active={active} onSelect={onSelect} />
         </Reveal>
 
-        {/* Photo */}
+        {/* Photo — on mobile it's a button that opens the works gallery; on
+            desktop it's a plain image (the gallery is a mobile-only feature). */}
         <Reveal
           className="w-full max-w-[300px] shrink-0 md:max-w-md"
           delay={0.12}
           y={24}
         >
-          <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl ring-1 ring-white/10">
-            <motion.img
-              key={active}
-              src={artist.img}
-              alt={artist.name}
-              draggable={false}
-              initial={{ opacity: 0, x: dir * 80, scale: 1.05 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-              className="absolute inset-0 h-full w-full object-cover"
-            />
-          </div>
+          {(() => {
+            const img = (
+              <motion.img
+                key={active}
+                src={artist.img}
+                alt={artist.name}
+                draggable={false}
+                initial={{ opacity: 0, x: dir * 80, scale: 1.05 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            );
+            return isMobile ? (
+              <button
+                type="button"
+                onClick={() => onOpenWorks(active)}
+                aria-label={`View ${artist.name}'s work`}
+                className="relative block aspect-[4/5] w-full overflow-hidden rounded-2xl outline-none ring-1 ring-white/10"
+              >
+                {img}
+              </button>
+            ) : (
+              <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl ring-1 ring-white/10">
+                {img}
+              </div>
+            );
+          })()}
         </Reveal>
 
         {/* Mobile-only: horizontal artist selector under the photo */}
@@ -1341,7 +1511,8 @@ function ArtistShowcase({
               data-cursor="pointer"
               className="mt-8 inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-[13px] font-medium text-black transition hover:bg-white/90"
             >
-              Book with {artist.name}
+              <Instagram className="h-4 w-4" strokeWidth={2} />
+              {artist.name}'s Instagram
             </a>
           </motion.div>
         </Reveal>
@@ -2583,6 +2754,7 @@ export default function App() {
   );
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeArtist, setActiveArtist] = useState(0);
+  const [worksArtist, setWorksArtist] = useState<number | null>(null);
   const [route, setRoute] = useState(() => window.location.pathname);
 
   useEffect(() => {
@@ -2694,7 +2866,11 @@ export default function App() {
           </section>
 
           {/* ============ ARTIST SHOWCASE ============ */}
-          <ArtistShowcase active={activeArtist} onSelect={setActiveArtist} />
+          <ArtistShowcase
+            active={activeArtist}
+            onSelect={setActiveArtist}
+            onOpenWorks={setWorksArtist}
+          />
 
           {/* ============ REVIEWS ============ */}
           <Reviews />
@@ -2741,6 +2917,12 @@ export default function App() {
       ) : (
         <TermsPage />
       )}
+
+      {/* ===================== WORKS LIGHTBOX ===================== */}
+      <WorksLightbox
+        artistIdx={worksArtist}
+        onClose={() => setWorksArtist(null)}
+      />
 
       {/* ===================== COOKIE BANNER ===================== */}
       <AnimatePresence>
