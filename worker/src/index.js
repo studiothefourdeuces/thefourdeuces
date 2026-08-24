@@ -54,9 +54,20 @@ export default {
     const source = String(data.source || "hero").slice(0, 40);
     const name = String(data.name || "").slice(0, 120);
     const message = String(data.message || "").slice(0, 2000);
-    const isContact = source === "contact" || Boolean(message);
+    // Optional booking context: a chosen artist and/or a chosen body area.
+    const artist = String(data.artist || "").slice(0, 60);
+    const bodyPart = String(data.bodyPart || "").slice(0, 60);
+    // The contact form collects an email; the hero and Book-page bookings
+    // collect an Instagram handle (+ optional artist / body area / message).
+    const isContact = source === "contact";
 
-    // The contact form collects an email; the hero booking collects an Instagram.
+    // Which kind of booking is this? Drives the notification wording.
+    const bookingKind = artist
+      ? `with ${artist}`
+      : bodyPart
+        ? `placement: ${bodyPart}`
+        : "general";
+
     if (isContact) {
       if (!/.+@.+\..+/.test(email))
         return json({ ok: false, error: "invalid email" }, 422, allow);
@@ -72,23 +83,50 @@ export default {
 
     if (env.TG_TOKEN && env.TG_CHAT_ID) {
       const handle = env.NOTIFY_HANDLE || "@sashamolchanova02";
+      // Booking heading reflects the kind: a specific artist, a body area, or
+      // a general request.
+      const bookingHeading = artist
+        ? `New Booking Request — with ${artist}`
+        : bodyPart
+          ? `New Booking Request — ${bodyPart}`
+          : "New Booking Request";
       const text = isContact
         ? `Hi ${handle} 🖤 New Contact Message:\n\n` +
           (name ? `🙂 Name: ${name}\n` : "") +
           `📧 Email: ${email}` +
           (message ? `\n\n💬 ${message}` : "")
-        : `Hi ${handle} 🖤 There's a new Booking Request:\n\n` +
-          `💸 Budget: €${budget || "—"}\n` +
-          `📸 Instagram: https://instagram.com/${instagram}`;
+        : `Hi ${handle} 🖤 ${bookingHeading}:\n\n` +
+          (budget ? `💸 Budget: €${budget}\n` : "") +
+          `📸 Instagram: https://instagram.com/${instagram}` +
+          (artist ? `\n🎨 Artist: ${artist}` : "") +
+          (bodyPart ? `\n📍 Placement: ${bodyPart}` : "") +
+          (message ? `\n\n💬 ${message}` : "");
+
+      const body = {
+        chat_id: env.TG_CHAT_ID,
+        text,
+        disable_web_page_preview: true,
+      };
+      // One-tap button that opens the DM thread with the client in Instagram
+      // (Meta's official click-to-chat link). Bookings only — contact has no
+      // Instagram handle.
+      if (!isContact && instagram) {
+        body.reply_markup = {
+          inline_keyboard: [
+            [
+              {
+                text: `💬 Message @${instagram} on Instagram`,
+                url: `https://ig.me/m/${instagram}`,
+              },
+            ],
+          ],
+        };
+      }
       tasks.push(
         fetch(`https://api.telegram.org/bot${env.TG_TOKEN}/sendMessage`, {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            chat_id: env.TG_CHAT_ID,
-            text,
-            disable_web_page_preview: true,
-          }),
+          body: JSON.stringify(body),
         }),
       );
     }
@@ -107,10 +145,14 @@ export default {
             reply_to: email || undefined,
             subject: isContact
               ? `New contact message${name ? ` — ${name}` : ""}`
-              : `New lead — €${budget || "—"}`,
+              : `New booking (${bookingKind}) — €${budget || "—"}`,
             text: isContact
               ? `Name: ${name}\nEmail: ${email}\nMessage:\n${message}\nTime: ${when}`
-              : `Budget: €${budget || "—"}\nInstagram: @${instagram} (https://instagram.com/${instagram})\nSource: ${source}\nTime: ${when}`,
+              : `Budget: €${budget || "—"}\nInstagram: @${instagram} (https://instagram.com/${instagram})` +
+                (artist ? `\nArtist: ${artist}` : "") +
+                (bodyPart ? `\nPlacement: ${bodyPart}` : "") +
+                (message ? `\nMessage:\n${message}` : "") +
+                `\nSource: ${source}\nTime: ${when}`,
           }),
         }),
       );
@@ -121,7 +163,16 @@ export default {
         fetch(env.SHEET_URL, {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ when, budget, email, instagram, source }),
+          body: JSON.stringify({
+            when,
+            budget,
+            email,
+            instagram,
+            artist,
+            bodyPart,
+            message,
+            source,
+          }),
         }),
       );
     }

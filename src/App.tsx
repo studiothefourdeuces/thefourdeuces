@@ -28,6 +28,7 @@ import daryaImg from "./img/artists/darya.png";
 import tattoolandLogo from "./img/partners/tattooland.png";
 import killerinkLogo from "./img/partners/killerink.png";
 import dashaLogo from "./img/partners/tattoodasha.png";
+import { FAQ_ITEMS } from "./faq";
 
 /* -------------------------------------------------------------------------- */
 /* DATA                                                                       */
@@ -133,10 +134,10 @@ const TICKER =
 
 const MENU: { label: string; target: string }[] = [
   { label: "Home", target: "top" },
-  { label: "Artists", target: "#artists" },
+  { label: "Book", target: "/book" },
+  { label: "Artists", target: "/artists" },
   { label: "Reviews", target: "#reviews" },
   { label: "Sponsors", target: "#sponsors" },
-  { label: "Guide", target: "/guide" },
   { label: "Contact", target: "/contact" },
 ];
 
@@ -732,23 +733,38 @@ type Step = "idle" | "budget" | "instagram" | "done";
 // time. If unset, the form still works locally; it just doesn't ship the lead.
 const FORM_ENDPOINT = import.meta.env.VITE_FORM_ENDPOINT as string | undefined;
 
-function Hero() {
+type LeadContext = { source: string; artist?: string; bodyPart?: string };
+
+// The lead form. Reused in two places so the site keeps one shared "book"
+// element: `mode="hero"` renders the centred hero overlay; `mode="modal"`
+// renders the exact same field + button flow inside a full-screen booking
+// overlay (opened from the Book page, an artist, or a body area).
+function LeadForm({
+  mode,
+  context,
+  onClose,
+}: {
+  mode: "hero" | "modal";
+  context: LeadContext;
+  onClose?: () => void;
+}) {
   const [step, setStep] = useState<Step>("idle");
   const [budget, setBudget] = useState("");
   const [instagram, setInstagram] = useState("");
   const [idleIdx, setIdleIdx] = useState(0);
   const [focused, setFocused] = useState(false);
-  const [loaded, setLoaded] = useState(false);
+  const [loaded, setLoaded] = useState(mode === "modal");
   const [hp, setHp] = useState(""); // honeypot — real users leave it empty
   const inputRef = useRef<HTMLInputElement>(null);
   const shake = useAnimationControls();
 
-  // First-load reveal — fade + rise the whole hero in once, on mount. A short
-  // timer lets the initial (hidden) state paint so the transition actually runs.
+  // First-load reveal (hero only) — fade + rise the whole hero in once, on
+  // mount. A short timer lets the hidden state paint so the transition runs.
   useEffect(() => {
+    if (mode !== "hero") return;
     const id = setTimeout(() => setLoaded(true), 40);
     return () => clearTimeout(id);
-  }, []);
+  }, [mode]);
 
   useEffect(() => {
     if (step !== "idle") return;
@@ -759,6 +775,21 @@ function Hero() {
   useEffect(() => {
     if (step === "instagram") inputRef.current?.focus();
   }, [step]);
+
+  // Modal: lock page scroll and close on Escape while open.
+  useEffect(() => {
+    if (mode !== "modal") return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose?.();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [mode, onClose]);
 
   const igHandle = instagram.trim().replace(/^@+/, "");
   const igValid = /^[a-zA-Z0-9._]{1,30}$/.test(igHandle);
@@ -779,7 +810,14 @@ function Hero() {
     fetch(FORM_ENDPOINT, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ budget, instagram: igHandle, hp, source: "hero" }),
+      body: JSON.stringify({
+        budget,
+        instagram: igHandle,
+        hp,
+        source: context.source,
+        artist: context.artist || "",
+        bodyPart: context.bodyPart || "",
+      }),
     }).catch(() => {});
   };
 
@@ -801,6 +839,221 @@ function Hero() {
       : "enter your budget";
   const Icon = isIg || (step === "idle" && idleIdx === 1) ? Instagram : Euro;
 
+  const contextLabel = context.artist
+    ? `with ${context.artist}`
+    : context.bodyPart
+      ? context.bodyPart
+      : null;
+
+  // ---- Shared inner pieces (identical in both modes) ----
+  const honeypot = (
+    <input
+      type="text"
+      name="company"
+      tabIndex={-1}
+      autoComplete="off"
+      aria-hidden="true"
+      value={hp}
+      onChange={(e) => setHp(e.target.value)}
+      className="absolute left-[-9999px] h-0 w-0 opacity-0"
+    />
+  );
+
+  const fieldGroup = (
+    <motion.div animate={shake} className="flex items-center gap-3 md:gap-4">
+      <span
+        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-black transition-colors duration-300 md:h-14 md:w-14 ${
+          engaged ? "bg-white" : "bg-white/30"
+        }`}
+      >
+        <Icon className="h-5 w-5 md:h-6 md:w-6" strokeWidth={2.25} />
+      </span>
+      <div className="relative grid items-center" style={{ maxWidth: "80vw" }}>
+        {/* Invisible sizer — the field width tracks the text EXACTLY. */}
+        <span
+          aria-hidden
+          className={`${big} invisible col-start-1 row-start-1 whitespace-pre`}
+        >
+          {value || placeholder}
+        </span>
+        <input
+          ref={inputRef}
+          value={value}
+          type="text"
+          inputMode={isIg ? "text" : "numeric"}
+          placeholder={placeholder}
+          data-cursor="text"
+          onFocus={() => {
+            setFocused(true);
+            if (step === "idle") setStep("budget");
+          }}
+          onBlur={() => {
+            setFocused(false);
+            if (step === "budget" && !budget) setStep("idle");
+          }}
+          onChange={(e) =>
+            isIg
+              ? setInstagram(e.target.value.replace(/\s/g, "").slice(0, 31))
+              : setBudget(e.target.value.replace(/\D/g, "").slice(0, 5))
+          }
+          onKeyDown={(e) => {
+            if (e.key !== "Enter") return;
+            isIg ? submit() : next();
+          }}
+          size={1}
+          className={`${big} col-start-1 row-start-1 w-full min-w-0 bg-transparent text-left text-white outline-none placeholder:text-transparent ${value ? "caret-white" : "caret-transparent"}`}
+        />
+        {!value && (
+          <div
+            className={`${big} pointer-events-none absolute inset-0 flex items-center`}
+          >
+            <span className="whitespace-pre text-white/30">{placeholder}</span>
+            {focused && (
+              <span
+                className="ml-[3px] w-[2px] shrink-0 bg-white"
+                style={{
+                  height: "0.82em",
+                  animation: "caretBlink 1.05s steps(1, end) infinite",
+                }}
+              />
+            )}
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+
+  const stepButton = (
+    <AnimatePresence mode="wait">
+      {step === "budget" && (
+        <motion.button
+          key="next"
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 6 }}
+          transition={{ duration: 0.25 }}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={next}
+          className="rounded-full bg-white/10 px-7 py-3 text-[14px] text-white/90 backdrop-blur transition hover:bg-white/20"
+        >
+          Okay, next
+        </motion.button>
+      )}
+      {step === "instagram" && (
+        <motion.button
+          key="submit"
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 6 }}
+          transition={{ duration: 0.25 }}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={submit}
+          className="rounded-full bg-white px-8 py-3 text-[14px] font-medium text-black transition hover:bg-white/90"
+        >
+          Submit
+        </motion.button>
+      )}
+    </AnimatePresence>
+  );
+
+  const doneInner = (
+    <>
+      <span className="mb-6 flex h-12 w-12 items-center justify-center rounded-full bg-white text-black">
+        <Check className="h-6 w-6" strokeWidth={2.5} />
+      </span>
+      <h2 className="font-serif text-[2.4rem] leading-[1.05] md:text-[3.4rem]">
+        Submission <span className="italic">accepted.</span>
+      </h2>
+      <p className="mt-3 text-[15px] text-white/70">We'll be in touch shortly.</p>
+      <div className="mt-6 space-y-1 text-[13px]">
+        <div>
+          <span className="text-white/40">budget</span>{" "}
+          <span className="text-white/90">€{fmtBudget(budget) || "—"}</span>
+        </div>
+        <div>
+          <span className="text-white/40">instagram</span>{" "}
+          <span className="text-white/90">
+            {igHandle ? "@" + igHandle : "—"}
+          </span>
+        </div>
+        {contextLabel && (
+          <div>
+            <span className="text-white/40">
+              {context.artist ? "artist" : "placement"}
+            </span>{" "}
+            <span className="text-white/90">
+              {context.artist || context.bodyPart}
+            </span>
+          </div>
+        )}
+      </div>
+      <p className="mt-5 max-w-sm text-[13px] leading-relaxed text-white/40">
+        We only use your Instagram to get in touch about your request. It isn't
+        stored anywhere and is deleted from our records as soon as we've
+        contacted you.
+      </p>
+    </>
+  );
+
+  // ---- MODAL MODE ----
+  if (mode === "modal") {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.25 }}
+        className="fixed inset-0 z-[100] flex flex-col bg-[#050505]"
+      >
+        <div className="flex items-center justify-between px-5 pb-3 pt-5">
+          <span className="font-serif text-[15px] tracking-tight text-white/60">
+            The Four <span className="italic">Deuces</span>
+          </span>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            data-cursor="pointer"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 transition hover:bg-white/20"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="flex flex-1 flex-col items-center justify-center px-6 pb-[12vh] text-center">
+          {honeypot}
+          {step === "done" ? (
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+              className="flex flex-col items-center"
+            >
+              {doneInner}
+            </motion.div>
+          ) : (
+            <>
+              <div className="mb-10">
+                <h2 className="font-serif text-[2rem] leading-[1.1] tracking-tight md:text-[2.8rem]">
+                  Request a <span className="italic">booking</span>
+                </h2>
+                {contextLabel && (
+                  <p className="mt-3 text-[13px] uppercase tracking-[0.25em] text-white/40">
+                    {contextLabel}
+                  </p>
+                )}
+              </div>
+              {fieldGroup}
+              <div className="mt-8 flex h-12 items-start justify-center">
+                {stepButton}
+              </div>
+            </>
+          )}
+        </div>
+      </motion.div>
+    );
+  }
+
+  // ---- HERO MODE ----
   if (step === "done") {
     return (
       <motion.div
@@ -809,32 +1062,7 @@ function Hero() {
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
         className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-6 pb-[26vh] text-center"
       >
-          <span className="mb-6 flex h-12 w-12 items-center justify-center rounded-full bg-white text-black">
-            <Check className="h-6 w-6" strokeWidth={2.5} />
-          </span>
-          <h2 className="font-serif text-[2.4rem] leading-[1.05] md:text-[3.4rem]">
-            Submission <span className="italic">accepted.</span>
-          </h2>
-          <p className="mt-3 text-[15px] text-white/70">
-            We'll be in touch shortly.
-          </p>
-          <div className="mt-6 space-y-1 text-[13px]">
-            <div>
-              <span className="text-white/40">budget</span>{" "}
-              <span className="text-white/90">€{fmtBudget(budget) || "—"}</span>
-            </div>
-            <div>
-              <span className="text-white/40">instagram</span>{" "}
-              <span className="text-white/90">
-                {igHandle ? "@" + igHandle : "—"}
-              </span>
-            </div>
-          </div>
-          <p className="mt-5 max-w-sm text-[13px] leading-relaxed text-white/40">
-            We only use your Instagram to get in touch about your request. It
-            isn't stored anywhere and is deleted from our records as soon as
-            we've contacted you.
-          </p>
+        {doneInner}
       </motion.div>
     );
   }
@@ -849,18 +1077,7 @@ function Hero() {
           "opacity 0.9s cubic-bezier(0.22,1,0.36,1), transform 0.9s cubic-bezier(0.22,1,0.36,1)",
       }}
     >
-      {/* Honeypot — off-screen, hidden from users & AT; bots that fill it are
-          silently dropped by the Worker. */}
-      <input
-        type="text"
-        name="company"
-        tabIndex={-1}
-        autoComplete="off"
-        aria-hidden="true"
-        value={hp}
-        onChange={(e) => setHp(e.target.value)}
-        className="absolute left-[-9999px] h-0 w-0 opacity-0"
-      />
+      {honeypot}
 
       {/* Heading — anchored above the centre; blurs (lightly) while a field is
           active and shifts up together with the input. */}
@@ -880,8 +1097,7 @@ function Hero() {
         <span className="italic">Made to Last.</span>
       </h1>
 
-      {/* Icon + input — anchored at the EXACT vertical + horizontal centre of
-          the page; shifts up when a field is active. */}
+      {/* Icon + input — anchored at the EXACT vertical + horizontal centre. */}
       <div
         className="pointer-events-auto absolute left-1/2 top-1/2"
         style={{
@@ -891,115 +1107,19 @@ function Hero() {
           transition: "transform 0.5s cubic-bezier(0.22,1,0.36,1)",
         }}
       >
-      <motion.div
-        animate={shake}
-        className="flex items-center gap-3 md:gap-4"
-      >
-        <span
-          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-black transition-colors duration-300 md:h-14 md:w-14 ${
-            engaged ? "bg-white" : "bg-white/30"
-          }`}
-        >
-          <Icon className="h-5 w-5 md:h-6 md:w-6" strokeWidth={2.25} />
-        </span>
-        <div
-          className="relative grid items-center"
-          style={{ maxWidth: "80vw" }}
-        >
-          {/* Invisible sizer — the field width tracks the text EXACTLY. (ch
-              units over-measure and leave dead space on the right, which shifts
-              the whole icon+text group off the page centre.) */}
-          <span
-            aria-hidden
-            className={`${big} invisible col-start-1 row-start-1 whitespace-pre`}
-          >
-            {value || placeholder}
-          </span>
-          <input
-            ref={inputRef}
-            value={value}
-            type="text"
-            inputMode={isIg ? "text" : "numeric"}
-            placeholder={placeholder}
-            data-cursor="text"
-            onFocus={() => {
-              setFocused(true);
-              if (step === "idle") setStep("budget");
-            }}
-            onBlur={() => {
-              setFocused(false);
-              if (step === "budget" && !budget) setStep("idle");
-            }}
-            onChange={(e) =>
-              isIg
-                ? setInstagram(e.target.value.replace(/\s/g, "").slice(0, 31))
-                : setBudget(e.target.value.replace(/\D/g, "").slice(0, 5))
-            }
-            onKeyDown={(e) => {
-              if (e.key !== "Enter") return;
-              isIg ? submit() : next();
-            }}
-            size={1}
-            className={`${big} col-start-1 row-start-1 w-full min-w-0 bg-transparent text-left text-white outline-none placeholder:text-transparent ${value ? "caret-white" : "caret-transparent"}`}
-          />
-          {/* Ghost placeholder + trailing caret: keeps the placeholder hugging
-              the icon (same gap as a typed value) while the blinking caret sits
-              AFTER the placeholder text once the field is focused. */}
-          {!value && (
-            <div
-              className={`${big} pointer-events-none absolute inset-0 flex items-center`}
-            >
-              <span className="whitespace-pre text-white/30">{placeholder}</span>
-              {focused && (
-                <span
-                  className="ml-[3px] w-[2px] shrink-0 bg-white"
-                  style={{
-                    height: "0.82em",
-                    animation: "caretBlink 1.05s steps(1, end) infinite",
-                  }}
-                />
-              )}
-            </div>
-          )}
-        </div>
-      </motion.div>
+        {fieldGroup}
       </div>
 
       {/* Button — anchored below the centre so it never shifts the input */}
       <div className="pointer-events-auto absolute left-1/2 top-[calc(50%+52px)] flex -translate-x-1/2 justify-center">
-        <AnimatePresence mode="wait">
-          {step === "budget" && (
-            <motion.button
-              key="next"
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 6 }}
-              transition={{ duration: 0.25 }}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={next}
-              className="rounded-full bg-white/10 px-7 py-3 text-[14px] text-white/90 backdrop-blur transition hover:bg-white/20"
-            >
-              Okay, next
-            </motion.button>
-          )}
-          {step === "instagram" && (
-            <motion.button
-              key="submit"
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 6 }}
-              transition={{ duration: 0.25 }}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={submit}
-              className="rounded-full bg-white px-8 py-3 text-[14px] font-medium text-black transition hover:bg-white/90"
-            >
-              Submit
-            </motion.button>
-          )}
-        </AnimatePresence>
+        {stepButton}
       </div>
     </div>
   );
+}
+
+function Hero() {
+  return <LeadForm mode="hero" context={{ source: "hero" }} />;
 }
 /* -------------------------------------------------------------------------- */
 /* APP                                                                        */
@@ -1407,11 +1527,13 @@ function WorksLightbox({
 function ArtistShowcase({
   active,
   onSelect,
-  onOpenWorks,
+  onNavigate,
+  onBook,
 }: {
   active: number;
   onSelect: (i: number) => void;
-  onOpenWorks: (i: number) => void;
+  onNavigate: (path: string) => void;
+  onBook: (ctx: { artist?: string; bodyPart?: string }) => void;
 }) {
   const M = ARTISTS.length;
   const artist = ARTISTS[active];
@@ -1425,16 +1547,6 @@ function ArtistShowcase({
     prevRef.current = active;
   }, [active, M]);
 
-  // The tap-to-view-works gallery is a mobile-only feature.
-  const [isMobile, setIsMobile] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 767px)");
-    const sync = () => setIsMobile(mq.matches);
-    sync();
-    mq.addEventListener("change", sync);
-    return () => mq.removeEventListener("change", sync);
-  }, []);
-
   return (
     <section
       id="artists"
@@ -1445,41 +1557,24 @@ function ArtistShowcase({
           <ArtistButtons active={active} onSelect={onSelect} />
         </Reveal>
 
-        {/* Photo — on mobile it's a button that opens the works gallery; on
-            desktop it's a plain image (the gallery is a mobile-only feature). */}
+        {/* Photo */}
         <Reveal
           className="w-full max-w-[300px] shrink-0 md:max-w-md"
           delay={0.12}
           y={24}
         >
-          {(() => {
-            const img = (
-              <motion.img
-                key={active}
-                src={artist.img}
-                alt={artist.name}
-                draggable={false}
-                initial={{ opacity: 0, x: dir * 80, scale: 1.05 }}
-                animate={{ opacity: 1, x: 0, scale: 1 }}
-                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                className="absolute inset-0 h-full w-full object-cover"
-              />
-            );
-            return isMobile ? (
-              <button
-                type="button"
-                onClick={() => onOpenWorks(active)}
-                aria-label={`View ${artist.name}'s work`}
-                className="relative block aspect-[4/5] w-full overflow-hidden rounded-2xl outline-none ring-1 ring-white/10"
-              >
-                {img}
-              </button>
-            ) : (
-              <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl ring-1 ring-white/10">
-                {img}
-              </div>
-            );
-          })()}
+          <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl ring-1 ring-white/10">
+            <motion.img
+              key={active}
+              src={artist.img}
+              alt={artist.name}
+              draggable={false}
+              initial={{ opacity: 0, x: dir * 80, scale: 1.05 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          </div>
         </Reveal>
 
         {/* Mobile-only: horizontal artist selector under the photo */}
@@ -1504,20 +1599,178 @@ function ArtistShowcase({
             <p className="mt-6 max-w-md text-[15px] leading-relaxed text-white/60">
               {artist.bio}
             </p>
-            <a
-              href={artist.ig}
-              target="_blank"
-              rel="noopener noreferrer"
-              data-cursor="pointer"
-              className="mt-8 inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-[13px] font-medium text-black transition hover:bg-white/90"
-            >
-              <Instagram className="h-4 w-4" strokeWidth={2} />
-              {artist.name}'s Instagram
-            </a>
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => onBook({ artist: artist.name })}
+                data-cursor="pointer"
+                className="rounded-full bg-white px-6 py-3 text-[13px] font-medium text-black transition hover:bg-white/90"
+              >
+                Book with {artist.name}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onSelect(active);
+                  onNavigate("/artists");
+                }}
+                data-cursor="pointer"
+                className="rounded-full border border-white/25 px-6 py-3 text-[13px] font-medium text-white/90 transition hover:border-white/50 hover:bg-white/5"
+              >
+                See {artist.name}'s Portfolio
+              </button>
+            </div>
           </motion.div>
         </Reveal>
       </div>
     </section>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* ARTISTS PAGE — /artists route: switch between artists; each shows photo,   */
+/* styles, bio and a grid of up to 18 works.                                  */
+/* -------------------------------------------------------------------------- */
+
+const MAX_PORTFOLIO = 18;
+
+function ArtistsPage({
+  active,
+  onSelect,
+  onOpenWorks,
+  onBook,
+}: {
+  active: number;
+  onSelect: (i: number) => void;
+  onOpenWorks: (i: number) => void;
+  onBook: (ctx: { artist?: string; bodyPart?: string }) => void;
+}) {
+  const M = ARTISTS.length;
+  const artist = ARTISTS[active];
+  const works = (WORKS_BY_ARTIST[active] || []).slice(0, MAX_PORTFOLIO);
+
+  // Direction of the last switch → the photo slides in from that side (same as
+  // the home artist showcase).
+  const [dir, setDir] = useState(1);
+  const prevRef = useRef(active);
+  useEffect(() => {
+    let d = active - prevRef.current;
+    d = ((d % M) + M) % M;
+    if (d > M / 2) d -= M;
+    if (d !== 0) setDir(Math.sign(d));
+    prevRef.current = active;
+  }, [active, M]);
+
+  return (
+    <main className="relative z-10 min-h-screen px-6 pb-24 pt-28 md:px-16 md:pt-32">
+      <div className="mx-auto w-full max-w-6xl">
+        <p className="mb-4 text-center text-[12px] uppercase tracking-[0.3em] text-white/40">
+          Our artists
+        </p>
+        <h1 className="text-center font-serif text-[3rem] leading-[0.95] tracking-tight md:text-[4.5rem]">
+          Artists
+        </h1>
+
+        {/* Artist showcase — mirrors the home page layout */}
+        <div className="mt-14 flex w-full flex-col items-center gap-10 md:flex-row md:justify-center md:gap-14">
+          <div className="hidden shrink-0 md:block">
+            <ArtistButtons active={active} onSelect={onSelect} />
+          </div>
+
+          {/* Photo */}
+          <div className="w-full max-w-[300px] shrink-0 md:max-w-md">
+            <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl ring-1 ring-white/10">
+              <motion.img
+                key={active}
+                src={artist.img}
+                alt={artist.name}
+                draggable={false}
+                initial={{ opacity: 0, x: dir * 80, scale: 1.05 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            </div>
+          </div>
+
+          {/* Mobile-only horizontal selector */}
+          <div className="md:hidden">
+            <ArtistRow active={active} onSelect={onSelect} />
+          </div>
+
+          {/* Text */}
+          <motion.div
+            key={active}
+            className="flex-1"
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <p className="mb-4 text-[12px] uppercase tracking-[0.3em] text-white/40">
+              {String(active + 1).padStart(2, "0")} — {artist.role}
+            </p>
+            <h2 className="font-serif text-[3rem] leading-[0.95] tracking-tight md:text-[4rem]">
+              {artist.name}
+            </h2>
+            <p className="mt-6 max-w-md text-[15px] leading-relaxed text-white/60">
+              {artist.bio}
+            </p>
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => onBook({ artist: artist.name })}
+                data-cursor="pointer"
+                className="rounded-full bg-white px-6 py-3 text-[13px] font-medium text-black transition hover:bg-white/90"
+              >
+                Book with {artist.name}
+              </button>
+              <a
+                href={artist.ig}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-cursor="pointer"
+                className="inline-flex items-center gap-2 rounded-full border border-white/25 px-6 py-3 text-[13px] font-medium text-white/90 transition hover:border-white/50 hover:bg-white/5"
+              >
+                <Instagram className="h-4 w-4" strokeWidth={2} />
+                Instagram
+              </a>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Works grid */}
+        <section className="mt-16">
+          <h2 className="text-center font-serif text-[1.7rem] leading-[1] tracking-tight md:text-[2.2rem]">
+            {artist.name}'s work
+          </h2>
+          {works.length > 0 ? (
+            <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4">
+              {works.map((src, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => onOpenWorks(active)}
+                  data-cursor="pointer"
+                  className="group relative aspect-square w-full overflow-hidden rounded-xl ring-1 ring-white/10 outline-none"
+                >
+                  <img
+                    src={src}
+                    alt={`${artist.name} — work ${i + 1}`}
+                    draggable={false}
+                    loading="lazy"
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-8 text-center text-[14px] text-white/40">
+              Portfolio coming soon.
+            </p>
+          )}
+        </section>
+      </div>
+    </main>
   );
 }
 
@@ -1999,48 +2252,7 @@ function ContactPage({
 /* FAQ PAGE — /faq route                                                      */
 /* -------------------------------------------------------------------------- */
 
-const FAQ_ITEMS: { q: string; a: string }[] = [
-  {
-    q: "How do I book an appointment?",
-    a: "By appointment only — in person, by email, via Instagram, or through this website. We don't take walk-ins. Our official addresses are booking@thefourdeuces.nl and studio@thefourdeuces.nl.",
-  },
-  {
-    q: "Is a deposit required?",
-    a: "Yes. A non-refundable deposit is required to secure your appointment, and it goes towards the final price of your tattoo.",
-  },
-  {
-    q: "What is your cancellation policy?",
-    a: "We ask for at least 48 hours' notice to cancel or reschedule. Arriving more than 30 minutes late without letting us know may result in cancellation or rescheduling and loss of your deposit.",
-  },
-  {
-    q: "How much does a tattoo cost?",
-    a: "Pricing depends on size, complexity and placement, and is discussed during your consultation. Cover-ups and reworks are quoted separately.",
-  },
-  {
-    q: "How can I pay?",
-    a: "We accept cash and credit/debit cards, and PayPal may be available by prior agreement. Tips are appreciated but never expected.",
-  },
-  {
-    q: "What is the minimum age?",
-    a: "You must be 18 or older, or accompanied by an adult.",
-  },
-  {
-    q: "Do you use numbing cream or anesthetic?",
-    a: "No local anesthetics are used.",
-  },
-  {
-    q: "Do you offer touch-ups?",
-    a: "One complimentary touch-up is offered within 6 months, subject to the conditions in our Terms & Conditions. This does not apply to guest artists.",
-  },
-  {
-    q: "Can I bring someone with me?",
-    a: "Yes, but accompanying persons must remain on the ground floor during your session.",
-  },
-  {
-    q: "How do I take care of my new tattoo?",
-    a: "Follow the aftercare instructions carefully — you can download our full aftercare guide below.",
-  },
-];
+// FAQ content lives in ./faq (shared with the build-time schema generator).
 
 function DownloadCard({
   href,
@@ -2239,7 +2451,11 @@ function BodyMap({
   );
 }
 
-function BodyPain() {
+function BodyPain({
+  onBook,
+}: {
+  onBook?: (ctx: { artist?: string; bodyPart?: string }) => void;
+}) {
   const [view, setView] = useState<View>("front");
   const [selected, setSelected] = useState<string | null>(null);
   const regions = REGION_SETS[view];
@@ -2320,12 +2536,23 @@ function BodyPain() {
               <p className="max-w-md text-[14px] leading-relaxed text-white/55">
                 {region.note}
               </p>
+
+              {onBook && (
+                <button
+                  type="button"
+                  onClick={() => onBook({ bodyPart: region.label })}
+                  data-cursor="pointer"
+                  className="rounded-full bg-white px-6 py-3 text-[13px] font-medium text-black transition hover:bg-white/90"
+                >
+                  Book this area
+                </button>
+              )}
             </div>
           </div>
         ) : (
-          <div className="flex h-full flex-col justify-center">
+          <div className="hidden h-full flex-col justify-center md:flex">
             <h3 className="font-serif text-[1.8rem] leading-[1.1] text-white/80 md:text-[2.2rem]">
-              Tap a body area
+              Tap a body <span className="italic">area</span>
             </h3>
             <p className="mt-3 max-w-sm text-[14px] leading-relaxed text-white/50">
               Select any part of the body to see how much it typically hurts and
@@ -2339,27 +2566,66 @@ function BodyPain() {
   );
 }
 
-function GuidePage({ onNavigate }: { onNavigate: (path: string) => void }) {
+function BookPage({
+  onNavigate,
+  onBook,
+}: {
+  onNavigate: (path: string) => void;
+  onBook: (ctx: { artist?: string; bodyPart?: string }) => void;
+}) {
   const sectionHeading =
     "text-center font-serif text-[2rem] leading-[1] tracking-tight md:text-[2.8rem]";
+
   return (
     <main className="relative z-10 min-h-screen px-6 pb-24 pt-28 md:px-16 md:pt-32">
       <div className="mx-auto w-full max-w-5xl">
         <p className="mb-4 text-center text-[12px] uppercase tracking-[0.3em] text-white/40">
-          Good to know
+          Book an appointment
         </p>
         <h1 className="text-center font-serif text-[3rem] leading-[0.95] tracking-tight md:text-[4.5rem]">
-          Guide
+          Book
         </h1>
+        <p className="mx-auto mt-5 max-w-lg text-center text-[15px] leading-relaxed text-white/55">
+          Tell us your budget and Instagram and we'll get back to you to arrange
+          the details.
+        </p>
+
+        <div className="mt-8 flex justify-center">
+          <button
+            type="button"
+            onClick={() => onBook({})}
+            data-cursor="pointer"
+            className="rounded-full bg-white px-8 py-3.5 text-[14px] font-medium text-black transition hover:bg-white/90"
+          >
+            Request a booking
+          </button>
+        </div>
 
         {/* ---- Does it hurt? ---- */}
-        <section className="mt-16">
-          <h2 className={sectionHeading}>Does it hurt?</h2>
-          <p className="mx-auto mt-3 max-w-lg text-center text-[15px] leading-relaxed text-white/55">
-            Pain is personal, but some spots are famously tougher than others.
-            Here's a rough guide by area — tap a part of the body to see more.
-          </p>
-          <BodyPain />
+        <section className="mt-20">
+          {/* Desktop lead */}
+          <div className="hidden md:block">
+            <h2 className={sectionHeading}>
+              Does it <span className="italic">hurt?</span>
+            </h2>
+            <p className="mx-auto mt-3 max-w-lg text-center text-[15px] leading-relaxed text-white/55">
+              Pain is personal, but some spots are famously tougher than others.
+              Here's a rough guide by area — tap a part of the body to see more,
+              then book that spot right here.
+            </p>
+          </div>
+          {/* Mobile lead */}
+          <div className="md:hidden">
+            <h2 className={sectionHeading}>
+              Tap a body <span className="italic">area</span>
+            </h2>
+            <p className="mx-auto mt-3 max-w-lg text-center text-[15px] leading-relaxed text-white/55">
+              Select any part of the body to see how much it typically hurts and
+              how long a session tends to take. Switch between front and back
+              with the toggle.
+            </p>
+          </div>
+          <BodyPain onBook={onBook} />
         </section>
 
         {/* ---- FAQ ---- */}
@@ -2755,6 +3021,10 @@ export default function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeArtist, setActiveArtist] = useState(0);
   const [worksArtist, setWorksArtist] = useState<number | null>(null);
+  const [booking, setBooking] = useState<{
+    artist?: string;
+    bodyPart?: string;
+  } | null>(null);
   const [route, setRoute] = useState(() => window.location.pathname);
 
   useEffect(() => {
@@ -2792,16 +3062,23 @@ export default function App() {
   const page =
     path === "/contact"
       ? "contact"
-      : path === "/guide"
-        ? "guide"
-        : path === "/terms"
-          ? "terms"
-          : "home";
+      : path === "/book" || path === "/guide"
+        ? "book"
+        : path === "/artists"
+          ? "artists"
+          : path === "/terms"
+            ? "terms"
+            : "home";
   const isHome = page === "home";
 
   const openProfile = (i: number) => {
     setActiveArtist(i);
     smoothScrollToId("artists", 950);
+  };
+
+  const openBooking = (ctx: { artist?: string; bodyPart?: string } = {}) => {
+    setMenuOpen(false);
+    setBooking(ctx);
   };
 
   return (
@@ -2869,7 +3146,8 @@ export default function App() {
           <ArtistShowcase
             active={activeArtist}
             onSelect={setActiveArtist}
-            onOpenWorks={setWorksArtist}
+            onNavigate={navigate}
+            onBook={openBooking}
           />
 
           {/* ============ REVIEWS ============ */}
@@ -2905,15 +3183,22 @@ export default function App() {
                   Terms &amp; Privacy
                 </button>
                 <span className="text-white/15">·</span>
-                <span>© {new Date().getFullYear()} The Four Deuces</span>
+                <span>© 2020–{new Date().getFullYear()} The Four Deuces</span>
               </div>
             </div>
           </footer>
         </>
       ) : page === "contact" ? (
         <ContactPage onNavigate={navigate} />
-      ) : page === "guide" ? (
-        <GuidePage onNavigate={navigate} />
+      ) : page === "book" ? (
+        <BookPage onNavigate={navigate} onBook={openBooking} />
+      ) : page === "artists" ? (
+        <ArtistsPage
+          active={activeArtist}
+          onSelect={setActiveArtist}
+          onOpenWorks={setWorksArtist}
+          onBook={openBooking}
+        />
       ) : (
         <TermsPage />
       )}
@@ -2923,6 +3208,18 @@ export default function App() {
         artistIdx={worksArtist}
         onClose={() => setWorksArtist(null)}
       />
+
+      {/* ===================== BOOKING OVERLAY ===================== */}
+      <AnimatePresence>
+        {booking && (
+          <LeadForm
+            key="booking"
+            mode="modal"
+            context={{ source: "book", ...booking }}
+            onClose={() => setBooking(null)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* ===================== COOKIE BANNER ===================== */}
       <AnimatePresence>
