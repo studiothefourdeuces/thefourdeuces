@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -29,6 +30,7 @@ import tattoolandLogo from "./img/partners/tattooland.png";
 import killerinkLogo from "./img/partners/killerink.png";
 import dashaLogo from "./img/partners/tattoodasha.png";
 import { FAQ_ITEMS } from "./faq";
+import AsciiFire from "./AsciiFire";
 
 /* -------------------------------------------------------------------------- */
 /* DATA                                                                       */
@@ -2988,6 +2990,106 @@ function RotateNotice() {
   );
 }
 
+/* -------------------------------------------------------------------------- */
+/* 404 — ASCII fire spelled from the studio's letters                          */
+/* -------------------------------------------------------------------------- */
+
+function NotFoundPage({ onNavigate }: { onNavigate: (path: string) => void }) {
+  return (
+    <main className="relative z-10 flex min-h-screen flex-col items-center justify-center overflow-hidden px-6 text-center">
+      <AsciiFire />
+      {/* Vignette so the text stays legible over the flames */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse at center, rgba(5,5,5,0.55) 0%, rgba(5,5,5,0.25) 42%, rgba(5,5,5,0.8) 100%)",
+        }}
+      />
+      <div className="relative z-10 flex flex-col items-center">
+        <p className="mb-4 text-[12px] uppercase tracking-[0.3em] text-white/50">
+          Page not found
+        </p>
+        <h1 className="font-serif text-[6rem] leading-[0.9] tracking-tight md:text-[10rem]">
+          404
+        </h1>
+        <p className="mt-6 max-w-sm text-[15px] leading-relaxed text-white/70">
+          This page went up in smoke. Let's get you back to the studio.
+        </p>
+        <button
+          onClick={() => onNavigate("/")}
+          data-cursor="pointer"
+          className="mt-8 rounded-full bg-white px-8 py-3 text-[14px] font-medium text-black transition hover:bg-white/90"
+        >
+          Back home
+        </button>
+      </div>
+    </main>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* LOADER — preloads the gallery images before revealing the site             */
+/* -------------------------------------------------------------------------- */
+
+function Loader({ onDone }: { onDone: () => void }) {
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    const urls = Array.from(
+      new Set([...ARTISTS.map((a) => a.img), ...WORKS.map((w) => w.img)]),
+    );
+    let finished = false;
+    const finish = () => {
+      if (!finished) {
+        finished = true;
+        onDone();
+      }
+    };
+    if (urls.length === 0) {
+      finish();
+      return;
+    }
+    let loaded = 0;
+    const bump = () => {
+      loaded += 1;
+      setProgress(Math.round((loaded / urls.length) * 100));
+      if (loaded >= urls.length) finish();
+    };
+    urls.forEach((src) => {
+      const img = new Image();
+      img.onload = bump;
+      img.onerror = bump;
+      img.src = src;
+    });
+    // Never block longer than 6s, even on a slow connection.
+    const timer = setTimeout(finish, 6000);
+    return () => clearTimeout(timer);
+  }, [onDone]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+      className="fixed inset-0 z-[300] flex flex-col items-center justify-center gap-6 bg-[#050505]"
+    >
+      <p className="font-serif text-[28px] leading-none tracking-tight text-white/90">
+        The Four <span className="italic">Deuces</span>
+      </p>
+      <div className="h-[2px] w-40 overflow-hidden rounded-full bg-white/15">
+        <div
+          className="h-full bg-white transition-[width] duration-200 ease-out"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+      <p className="text-[11px] uppercase tracking-[0.3em] text-white/40">
+        {progress}%
+      </p>
+    </motion.div>
+  );
+}
+
 const CONSENT_KEY = "tfd-consent";
 type Consent = "accepted" | "declined";
 
@@ -3025,6 +3127,8 @@ export default function App() {
     artist?: string;
     bodyPart?: string;
   } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const finishLoading = useCallback(() => setLoading(false), []);
   const [route, setRoute] = useState(() => window.location.pathname);
 
   useEffect(() => {
@@ -3060,15 +3164,17 @@ export default function App() {
 
   const path = route.replace(/\/+$/, "") || "/";
   const page =
-    path === "/contact"
-      ? "contact"
-      : path === "/book" || path === "/guide"
-        ? "book"
-        : path === "/artists"
-          ? "artists"
-          : path === "/terms"
-            ? "terms"
-            : "home";
+    path === "/"
+      ? "home"
+      : path === "/contact"
+        ? "contact"
+        : path === "/book" || path === "/guide"
+          ? "book"
+          : path === "/artists"
+            ? "artists"
+            : path === "/terms"
+              ? "terms"
+              : "notfound";
   const isHome = page === "home";
 
   const openProfile = (i: number) => {
@@ -3083,6 +3189,11 @@ export default function App() {
 
   return (
     <div className="relative w-full overflow-x-hidden bg-[#050505] text-white">
+      {/* ===================== LOADER ===================== */}
+      <AnimatePresence>
+        {loading && <Loader key="loader" onDone={finishLoading} />}
+      </AnimatePresence>
+
       {/* ===================== HEADER ===================== */}
       <header className="fixed inset-x-0 top-0 z-30 flex items-start justify-between px-4 py-4 md:px-6 md:py-5">
         <div className="flex items-center gap-3 overflow-hidden">
@@ -3199,8 +3310,10 @@ export default function App() {
           onOpenWorks={setWorksArtist}
           onBook={openBooking}
         />
-      ) : (
+      ) : page === "terms" ? (
         <TermsPage />
+      ) : (
+        <NotFoundPage onNavigate={navigate} />
       )}
 
       {/* ===================== WORKS LIGHTBOX ===================== */}
