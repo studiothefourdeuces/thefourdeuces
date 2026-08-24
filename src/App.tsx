@@ -86,10 +86,11 @@ const ARTISTS = [
   },
 ];
 
-// Carousel works — each photo in src/img/works is named after its artist
-// (e.g. max1.jpg). Map every work to its artist so clicking a work opens that
-// artist's profile. Files that don't match an artist (e.g. guest*) are skipped.
-const workUrls = import.meta.glob("./img/works/*.jpg", {
+// Works live in a per-artist folder: src/img/works/<slug>/<anything>.jpg
+// (e.g. src/img/works/max/1.jpg). The folder name is the artist slug, so to
+// add works just drop .jpg files into that artist's folder. Folders that don't
+// map to an artist (e.g. guest/) are skipped.
+const workUrls = import.meta.glob("./img/works/*/*.jpg", {
   eager: true,
   query: "?url",
   import: "default",
@@ -107,13 +108,23 @@ const WORK_ARTIST_INDEX: Record<string, number> = {
 
 type Work = { img: string; artistIdx: number };
 
+// Natural numeric sort of filenames so "2.jpg" comes before "10.jpg".
+const naturalKey = (path: string) => {
+  const file = path.split("/").pop() || "";
+  const n = parseInt(file, 10);
+  return Number.isNaN(n) ? Number.MAX_SAFE_INTEGER : n;
+};
+
 const WORKS: Work[] = (() => {
   const byArtist: Work[][] = ARTISTS.map(() => []);
-  for (const [path, url] of Object.entries(workUrls)) {
-    const file = path.split("/").pop() || "";
-    const slug = file.replace(/\d+\.jpg$/i, "").toLowerCase();
+  const entries = Object.entries(workUrls).sort(
+    ([a], [b]) => naturalKey(a) - naturalKey(b),
+  );
+  for (const [path, url] of entries) {
+    const parts = path.split("/");
+    const slug = (parts[parts.length - 2] || "").toLowerCase(); // folder name
     const idx = WORK_ARTIST_INDEX[slug];
-    if (idx === undefined) continue; // unmapped (e.g. guest*)
+    if (idx === undefined) continue; // unmapped folder (e.g. guest/)
     byArtist[idx].push({ img: url, artistIdx: idx });
   }
   // Interleave round-robin so consecutive cards aren't the same artist.
@@ -1494,30 +1505,18 @@ function WorksLightbox({
             ))}
           </div>
 
-          {/* Dots + book CTA */}
-          <div className="flex flex-col items-center gap-4 pb-7 pt-1">
-            {works.length > 1 && (
-              <div className="flex items-center gap-1.5">
-                {works.map((_, i) => (
-                  <span
-                    key={i}
-                    className="h-1.5 rounded-full bg-white transition-all duration-300"
-                    style={{ width: i === idx ? 18 : 6, opacity: i === idx ? 1 : 0.35 }}
-                  />
-                ))}
-              </div>
-            )}
-            <a
-              href={artist.ig}
-              target="_blank"
-              rel="noopener noreferrer"
-              data-cursor="pointer"
-              className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-2.5 text-[13px] font-medium text-black transition hover:bg-white/90"
-            >
-              <Instagram className="h-4 w-4" strokeWidth={2} />
-              {artist.name}'s Instagram
-            </a>
-          </div>
+          {/* Dots */}
+          {works.length > 1 && (
+            <div className="flex items-center justify-center gap-1.5 pb-7 pt-1">
+              {works.map((_, i) => (
+                <span
+                  key={i}
+                  className="h-1.5 rounded-full bg-white transition-all duration-300"
+                  style={{ width: i === idx ? 18 : 6, opacity: i === idx ? 1 : 0.35 }}
+                />
+              ))}
+            </div>
+          )}
         </motion.div>
       )}
     </AnimatePresence>
