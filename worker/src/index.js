@@ -107,16 +107,17 @@ export default {
         text,
         disable_web_page_preview: true,
       };
-      // One-tap button that opens the DM thread with the client in Instagram
-      // (Meta's official click-to-chat link). Bookings only — contact has no
-      // Instagram handle.
+      // One-tap button that opens the client's Instagram profile (from there,
+      // "Message" is one tap). We link to the profile rather than the ig.me/m
+      // DM deep link because ig.me only resolves for some accounts and 404s
+      // otherwise. Bookings only — contact has no Instagram handle.
       if (!isContact && instagram) {
         body.reply_markup = {
           inline_keyboard: [
             [
               {
-                text: `💬 Message @${instagram} on Instagram`,
-                url: `https://ig.me/m/${instagram}`,
+                text: `📸 Open @${instagram} on Instagram`,
+                url: `https://www.instagram.com/${instagram}/`,
               },
             ],
           ],
