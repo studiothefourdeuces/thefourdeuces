@@ -15,8 +15,6 @@ import {
   ArrowUpRight,
   ArrowLeft,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   Download,
   Smartphone,
   X,
@@ -1427,7 +1425,7 @@ function WorksLightbox({
     });
   }, [artistIdx, open]);
 
-  // Scroll to an adjacent work (used by the on-screen arrows and arrow keys).
+  // Step to an adjacent work (used by the arrow keys).
   const go = useCallback((delta: number) => {
     const el = trackRef.current;
     if (!el) return;
@@ -1436,7 +1434,8 @@ function WorksLightbox({
     el.scrollTo({ left: clamped * el.clientWidth, behavior: "smooth" });
   }, []);
 
-  // Lock page scroll; close on Escape; step with the arrow keys.
+  // Lock page scroll; close on Escape; step with the arrow keys; and let a
+  // (vertical) mouse wheel scroll horizontally through the works on desktop.
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
@@ -1446,10 +1445,29 @@ function WorksLightbox({
       else if (e.key === "ArrowRight") go(1);
       else if (e.key === "ArrowLeft") go(-1);
     };
+    // Wheel / trackpad → page one work at a time. A short cooldown means one
+    // scroll gesture advances a single image (snap-mandatory fights a raw
+    // scrollLeft += delta, so we page explicitly instead).
+    const track = trackRef.current;
+    let cooling = false;
+    const onWheel = (e: WheelEvent) => {
+      const delta =
+        Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+      if (Math.abs(delta) < 4 || !track) return;
+      e.preventDefault();
+      if (cooling) return;
+      cooling = true;
+      setTimeout(() => {
+        cooling = false;
+      }, 350);
+      go(delta > 0 ? 1 : -1);
+    };
     window.addEventListener("keydown", onKey);
+    track?.addEventListener("wheel", onWheel, { passive: false });
     return () => {
       document.body.style.overflow = prev;
       window.removeEventListener("keydown", onKey);
+      track?.removeEventListener("wheel", onWheel);
     };
   }, [open, onClose, go]);
 
@@ -1519,32 +1537,6 @@ function WorksLightbox({
               </div>
             ))}
           </div>
-
-          {/* Prev / next arrows — desktop (no touch to swipe with) */}
-          {works.length > 1 && (
-            <>
-              <button
-                type="button"
-                onClick={() => go(-1)}
-                disabled={idx === 0}
-                aria-label="Previous work"
-                data-cursor="pointer"
-                className="absolute left-4 top-1/2 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur transition hover:bg-white/20 disabled:pointer-events-none disabled:opacity-0 md:flex"
-              >
-                <ChevronLeft className="h-6 w-6" />
-              </button>
-              <button
-                type="button"
-                onClick={() => go(1)}
-                disabled={idx === works.length - 1}
-                aria-label="Next work"
-                data-cursor="pointer"
-                className="absolute right-4 top-1/2 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur transition hover:bg-white/20 disabled:pointer-events-none disabled:opacity-0 md:flex"
-              >
-                <ChevronRight className="h-6 w-6" />
-              </button>
-            </>
-          )}
 
           {/* Dots */}
           {works.length > 1 && (
