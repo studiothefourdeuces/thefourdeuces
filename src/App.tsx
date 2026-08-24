@@ -1676,8 +1676,9 @@ function ArtistsPage({
             <ArtistButtons active={active} onSelect={onSelect} />
           </div>
 
-          {/* Photo */}
-          <div className="w-full max-w-[300px] shrink-0 md:max-w-md">
+          {/* Photo — desktop only; on mobile the small-avatar carousel is the
+              only artist picker. */}
+          <div className="hidden w-full max-w-[300px] shrink-0 md:block md:max-w-md">
             <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl ring-1 ring-white/10">
               <motion.img
                 key={active}
