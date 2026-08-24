@@ -57,6 +57,13 @@ const ARTISTS = [
     bio: "Soft watercolour washes, delicate fine-line work, and loose abstract compositions that feel painted onto the skin.",
   },
   {
+    name: "Darya",
+    img: daryaImg,
+    ig: "https://www.instagram.com/bazhina_tatoonl/",
+    role: "Anime, Manga, Realism",
+    bio: "Anime and manga brought to skin — bold graphic linework and colour alongside detailed black-and-grey realism and illustrative graphic art.",
+  },
+  {
     name: "Mila",
     img: milaImg,
     ig: "https://www.instagram.com/mila.delger/",
@@ -69,13 +76,6 @@ const ARTISTS = [
     ig: "https://www.instagram.com/gianluca_tattooer/",
     role: "Geometric & ornamental blackwork",
     bio: "Geometric, optical and ornamental blackwork with elements of abstract calligraphy, dotwork, and engraving-inspired detail.",
-  },
-  {
-    name: "Darya",
-    img: daryaImg,
-    ig: "https://www.instagram.com/bazhina_tatoonl/",
-    role: "Anime, Manga, Realism",
-    bio: "Anime and manga brought to skin — bold graphic linework and colour alongside detailed black-and-grey realism and illustrative graphic art.",
   },
   {
     name: "Selçuk",
@@ -100,9 +100,9 @@ const WORK_ARTIST_INDEX: Record<string, number> = {
   max: 0,
   eugene: 1,
   daria: 2,
-  mila: 3,
-  gianluca: 4,
-  darya: 5,
+  darya: 3,
+  mila: 4,
+  gianluca: 5,
   selcuk: 6,
 };
 
