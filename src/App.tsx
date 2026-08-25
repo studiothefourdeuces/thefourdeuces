@@ -36,13 +36,23 @@ import AsciiFire from "./AsciiFire";
 /* DATA                                                                       */
 /* -------------------------------------------------------------------------- */
 
-const ARTISTS = [
+type Artist = {
+  name: string;
+  img: string;
+  ig: string;
+  role: string;
+  bio: string;
+  since?: number; // year they started tattooing (shown only when set)
+};
+
+const ARTISTS: Artist[] = [
   {
     name: "Max",
     img: maxImg,
     ig: "https://www.instagram.com/maxxonk_tattoo/",
     role: "Chicano, Realism, Portraits",
     bio: "Chicano-inspired realism and portraits — black-and-grey work with smooth gradients and lifelike depth.",
+    since: 2014,
   },
   {
     name: "Eugene",
@@ -85,6 +95,7 @@ const ARTISTS = [
     ig: "https://www.instagram.com/selcukozger.ink/",
     role: "Minimal, Fine Line, Botanical",
     bio: "Minimal fine-line and botanical designs — restrained, elegant, and built to last.",
+    since: 2011,
   },
 ];
 
@@ -1407,23 +1418,28 @@ function ArtistRow({
    so swiping feels native and needs no drag maths. */
 function WorksLightbox({
   artistIdx,
+  startIndex = 0,
   onClose,
 }: {
   artistIdx: number | null;
+  startIndex?: number;
   onClose: () => void;
 }) {
   const trackRef = useRef<HTMLDivElement | null>(null);
   const [idx, setIdx] = useState(0);
   const open = artistIdx !== null;
 
-  // Reset to the first work whenever a different artist is opened.
+  // Open on the clicked work (jump straight to it, no scroll animation).
   useEffect(() => {
     if (!open) return;
-    setIdx(0);
-    requestAnimationFrame(() => {
-      if (trackRef.current) trackRef.current.scrollLeft = 0;
-    });
-  }, [artistIdx, open]);
+    setIdx(startIndex);
+    const jump = () => {
+      const el = trackRef.current;
+      if (el) el.scrollLeft = startIndex * el.clientWidth;
+    };
+    jump(); // element is already mounted at effect time
+    requestAnimationFrame(jump); // re-apply once layout settles
+  }, [artistIdx, open, startIndex]);
 
   // Step to an adjacent work (used by the arrow keys).
   const go = useCallback((delta: number) => {
@@ -1631,6 +1647,11 @@ function ArtistShowcase({
             <p className="mt-6 max-w-md text-[15px] leading-relaxed text-white/60">
               {artist.bio}
             </p>
+            {artist.since && (
+              <p className="mt-4 text-[12px] uppercase tracking-[0.25em] text-white/40">
+                Tattooing since {artist.since}
+              </p>
+            )}
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <button
                 type="button"
@@ -1674,7 +1695,7 @@ function ArtistsPage({
 }: {
   active: number;
   onSelect: (i: number) => void;
-  onOpenWorks: (i: number) => void;
+  onOpenWorks: (artist: number, startIndex: number) => void;
   onBook: (ctx: { artist?: string; bodyPart?: string }) => void;
 }) {
   const M = ARTISTS.length;
@@ -1748,6 +1769,11 @@ function ArtistsPage({
             <p className="mt-6 max-w-md text-[15px] leading-relaxed text-white/60">
               {artist.bio}
             </p>
+            {artist.since && (
+              <p className="mt-4 text-[12px] uppercase tracking-[0.25em] text-white/40">
+                Tattooing since {artist.since}
+              </p>
+            )}
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <button
                 type="button"
@@ -1782,7 +1808,7 @@ function ArtistsPage({
                 <button
                   key={i}
                   type="button"
-                  onClick={() => onOpenWorks(active)}
+                  onClick={() => onOpenWorks(active, i)}
                   data-cursor="pointer"
                   className="group relative aspect-square w-full overflow-hidden rounded-xl ring-1 ring-white/10 outline-none"
                 >
@@ -3154,6 +3180,11 @@ export default function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeArtist, setActiveArtist] = useState(0);
   const [worksArtist, setWorksArtist] = useState<number | null>(null);
+  const [worksStart, setWorksStart] = useState(0);
+  const openWorks = (artistIdx: number, startIndex = 0) => {
+    setWorksStart(startIndex);
+    setWorksArtist(artistIdx);
+  };
   const [booking, setBooking] = useState<{
     artist?: string;
     bodyPart?: string;
@@ -3350,7 +3381,7 @@ export default function App() {
         <ArtistsPage
           active={activeArtist}
           onSelect={setActiveArtist}
-          onOpenWorks={setWorksArtist}
+          onOpenWorks={openWorks}
           onBook={openBooking}
         />
       ) : page === "terms" ? (
@@ -3362,6 +3393,7 @@ export default function App() {
       {/* ===================== WORKS LIGHTBOX ===================== */}
       <WorksLightbox
         artistIdx={worksArtist}
+        startIndex={worksStart}
         onClose={() => setWorksArtist(null)}
       />
 
