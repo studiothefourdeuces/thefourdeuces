@@ -1725,8 +1725,18 @@ function ArtistShowcase({
   return (
     <section
       id="artists"
-      className="relative flex min-h-screen items-center px-6 py-24 md:px-16"
+      className="relative flex min-h-screen flex-col justify-center px-6 py-24 md:px-16"
     >
+      {/* Mobile-only title (matches the /artists page) */}
+      <div className="mb-12 md:hidden">
+        <p className="mb-4 text-center text-[12px] uppercase tracking-[0.3em] text-white/40">
+          Our artists
+        </p>
+        <h2 className="text-center font-serif text-[3rem] leading-[0.95] tracking-tight">
+          Artists
+        </h2>
+      </div>
+
       <div className="mx-auto flex w-full max-w-6xl flex-col items-center gap-10 md:flex-row md:justify-center md:gap-14">
         <Reveal className="hidden shrink-0 md:block" y={24}>
           <ArtistButtons active={active} onSelect={onSelect} />
