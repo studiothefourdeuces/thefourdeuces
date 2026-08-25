@@ -3316,9 +3316,8 @@ export default function App() {
                   aerdt
                 </a>
               </p>
-              {/* Mobile: © on the left, Terms on the right */}
+              {/* Mobile: Terms on the left, © on the right */}
               <div className="flex w-full items-center justify-between gap-3 text-[10px] uppercase tracking-[0.12em] text-white/30 md:hidden">
-                <span>© 2020–{new Date().getFullYear()} The Four Deuces</span>
                 <button
                   onClick={() => navigate("/terms")}
                   data-cursor="pointer"
@@ -3326,6 +3325,7 @@ export default function App() {
                 >
                   Terms &amp; Privacy
                 </button>
+                <span>© 2020–{new Date().getFullYear()} The Four Deuces</span>
               </div>
               {/* Desktop: centred */}
               <div className="hidden items-center gap-3 text-[11px] uppercase tracking-[0.2em] text-white/30 md:flex">
