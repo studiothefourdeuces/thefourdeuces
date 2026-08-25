@@ -37,7 +37,13 @@ const ROUTES: {
     slug: "book",
     title: "Book a Tattoo Appointment | The Four Deuces Amsterdam",
     description:
-      "Book your tattoo at The Four Deuces in Amsterdam, plus answers to common tattoo questions — does it hurt, healing time, aftercare, pricing, age and more.",
+      "Book your tattoo at The Four Deuces in Amsterdam. Tell us your budget and Instagram, or explore the body-pain map to book by placement.",
+  },
+  {
+    slug: "faq",
+    title: "Tattoo FAQ | The Four Deuces Amsterdam",
+    description:
+      "Answers to common tattoo questions — does it hurt, healing time, aftercare, prep, pricing, age and more — plus aftercare and risk documents to download.",
     headExtra: `<script type="application/ld+json">${faqSchema}</script>`,
   },
   {

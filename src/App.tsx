@@ -13,19 +13,18 @@ import {
   Cookie,
   Instagram,
   ArrowUpRight,
-  ArrowLeft,
   ChevronDown,
   Download,
   Smartphone,
   X,
 } from "lucide-react";
-import dariaImg from "./img/artists/daria.png";
-import eugeneImg from "./img/artists/eugene.png";
-import maxImg from "./img/artists/max.png";
-import milaImg from "./img/artists/mila.png";
-import selcukImg from "./img/artists/selcuk.png";
-import gianlucaImg from "./img/artists/gianluca.png";
-import daryaImg from "./img/artists/darya.png";
+import dariaImg from "./img/artists/daria.jpg";
+import eugeneImg from "./img/artists/eugene.jpg";
+import maxImg from "./img/artists/max.jpg";
+import milaImg from "./img/artists/mila.jpg";
+import selcukImg from "./img/artists/selcuk.jpg";
+import gianlucaImg from "./img/artists/gianluca.jpg";
+import daryaImg from "./img/artists/darya.jpg";
 import tattoolandLogo from "./img/partners/tattooland.png";
 import killerinkLogo from "./img/partners/killerink.png";
 import dashaLogo from "./img/partners/tattoodasha.png";
@@ -158,11 +157,11 @@ const TICKER =
 
 const MENU: { label: string; target: string }[] = [
   { label: "Home", target: "top" },
-  { label: "Book", target: "/book" },
   { label: "Artists", target: "/artists" },
   { label: "Reviews", target: "#reviews" },
   { label: "Sponsors", target: "#sponsors" },
   { label: "Contact", target: "/contact" },
+  { label: "FAQ", target: "/faq" },
 ];
 
 type ChatMsg = { from: "me" | "them"; text: string; timestamp?: string };
@@ -1161,6 +1160,8 @@ function MenuButton({ open, onClick }: { open: boolean; onClick: () => void }) {
       onClick={onClick}
       data-cursor="pointer"
       aria-label={open ? "Close menu" : "Open menu"}
+      aria-expanded={open}
+      aria-controls="main-menu"
       className="fixed right-4 top-[9px] z-[60] flex h-12 w-12 items-center justify-center md:right-6 md:h-14 md:w-14"
     >
       <motion.span
@@ -1193,16 +1194,60 @@ function Menu({
     "block font-display font-normal leading-[0.9] tracking-[-0.03em] text-[14vw] md:text-[7rem]";
   const sections = MENU;
 
+  // Live Amsterdam local time (shown in the mobile menu footer).
+  const [amsTime, setAmsTime] = useState("");
+  useEffect(() => {
+    const update = () =>
+      setAmsTime(
+        new Date().toLocaleTimeString("en-GB", {
+          timeZone: "Europe/Amsterdam",
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      );
+    update();
+    const id = setInterval(update, 30000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Close on Escape + lock background scroll while the menu is open.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open, onClose]);
+
   const go = (item: (typeof MENU)[number]) => {
     onClose();
+    const onHome =
+      window.location.pathname === "/" || window.location.pathname === "";
     if (item.target === "top") {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    } else if (item.target.startsWith("/")) {
-      onNavigate(item.target);
+      if (onHome) window.scrollTo({ top: 0, behavior: "smooth" });
+      else onNavigate("/");
+    } else if (item.target.startsWith("#")) {
+      if (onHome) {
+        document
+          .querySelector(item.target)
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      } else {
+        // Coming from a sub-page: go home first, then scroll to the section.
+        onNavigate("/");
+        setTimeout(() => {
+          document
+            .querySelector(item.target)
+            ?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 140);
+      }
     } else {
-      document
-        .querySelector(item.target)
-        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      onNavigate(item.target);
     }
   };
 
@@ -1215,9 +1260,13 @@ function Menu({
           exit={{ opacity: 0 }}
           transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
           onMouseLeave={() => setHovered(null)}
-          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black px-6"
+          id="main-menu"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Site menu"
+          className="fixed inset-0 z-50 flex flex-col bg-black"
         >
-          <nav className="flex flex-col items-center gap-1 md:gap-2">
+          <nav className="flex flex-1 flex-col items-center justify-center gap-1 px-6 md:gap-2">
             {sections.map((item, i) => {
               const isHovered = hovered === i;
               const color = anyActive
@@ -1261,6 +1310,47 @@ function Menu({
               );
             })}
           </nav>
+
+          {/* Book CTA — pinned to the bottom, styled like a Sponsors row */}
+          <motion.button
+            type="button"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{
+              duration: 0.5,
+              delay: open ? 0.08 + sections.length * 0.06 : 0,
+              ease: [0.22, 1, 0.36, 1],
+            }}
+            onClick={() => {
+              onClose();
+              onNavigate("/book");
+            }}
+            data-cursor="pointer"
+            className="group flex w-full items-center justify-center gap-3 border-t border-white/10 px-6 py-7 transition-colors hover:bg-white/[0.03] md:py-9"
+          >
+            <span className="font-serif text-[1.8rem] leading-none text-white md:text-[2.6rem]">
+              Book <span className="italic">experience</span>
+            </span>
+            <ArrowUpRight
+              className="h-6 w-6 shrink-0 text-white/45 transition duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-white md:h-7 md:w-7"
+              strokeWidth={1.75}
+            />
+          </motion.button>
+
+          {/* Address + local time — mobile only, under the Book CTA */}
+          <div className="border-t border-white/10 px-6 py-6 text-center text-[12px] leading-relaxed text-white/45 md:hidden">
+            <a
+              href="https://www.google.com/maps/search/?api=1&query=The%20Four%20Deuces%20Van%20Baerlestraat%20126H%201071%20BD%20Amsterdam"
+              target="_blank"
+              rel="noopener noreferrer"
+              data-cursor="pointer"
+              className="transition hover:text-white/70"
+            >
+              Van Baerlestraat 126 H, 1071 BD Amsterdam
+            </a>
+            <p className="mt-1.5 text-white/35">Local time · {amsTime}</p>
+          </div>
         </motion.div>
       )}
     </AnimatePresence>
@@ -1413,6 +1503,38 @@ function ArtistRow({
   );
 }
 
+/* Image that fades in once it has loaded (handles cached images too). */
+function FadeImg({
+  src,
+  alt,
+  className = "",
+  draggable,
+  loading,
+}: {
+  src: string;
+  alt: string;
+  className?: string;
+  draggable?: boolean;
+  loading?: "lazy" | "eager";
+}) {
+  const ref = useRef<HTMLImageElement>(null);
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => {
+    if (ref.current?.complete) setLoaded(true);
+  }, [src]);
+  return (
+    <img
+      ref={ref}
+      src={src}
+      alt={alt}
+      draggable={draggable}
+      loading={loading}
+      onLoad={() => setLoaded(true)}
+      className={`${className} transition duration-500 ${loaded ? "opacity-100" : "opacity-0"}`}
+    />
+  );
+}
+
 /* Full-screen, swipeable gallery of a single artist's works. Opened by tapping
    an artist's photo (primarily on mobile). Uses native horizontal scroll-snap
    so swiping feels native and needs no drag maths. */
@@ -1544,7 +1666,7 @@ function WorksLightbox({
                 key={i}
                 className="flex h-full w-full shrink-0 snap-center items-center justify-center px-4 pb-4"
               >
-                <img
+                <FadeImg
                   src={src}
                   alt={`${artist.name} — work ${i + 1}`}
                   draggable={false}
@@ -1805,21 +1927,22 @@ function ArtistsPage({
           {works.length > 0 ? (
             <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4">
               {works.map((src, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => onOpenWorks(active, i)}
-                  data-cursor="pointer"
-                  className="group relative aspect-square w-full overflow-hidden rounded-xl ring-1 ring-white/10 outline-none"
-                >
-                  <img
-                    src={src}
-                    alt={`${artist.name} — work ${i + 1}`}
-                    draggable={false}
-                    loading="lazy"
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                </button>
+                <Reveal key={`${active}-${i}`} delay={(i % 3) * 0.08} y={24}>
+                  <button
+                    type="button"
+                    onClick={() => onOpenWorks(active, i)}
+                    data-cursor="pointer"
+                    className="group relative block aspect-square w-full overflow-hidden rounded-xl ring-1 ring-white/10 outline-none"
+                  >
+                    <FadeImg
+                      src={src}
+                      alt={`${artist.name} — work ${i + 1}`}
+                      draggable={false}
+                      loading="lazy"
+                      className="h-full w-full object-cover group-hover:scale-105"
+                    />
+                  </button>
+                </Reveal>
               ))}
             </div>
           ) : (
@@ -1905,11 +2028,11 @@ function FloatingColumn({
 }) {
   return (
     <div
-      className={`relative h-[560px] overflow-hidden md:h-[720px] ${className}`}
+      className={`group relative h-[560px] overflow-hidden md:h-[720px] ${className}`}
       style={{ WebkitMaskImage: REVIEW_MASK, maskImage: REVIEW_MASK }}
     >
       <div
-        className="tfd-marquee absolute inset-x-0 top-0 flex flex-col"
+        className="tfd-marquee absolute inset-x-0 top-0 flex flex-col [animation-play-state:running] group-hover:[animation-play-state:paused]"
         style={{
           animation: `${dir === "up" ? "tfdFloatUp" : "tfdFloatDown"} ${duration}s linear infinite`,
           willChange: "transform",
@@ -2146,19 +2269,6 @@ function Sponsors() {
 /* -------------------------------------------------------------------------- */
 /* CONTACT PAGE — /contact route                                              */
 /* -------------------------------------------------------------------------- */
-
-function BackButton({ onClick }: { onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      data-cursor="pointer"
-      aria-label="Back to home"
-      className="fixed right-4 top-[9px] z-[60] flex h-12 w-12 items-center justify-center md:right-6 md:h-14 md:w-14"
-    >
-      <ArrowLeft className="h-6 w-6 text-white md:h-7 md:w-7" strokeWidth={2} />
-    </button>
-  );
-}
 
 function ContactPage({
   onNavigate,
@@ -2453,11 +2563,22 @@ function BodyMap({
   onSelect: (k: string) => void;
 }) {
   const [hover, setHover] = useState<string | null>(null);
+  const [pos, setPos] = useState({ x: 0, y: 0 });
+  const wrapRef = useRef<HTMLDivElement>(null);
   const byGeo: Record<string, BodyRegion> = {};
   regions.forEach((r) => {
     byGeo[r.geo] = r;
   });
+  const hoverRegion = hover ? regions.find((r) => r.key === hover) : null;
   return (
+    <div
+      ref={wrapRef}
+      className="relative h-full w-full"
+      onPointerMove={(e) => {
+        const r = wrapRef.current?.getBoundingClientRect();
+        if (r) setPos({ x: e.clientX - r.left, y: e.clientY - r.top });
+      }}
+    >
     <svg
       viewBox="0 0 308 1026"
       className="h-full w-full"
@@ -2507,6 +2628,16 @@ function BodyMap({
         );
       })}
     </svg>
+      {/* Cursor-following name tooltip — desktop only (no hover on touch) */}
+      {hoverRegion && (
+        <div
+          className="pointer-events-none absolute z-10 hidden -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-full bg-white px-3 py-1 text-[12px] font-medium text-black md:block"
+          style={{ left: pos.x, top: pos.y - 10 }}
+        >
+          {hoverRegion.label}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -2519,6 +2650,14 @@ function BodyPain({
   const [selected, setSelected] = useState<string | null>(null);
   const regions = REGION_SETS[view];
   const region = regions.find((r) => r.key === selected) || null;
+
+  // When a zone is picked, bring its description + Book button into view —
+  // scrolls down on mobile, centres on desktop (like the hero carousel).
+  const panelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!selected) return;
+    panelRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [selected]);
 
   const ViewBtn = ({ value, label }: { value: View; label: string }) => (
     <button
@@ -2546,7 +2685,10 @@ function BodyPain({
       </div>
 
       {/* Info panel */}
-      <div className="w-full md:w-96 md:self-center md:border-l md:border-white/10 md:pl-12">
+      <div
+        ref={panelRef}
+        className="w-full scroll-mt-24 md:w-96 md:self-center md:border-l md:border-white/10 md:pl-12"
+      >
         {region ? (
           <div>
             <p className="mb-2 text-[12px] uppercase tracking-[0.3em] text-white/40">
@@ -2626,56 +2768,32 @@ function BodyPain({
 }
 
 function BookPage({
-  onNavigate,
   onBook,
 }: {
-  onNavigate: (path: string) => void;
   onBook: (ctx: { artist?: string; bodyPart?: string }) => void;
 }) {
-  const sectionHeading =
-    "text-center font-serif text-[2rem] leading-[1] tracking-tight md:text-[2.8rem]";
-
   return (
     <main className="relative z-10 min-h-screen px-6 pb-24 pt-28 md:px-16 md:pt-32">
       <div className="mx-auto w-full max-w-5xl">
-        <p className="mb-4 text-center text-[12px] uppercase tracking-[0.3em] text-white/40">
-          Book an appointment
-        </p>
-        <h1 className="text-center font-serif text-[3rem] leading-[0.95] tracking-tight md:text-[4.5rem]">
-          Book
-        </h1>
-        <p className="mx-auto mt-5 max-w-lg text-center text-[15px] leading-relaxed text-white/55">
-          Tell us your budget and Instagram and we'll get back to you to arrange
-          the details.
-        </p>
-
-        <div className="mt-8 flex justify-center">
-          <button
-            type="button"
-            onClick={() => onBook({})}
-            data-cursor="pointer"
-            className="rounded-full bg-white px-8 py-3.5 text-[14px] font-medium text-black transition hover:bg-white/90"
-          >
-            Request a booking
-          </button>
+        {/* Title + intro — desktop only (mobile jumps straight to the map) */}
+        <div className="hidden md:block">
+          <p className="mb-4 text-center text-[12px] uppercase tracking-[0.3em] text-white/40">
+            Book an appointment
+          </p>
+          <h1 className="text-center font-serif text-[3rem] leading-[0.95] tracking-tight md:text-[4.5rem]">
+            Book
+          </h1>
+          <p className="mx-auto mt-5 max-w-lg text-center text-[15px] leading-relaxed text-white/55">
+            Start by choosing the area you'd like tattooed. Then add your budget
+            and your Instagram.{" "}
+            <span className="italic">We'll be in touch to arrange the rest.</span>
+          </p>
         </div>
 
-        {/* ---- Does it hurt? ---- */}
-        <section className="mt-20">
-          {/* Desktop lead */}
-          <div className="hidden md:block">
-            <h2 className={sectionHeading}>
-              Does it <span className="italic">hurt?</span>
-            </h2>
-            <p className="mx-auto mt-3 max-w-lg text-center text-[15px] leading-relaxed text-white/55">
-              Pain is personal, but some spots are famously tougher than others.
-              Here's a rough guide by area — tap a part of the body to see more,
-              then book that spot right here.
-            </p>
-          </div>
-          {/* Mobile lead */}
+        <section className="md:mt-14">
+          {/* Mobile lead above the map */}
           <div className="md:hidden">
-            <h2 className={sectionHeading}>
+            <h2 className="text-center font-serif text-[2rem] leading-[1] tracking-tight">
               Tap a body <span className="italic">area</span>
             </h2>
             <p className="mx-auto mt-3 max-w-lg text-center text-[15px] leading-relaxed text-white/55">
@@ -2686,64 +2804,78 @@ function BookPage({
           </div>
           <BodyPain onBook={onBook} />
         </section>
+      </div>
+    </main>
+  );
+}
 
-        {/* ---- FAQ ---- */}
-        <section className="mx-auto mt-24 max-w-3xl">
-          <h2 className={sectionHeading}>FAQ</h2>
+/* -------------------------------------------------------------------------- */
+/* FAQ PAGE — /faq route: questions + downloadable documents                  */
+/* -------------------------------------------------------------------------- */
 
-          <div className="mt-8 divide-y divide-white/10 border-y border-white/10">
-            {FAQ_ITEMS.map((item, i) => (
-              <details key={i} className="group py-5">
-                <summary
-                  data-cursor="pointer"
-                  className="flex cursor-pointer list-none items-center justify-between gap-4 text-[16px] text-white/90 md:text-[18px] [&::-webkit-details-marker]:hidden"
-                >
-                  {item.q}
-                  <ChevronDown
-                    className="h-5 w-5 shrink-0 text-white/40 transition-transform duration-300 group-open:rotate-180"
-                    strokeWidth={2}
-                  />
-                </summary>
-                <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-white/55">
-                  {item.a}
-                </p>
-              </details>
-            ))}
-          </div>
+function FaqPage({ onNavigate }: { onNavigate: (path: string) => void }) {
+  return (
+    <main className="relative z-10 min-h-screen px-6 pb-24 pt-28 md:px-16 md:pt-32">
+      <div className="mx-auto w-full max-w-3xl">
+        <p className="mb-4 text-center text-[12px] uppercase tracking-[0.3em] text-white/40">
+          Good to know
+        </p>
+        <h1 className="text-center font-serif text-[3rem] leading-[0.95] tracking-tight md:text-[4.5rem]">
+          FAQ
+        </h1>
 
-          <div className="mt-14">
-            <h3 className="mb-1 text-[12px] uppercase tracking-[0.25em] text-white/40">
-              Downloads
-            </h3>
-            <p className="mb-5 text-[13px] text-white/40">
-              Available in Dutch (Nederlands) only.
-            </p>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <DownloadCard
-                href="/docs/nazorginstructie-tatoeage.pdf"
-                title="Aftercare instructions"
-                sub="Nazorginstructie · PDF · NL"
-              />
-              <DownloadCard
-                href="/docs/informatie-risicos-tatoeage-pmu.pdf"
-                title="Information about risks"
-                sub="Risico-informatie (PMU) · PDF · NL"
-              />
-            </div>
-          </div>
+        <div className="mt-12 divide-y divide-white/10 border-y border-white/10">
+          {FAQ_ITEMS.map((item, i) => (
+            <details key={i} className="group py-5">
+              <summary
+                data-cursor="pointer"
+                className="flex cursor-pointer list-none items-center justify-between gap-4 text-[16px] text-white/90 md:text-[18px] [&::-webkit-details-marker]:hidden"
+              >
+                {item.q}
+                <ChevronDown
+                  className="h-5 w-5 shrink-0 text-white/40 transition-transform duration-300 group-open:rotate-180"
+                  strokeWidth={2}
+                />
+              </summary>
+              <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-white/55">
+                {item.a}
+              </p>
+            </details>
+          ))}
+        </div>
 
-          <p className="mt-14 border-t border-white/10 pt-6 text-[14px] text-white/50">
-            For full details, please read our{" "}
-            <button
-              onClick={() => onNavigate("/terms")}
-              data-cursor="pointer"
-              className="text-white underline underline-offset-4 transition hover:text-white/70"
-            >
-              Terms &amp; Conditions
-            </button>
-            .
+        <div className="mt-14">
+          <h2 className="mb-1 text-[12px] uppercase tracking-[0.25em] text-white/40">
+            Downloads
+          </h2>
+          <p className="mb-5 text-[13px] text-white/40">
+            Available in Dutch (Nederlands) only.
           </p>
-        </section>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <DownloadCard
+              href="/docs/nazorginstructie-tatoeage.pdf"
+              title="Aftercare instructions"
+              sub="Nazorginstructie · PDF · NL"
+            />
+            <DownloadCard
+              href="/docs/informatie-risicos-tatoeage-pmu.pdf"
+              title="Information about risks"
+              sub="Risico-informatie (PMU) · PDF · NL"
+            />
+          </div>
+        </div>
+
+        <p className="mt-14 border-t border-white/10 pt-6 text-[14px] text-white/50">
+          For full details, please read our{" "}
+          <button
+            onClick={() => onNavigate("/terms")}
+            data-cursor="pointer"
+            className="text-white underline underline-offset-4 transition hover:text-white/70"
+          >
+            Terms &amp; Conditions
+          </button>
+          .
+        </p>
       </div>
     </main>
   );
@@ -3234,9 +3366,11 @@ export default function App() {
           ? "book"
           : path === "/artists"
             ? "artists"
-            : path === "/terms"
-              ? "terms"
-              : "notfound";
+            : path === "/faq"
+              ? "faq"
+              : path === "/terms"
+                ? "terms"
+                : "notfound";
   const isHome = page === "home";
 
   const openProfile = (i: number) => {
@@ -3292,18 +3426,13 @@ export default function App() {
 
       </header>
 
-      {isHome ? (
-        <>
-          <MenuButton open={menuOpen} onClick={() => setMenuOpen((o) => !o)} />
-          <Menu
-            open={menuOpen}
-            onClose={() => setMenuOpen(false)}
-            onNavigate={navigate}
-          />
-        </>
-      ) : (
-        <BackButton onClick={() => navigate("/")} />
-      )}
+      {/* Burger menu — always available (replaces the old back button) */}
+      <MenuButton open={menuOpen} onClick={() => setMenuOpen((o) => !o)} />
+      <Menu
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        onNavigate={navigate}
+      />
 
       {isHome ? (
         <>
@@ -3376,7 +3505,9 @@ export default function App() {
       ) : page === "contact" ? (
         <ContactPage onNavigate={navigate} />
       ) : page === "book" ? (
-        <BookPage onNavigate={navigate} onBook={openBooking} />
+        <BookPage onBook={openBooking} />
+      ) : page === "faq" ? (
+        <FaqPage onNavigate={navigate} />
       ) : page === "artists" ? (
         <ArtistsPage
           active={activeArtist}
