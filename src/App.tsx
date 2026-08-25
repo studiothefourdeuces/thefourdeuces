@@ -560,7 +560,7 @@ function Carousel({
 
     const dims = () => {
       const vw = window.innerWidth;
-      const cardW = vw < 640 ? 168 : vw < 1024 ? 216 : 264;
+      const cardW = vw < 640 ? 280 : vw < 1024 ? 216 : 264;
       return { cardW, spacing: cardW * 1.04 }; // >cardW → visible gaps
     };
 
@@ -698,7 +698,7 @@ function Carousel({
 
   return (
     <div
-      className="pointer-events-none absolute inset-x-0 bottom-[9%] z-20 h-[240px]"
+      className="pointer-events-none absolute inset-x-0 bottom-[5%] z-20 h-[46vh] md:bottom-[9%] md:h-[240px]"
       style={{ perspective: "1200px" }}
     >
       <div
@@ -1096,23 +1096,23 @@ function LeadForm({
           active and shifts up together with the input. */}
       <h1
         style={{
-          top: "calc(50% - 150px)",
           transform: engaged ? "translate(-50%, -40px)" : "translate(-50%, 0)",
           filter: engaged ? "blur(1.8px)" : "blur(0px)",
           opacity: engaged ? 0.4 : 1,
           transition:
             "transform 0.5s cubic-bezier(0.22,1,0.36,1), filter 0.5s ease, opacity 0.5s ease",
         }}
-        className="pointer-events-none absolute left-1/2 w-full px-6 text-center font-serif text-[2rem] leading-[1.15] tracking-tight md:text-[2.8rem]"
+        className="pointer-events-none absolute left-1/2 top-[calc(50%-220px)] w-full px-6 text-center font-serif text-[2rem] leading-[1.15] tracking-tight md:top-[calc(50%-150px)] md:text-[2.8rem]"
       >
         Ink With Intent.
         <br />
         <span className="italic">Made to Last.</span>
       </h1>
 
-      {/* Icon + input — anchored at the EXACT vertical + horizontal centre. */}
+      {/* Icon + input — centred (shifted up on mobile so the taller works
+          carousel has room below). */}
       <div
-        className="pointer-events-auto absolute left-1/2 top-1/2"
+        className="pointer-events-auto absolute left-1/2 top-[calc(50%-70px)] md:top-1/2"
         style={{
           transform: engaged
             ? "translate(-50%, calc(-50% - 40px))"
@@ -1123,8 +1123,8 @@ function LeadForm({
         {fieldGroup}
       </div>
 
-      {/* Button — anchored below the centre so it never shifts the input */}
-      <div className="pointer-events-auto absolute left-1/2 top-[calc(50%+52px)] flex -translate-x-1/2 justify-center">
+      {/* Button — anchored below the input (shifted up on mobile to match) */}
+      <div className="pointer-events-auto absolute left-1/2 top-[calc(50%-18px)] flex -translate-x-1/2 justify-center md:top-[calc(50%+52px)]">
         {stepButton}
       </div>
     </div>
@@ -3316,7 +3316,19 @@ export default function App() {
                   aerdt
                 </a>
               </p>
-              <div className="flex items-center gap-3 text-[11px] uppercase tracking-[0.2em] text-white/30">
+              {/* Mobile: © on the left, Terms on the right */}
+              <div className="flex w-full items-center justify-between gap-3 text-[10px] uppercase tracking-[0.12em] text-white/30 md:hidden">
+                <span>© 2020–{new Date().getFullYear()} The Four Deuces</span>
+                <button
+                  onClick={() => navigate("/terms")}
+                  data-cursor="pointer"
+                  className="shrink-0 transition hover:text-white/70"
+                >
+                  Terms &amp; Privacy
+                </button>
+              </div>
+              {/* Desktop: centred */}
+              <div className="hidden items-center gap-3 text-[11px] uppercase tracking-[0.2em] text-white/30 md:flex">
                 <button
                   onClick={() => navigate("/terms")}
                   data-cursor="pointer"
