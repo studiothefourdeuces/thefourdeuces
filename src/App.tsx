@@ -59,6 +59,7 @@ const ARTISTS: Artist[] = [
     ig: "https://www.instagram.com/novohatskytattoo/",
     role: "Chicano, Realism, Blackwork",
     bio: "Chicano lettering and portrait realism backed by solid blackwork that stays crisp for years.",
+    since: 2018,
   },
   {
     name: "Daria",
@@ -66,6 +67,7 @@ const ARTISTS: Artist[] = [
     ig: "https://www.instagram.com/tattoo.daria/",
     role: "Watercolour, Fine Line, Abstract",
     bio: "Soft watercolour washes, delicate fine-line work, and loose abstract compositions that feel painted onto the skin.",
+    since: 2019,
   },
   {
     name: "Darya",
@@ -73,6 +75,7 @@ const ARTISTS: Artist[] = [
     ig: "https://www.instagram.com/bazhina_tatoonl/",
     role: "Anime, Manga, Realism",
     bio: "Anime and manga brought to skin — bold graphic linework and colour alongside detailed black-and-grey realism and illustrative graphic art.",
+    since: 2018,
   },
   {
     name: "Mila",
@@ -80,6 +83,7 @@ const ARTISTS: Artist[] = [
     ig: "https://www.instagram.com/mila.delger/",
     role: "Freehand, Fine Line, Abstract",
     bio: "Freehand pieces drawn straight onto the skin — fine-line and abstract shapes made to flow with the body.",
+    since: 2018,
   },
   {
     name: "Gianluca",
@@ -87,6 +91,7 @@ const ARTISTS: Artist[] = [
     ig: "https://www.instagram.com/gianluca_tattooer/",
     role: "Geometric & ornamental blackwork",
     bio: "Geometric, optical and ornamental blackwork with elements of abstract calligraphy, dotwork, and engraving-inspired detail.",
+    since: 2023,
   },
   {
     name: "Selçuk",
