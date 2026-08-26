@@ -927,6 +927,9 @@ function Smooth3DSlideshow({
                 opacity: cardOpacity,
                 pointerEvents: visible ? "auto" : "none",
                 backgroundColor: "#111",
+                // Same subtle outline the artist / works photos use
+                // (Tailwind `ring-1 ring-white/10`).
+                boxShadow: "0 0 0 1px rgba(255,255,255,0.1)",
               }}
             >
               <img
