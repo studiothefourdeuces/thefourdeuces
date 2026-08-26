@@ -796,12 +796,13 @@ function Smooth3DSlideshow({
     };
   }, []);
 
-  // Match the desktop carousel's pace: it drifts ~2.2s per card at constant
-  // (linear) speed. HOLD == transition duration → no pause at centre, so it
-  // flows continuously.
-  const DUR = 2.2;
-  const EASE = "linear";
-  const HOLD = 2200;
+  // Originkit coverflow timing: a 0.6s eased move per card (ease-out, so each
+  // card decelerates as it settles into the centre — the natural coverflow
+  // feel). HOLD is the full cadence: the 0.6s move, then a ~1s rest so each
+  // photo stays on screen long enough to take in before the next advance.
+  const DUR = 0.6;
+  const EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
+  const HOLD = 1600;
 
   const step = useCallback(
     (dir: number) => {
