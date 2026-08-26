@@ -492,17 +492,26 @@ function Reveal({
   children,
   className,
   delay = 0,
-  y = 28,
+  y = 24,
+  eager = false,
 }: {
   children: ReactNode;
   className?: string;
   delay?: number;
   y?: number;
+  eager?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [shown, setShown] = useState(false);
+  const [shown, setShown] = useState(eager);
+
+  // Show right away when asked (e.g. above-the-fold items that would otherwise
+  // wait for a scroll that never happens), and stay in sync if `eager` flips.
+  useEffect(() => {
+    if (eager) setShown(true);
+  }, [eager]);
 
   useEffect(() => {
+    if (eager) return;
     const el = ref.current;
     if (!el) return;
     const check = () => {
@@ -743,6 +752,210 @@ function Carousel({
             />
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+/* Mobile hero carousel — the Originkit "Smooth 3D Slideshow": active card
+   upright & centred, neighbours tilt back (rotateY) with a side tilt (rotateZ),
+   recede in depth and dim. Discrete active index with a smooth eased CSS
+   transition; autoplays, swipeable, tap a side card to centre it, tap the
+   centre card to open that artist. */
+function Smooth3DSlideshow({
+  onOpenProfile,
+}: {
+  onOpenProfile: (artistIdx: number) => void;
+}) {
+  const slides = WORKS.slice(0, 12);
+  const n = slides.length;
+  const [active, setActive] = useState(0);
+  // Size from the viewport up-front so the first paint is already correct —
+  // otherwise a post-mount resize would animate the side cards inward.
+  const measure = () => {
+    const w = Math.min(272, Math.round(window.innerWidth * 0.68));
+    return { w, h: Math.round(w * 1.45) };
+  };
+  const [dim, setDim] = useState(measure);
+  // Transitions stay off for the first paint so nothing slides in on load.
+  const [ready, setReady] = useState(false);
+  const pausedUntil = useRef(0);
+  const startX = useRef<number | null>(null);
+  const lastX = useRef(0);
+  // Set on a swipe so the click that follows pointerup doesn't also fire
+  // (which would open the profile).
+  const swipedRef = useRef(false);
+
+  useEffect(() => {
+    const onResize = () => setDim(measure());
+    window.addEventListener("resize", onResize);
+    const t = window.setTimeout(() => setReady(true), 60);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      window.clearTimeout(t);
+    };
+  }, []);
+
+  // Match the desktop carousel's pace: it drifts ~2.2s per card at constant
+  // (linear) speed. HOLD == transition duration → no pause at centre, so it
+  // flows continuously.
+  const DUR = 2.2;
+  const EASE = "linear";
+  const HOLD = 2200;
+
+  const step = useCallback(
+    (dir: number) => {
+      if (!dir) return;
+      setActive((a) => (((a + dir) % n) + n) % n);
+    },
+    [n],
+  );
+
+  useEffect(() => {
+    if (n < 2) return;
+    let id = 0;
+    const tick = () => {
+      if (performance.now() >= pausedUntil.current) step(1);
+      id = window.setTimeout(tick, HOLD);
+    };
+    // Kick off the first move right away so the carousel starts drifting as
+    // soon as the page loads, instead of sitting still for a full HOLD.
+    id = window.setTimeout(tick, 250);
+    return () => window.clearTimeout(id);
+  }, [n, step]);
+
+  // Resume auto-drift 1s after the last interaction — same as the desktop
+  // carousel's IDLE_MS.
+  const pause = () => {
+    pausedUntil.current = performance.now() + 1000;
+  };
+
+  const endSwipe = () => {
+    if (startX.current == null) return;
+    const dx = lastX.current - startX.current;
+    startX.current = null;
+    pause();
+    if (Math.abs(dx) > 40) {
+      swipedRef.current = true;
+      step(dx < 0 ? 1 : -1);
+    }
+  };
+
+  const TILT = 12;
+  const SIDE = 8;
+  const DEPTH = 240;
+  const SCALE_STEP = 0.16;
+  const MAX_VISIBLE = 2;
+  const transitionCss = `transform ${DUR}s ${EASE}, opacity ${DUR}s ${EASE}`;
+  const radius = Math.round((3 / 20) * (Math.min(dim.w, dim.h) / 2));
+
+  return (
+    <div
+      className="pointer-events-auto absolute inset-x-0 bottom-[1%] z-20 flex items-center justify-center"
+      // pan-y lets the page still scroll vertically while we own horizontal
+      // gestures — otherwise the browser hijacks the swipe and fires
+      // pointercancel before we see the pointerup.
+      style={{ perspective: "1600px", height: "60vh", touchAction: "pan-y" }}
+      onPointerDown={(e) => {
+        startX.current = e.clientX;
+        lastX.current = e.clientX;
+        swipedRef.current = false;
+        pause();
+        try {
+          e.currentTarget.setPointerCapture(e.pointerId);
+        } catch {
+          /* not all pointer types support capture */
+        }
+        const a = document.activeElement;
+        if (a instanceof HTMLElement && a !== document.body) a.blur();
+      }}
+      onPointerMove={(e) => {
+        if (startX.current != null) lastX.current = e.clientX;
+      }}
+      onPointerUp={endSwipe}
+      onPointerCancel={endSwipe}
+    >
+      <div
+        style={{
+          position: "relative",
+          width: dim.w,
+          height: dim.h,
+          transformStyle: "preserve-3d",
+        }}
+      >
+        {slides.map((slide, i) => {
+          let rel = i - active;
+          if (rel > n / 2) rel -= n;
+          if (rel < -n / 2) rel += n;
+          const ax = Math.abs(rel);
+          const visible = ax <= MAX_VISIBLE;
+          const isActive = rel === 0;
+          const sc = Math.max(0.4, 1 - ax * SCALE_STEP);
+          // Graduated fade so cards ease in/out on the sides rather than
+          // popping at the edge of the stack.
+          const cardOpacity = Math.max(0, 1 - ax * 0.5);
+          const tx = rel * (dim.w * 1.15);
+          const tz = -ax * DEPTH;
+          const ry = -rel * TILT;
+          const rz = rel * SIDE;
+          return (
+            <div
+              key={i}
+              onClick={() => {
+                if (swipedRef.current) {
+                  swipedRef.current = false;
+                  return;
+                }
+                pause();
+                if (isActive) onOpenProfile(slide.artistIdx);
+                else step(rel);
+              }}
+              data-cursor="pointer"
+              style={{
+                position: "absolute",
+                left: "50%",
+                top: "50%",
+                width: dim.w,
+                height: dim.h,
+                borderRadius: radius,
+                overflow: "hidden",
+                transformStyle: "preserve-3d",
+                transformOrigin: "center center",
+                transform: `translate(-50%, -50%) translateX(${tx}px) translateZ(${tz}px) rotateY(${ry}deg) rotateZ(${rz}deg) scale(${sc})`,
+                transition: ready ? transitionCss : "none",
+                opacity: cardOpacity,
+                pointerEvents: visible ? "auto" : "none",
+                backgroundColor: "#111",
+              }}
+            >
+              <img
+                src={slide.img}
+                alt={ARTISTS[slide.artistIdx].name}
+                draggable={false}
+                className="grayscale"
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  display: "block",
+                  userSelect: "none",
+                }}
+              />
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  background: "#000",
+                  opacity: isActive ? 0 : 0.2,
+                  transition: `opacity ${DUR}s ${EASE}`,
+                  pointerEvents: "none",
+                }}
+              />
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -1015,7 +1228,7 @@ function LeadForm({
           </div>
         )}
       </div>
-      <p className="mt-5 max-w-sm text-[13px] leading-relaxed text-white/40">
+      <p className="mt-5 hidden max-w-sm text-[13px] leading-relaxed text-white/40 md:block">
         We only use your Instagram to get in touch about your request. It isn't
         stored anywhere and is deleted from our records as soon as we've
         contacted you.
@@ -1088,7 +1301,7 @@ function LeadForm({
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-        className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-6 pb-[26vh] text-center"
+        className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-6 pb-[48vh] text-center md:pb-[26vh]"
       >
         {doneInner}
       </motion.div>
@@ -1102,7 +1315,7 @@ function LeadForm({
         opacity: loaded ? 1 : 0,
         transform: loaded ? "translateY(0)" : "translateY(26px)",
         transition:
-          "opacity 0.9s cubic-bezier(0.22,1,0.36,1), transform 0.9s cubic-bezier(0.22,1,0.36,1)",
+          "opacity 0.7s cubic-bezier(0.22,1,0.36,1), transform 0.7s cubic-bezier(0.22,1,0.36,1)",
       }}
     >
       {honeypot}
@@ -1115,9 +1328,9 @@ function LeadForm({
           filter: engaged ? "blur(1.8px)" : "blur(0px)",
           opacity: engaged ? 0.4 : 1,
           transition:
-            "transform 0.5s cubic-bezier(0.22,1,0.36,1), filter 0.5s ease, opacity 0.5s ease",
+            "transform 0.5s cubic-bezier(0.22,1,0.36,1), filter 0.5s cubic-bezier(0.22,1,0.36,1), opacity 0.5s cubic-bezier(0.22,1,0.36,1)",
         }}
-        className="pointer-events-none absolute left-1/2 top-[calc(50%-220px)] w-full px-6 text-center font-serif text-[2rem] leading-[1.15] tracking-tight md:top-[calc(50%-150px)] md:text-[2.8rem]"
+        className="pointer-events-none absolute left-1/2 top-[18%] w-full px-6 text-center font-serif text-[2rem] leading-[1.15] tracking-tight md:top-[calc(50%-150px)] md:text-[2.8rem]"
       >
         Ink With Intent.
         <br />
@@ -1127,7 +1340,7 @@ function LeadForm({
       {/* Icon + input — centred (shifted up on mobile so the taller works
           carousel has room below). */}
       <div
-        className="pointer-events-auto absolute left-1/2 top-[calc(50%-70px)] md:top-1/2"
+        className="pointer-events-auto absolute left-1/2 top-[35%] md:top-1/2"
         style={{
           transform: engaged
             ? "translate(-50%, calc(-50% - 40px))"
@@ -1139,7 +1352,7 @@ function LeadForm({
       </div>
 
       {/* Button — anchored below the input (shifted up on mobile to match) */}
-      <div className="pointer-events-auto absolute left-1/2 top-[calc(50%-18px)] flex -translate-x-1/2 justify-center md:top-[calc(50%+52px)]">
+      <div className="pointer-events-auto absolute left-1/2 top-[calc(35%+10px)] flex -translate-x-1/2 justify-center md:top-[calc(50%+52px)]">
         {stepButton}
       </div>
     </div>
@@ -1263,7 +1476,7 @@ function Menu({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.25 }}
           onMouseLeave={() => setHovered(null)}
           id="main-menu"
           role="dialog"
@@ -1525,7 +1738,18 @@ function FadeImg({
   const ref = useRef<HTMLImageElement>(null);
   const [loaded, setLoaded] = useState(false);
   useEffect(() => {
-    if (ref.current?.complete) setLoaded(true);
+    const img = ref.current;
+    if (!img) return;
+    // Already decoded (cached or resolved during commit, which React's onLoad
+    // can miss) → show immediately. Otherwise wait for the native load event,
+    // which is more reliable here than the synthetic one.
+    if (img.complete && img.naturalWidth > 0) {
+      setLoaded(true);
+      return;
+    }
+    const onLoad = () => setLoaded(true);
+    img.addEventListener("load", onLoad);
+    return () => img.removeEventListener("load", onLoad);
   }, [src]);
   return (
     <img
@@ -1763,7 +1987,7 @@ function ArtistShowcase({
         </Reveal>
 
         {/* Mobile-only: horizontal artist selector under the photo */}
-        <Reveal className="md:hidden" delay={0.18} y={20}>
+        <Reveal className="md:hidden" delay={0.18}>
           <ArtistRow active={active} onSelect={onSelect} />
         </Reveal>
 
@@ -1838,6 +2062,21 @@ function ArtistsPage({
   const M = ARTISTS.length;
   const artist = ARTISTS[active];
   const works = (WORKS_BY_ARTIST[active] || []).slice(0, MAX_PORTFOLIO);
+
+  // On mobile the works grid sits well below the fold, so the first two are
+  // shown/loaded eagerly (they appear with the heading) instead of waiting for
+  // a scroll-reveal. Desktop is unaffected.
+  const [isMobile, setIsMobile] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      window.matchMedia("(max-width: 767px)").matches,
+  );
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const on = () => setIsMobile(mq.matches);
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
 
   // Direction of the last switch → the photo slides in from that side (same as
   // the home artist showcase).
@@ -1941,24 +2180,32 @@ function ArtistsPage({
           </h2>
           {works.length > 0 ? (
             <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4">
-              {works.map((src, i) => (
-                <Reveal key={`${active}-${i}`} delay={(i % 3) * 0.08} y={24}>
-                  <button
-                    type="button"
-                    onClick={() => onOpenWorks(active, i)}
-                    data-cursor="pointer"
-                    className="group relative block aspect-square w-full overflow-hidden rounded-xl ring-1 ring-white/10 outline-none"
+              {works.map((src, i) => {
+                const eager = isMobile && i < 2;
+                return (
+                  <Reveal
+                    key={`${active}-${i}`}
+                    delay={eager ? 0 : (i % 3) * 0.08}
+                    y={24}
+                    eager={eager}
                   >
-                    <FadeImg
-                      src={src}
-                      alt={`${artist.name} — work ${i + 1}`}
-                      draggable={false}
-                      loading="lazy"
-                      className="h-full w-full object-cover group-hover:scale-105"
-                    />
-                  </button>
-                </Reveal>
-              ))}
+                    <button
+                      type="button"
+                      onClick={() => onOpenWorks(active, i)}
+                      data-cursor="pointer"
+                      className="group relative block aspect-square w-full overflow-hidden rounded-xl ring-1 ring-white/10 outline-none"
+                    >
+                      <FadeImg
+                        src={src}
+                        alt={`${artist.name} — work ${i + 1}`}
+                        draggable={false}
+                        loading={eager ? "eager" : "lazy"}
+                        className="h-full w-full object-cover group-hover:scale-105"
+                      />
+                    </button>
+                  </Reveal>
+                );
+              })}
             </div>
           ) : (
             <p className="mt-8 text-center text-[14px] text-white/40">
@@ -2245,7 +2492,7 @@ function Sponsors() {
     <section id="sponsors" className="relative px-6 py-24 md:px-16 md:py-32">
       <div className="mx-auto w-full max-w-6xl border-t border-white/10">
         {SPONSORS.map((s, i) => (
-          <Reveal key={s.name} delay={i * 0.08} y={20}>
+          <Reveal key={s.name} delay={i * 0.08}>
           <a
             href={s.url}
             target="_blank"
@@ -2322,25 +2569,28 @@ function ContactPage({
   return (
     <main className="relative z-10 min-h-screen px-6 pb-24 pt-28 md:px-16 md:pt-32">
       <div className="mx-auto w-full max-w-2xl">
-        <p className="mb-4 text-[12px] uppercase tracking-[0.3em] text-white/40">
-          Get in touch
-        </p>
-        <h1 className="font-serif text-[3rem] leading-[0.95] tracking-tight md:text-[4.5rem]">
-          Contact
-        </h1>
-        <p className="mt-6 max-w-lg text-[15px] leading-relaxed text-white/60">
-          Looking to book a tattoo? Appointments are requested on the{" "}
-          <button
-            onClick={() => onNavigate("/")}
-            data-cursor="pointer"
-            className="text-white underline underline-offset-4 transition hover:text-white/70"
-          >
-            home page
-          </button>
-          . For everything else — collaborations, press or general questions —
-          drop us a line below.
-        </p>
+        <Reveal>
+          <p className="mb-4 text-[12px] uppercase tracking-[0.3em] text-white/40">
+            Get in touch
+          </p>
+          <h1 className="font-serif text-[3rem] leading-[0.95] tracking-tight md:text-[4.5rem]">
+            Contact
+          </h1>
+          <p className="mt-6 max-w-lg text-[15px] leading-relaxed text-white/60">
+            Looking to book a tattoo? Appointments are requested on the{" "}
+            <button
+              onClick={() => onNavigate("/")}
+              data-cursor="pointer"
+              className="text-white underline underline-offset-4 transition hover:text-white/70"
+            >
+              home page
+            </button>
+            . For everything else — collaborations, press or general questions —
+            drop us a line below.
+          </p>
+        </Reveal>
 
+        <Reveal delay={0.1}>
         {sent ? (
           <div className="mt-10 rounded-3xl border border-white/10 bg-white/[0.03] p-8 text-center">
             <span className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-white text-black">
@@ -2402,31 +2652,36 @@ function ContactPage({
             </button>
           </form>
         )}
+        </Reveal>
 
-        <div className="mt-14 border-t border-white/10 pt-6">
-          <p className="mb-1 text-[11px] uppercase tracking-[0.25em] text-white/40">
-            Partnerships & collaborations
+        <Reveal delay={0.18}>
+          <div className="mt-14 border-t border-white/10 pt-6">
+            <p className="mb-1 text-[11px] uppercase tracking-[0.25em] text-white/40">
+              Partnerships & collaborations
+            </p>
+            <a
+              href="mailto:studio@thefourdeuces.nl"
+              data-cursor="pointer"
+              className="text-[15px] text-white/80 transition hover:text-white"
+            >
+              studio@thefourdeuces.nl
+            </a>
+          </div>
+        </Reveal>
+
+        <Reveal delay={0.24}>
+          <p className="mt-8 text-[13px] text-white/40">
+            By contacting us you agree to our{" "}
+            <button
+              onClick={() => onNavigate("/terms")}
+              data-cursor="pointer"
+              className="text-white/70 underline underline-offset-4 transition hover:text-white"
+            >
+              Terms &amp; Conditions
+            </button>
+            .
           </p>
-          <a
-            href="mailto:studio@thefourdeuces.nl"
-            data-cursor="pointer"
-            className="text-[15px] text-white/80 transition hover:text-white"
-          >
-            studio@thefourdeuces.nl
-          </a>
-        </div>
-
-        <p className="mt-8 text-[13px] text-white/40">
-          By contacting us you agree to our{" "}
-          <button
-            onClick={() => onNavigate("/terms")}
-            data-cursor="pointer"
-            className="text-white/70 underline underline-offset-4 transition hover:text-white"
-          >
-            Terms &amp; Conditions
-          </button>
-          .
-        </p>
+        </Reveal>
       </div>
     </main>
   );
@@ -2791,7 +3046,7 @@ function BookPage({
     <main className="relative z-10 min-h-screen px-6 pb-24 pt-28 md:px-16 md:pt-32">
       <div className="mx-auto w-full max-w-5xl">
         {/* Title + intro — desktop only (mobile jumps straight to the map) */}
-        <div className="hidden md:block">
+        <Reveal className="hidden md:block">
           <p className="mb-4 text-center text-[12px] uppercase tracking-[0.3em] text-white/40">
             Book an appointment
           </p>
@@ -2803,11 +3058,11 @@ function BookPage({
             and your Instagram.{" "}
             <span className="italic">We'll be in touch to arrange the rest.</span>
           </p>
-        </div>
+        </Reveal>
 
         <section className="md:mt-14">
           {/* Mobile lead above the map */}
-          <div className="md:hidden">
+          <Reveal className="md:hidden">
             <h2 className="text-center font-serif text-[2rem] leading-[1] tracking-tight">
               Tap a body <span className="italic">area</span>
             </h2>
@@ -2816,8 +3071,10 @@ function BookPage({
               how long a session tends to take. Switch between front and back
               with the toggle.
             </p>
-          </div>
-          <BodyPain onBook={onBook} />
+          </Reveal>
+          <Reveal delay={0.1}>
+            <BodyPain onBook={onBook} />
+          </Reveal>
         </section>
       </div>
     </main>
@@ -2832,13 +3089,16 @@ function FaqPage({ onNavigate }: { onNavigate: (path: string) => void }) {
   return (
     <main className="relative z-10 min-h-screen px-6 pb-24 pt-28 md:px-16 md:pt-32">
       <div className="mx-auto w-full max-w-3xl">
-        <p className="mb-4 text-center text-[12px] uppercase tracking-[0.3em] text-white/40">
-          Good to know
-        </p>
-        <h1 className="text-center font-serif text-[3rem] leading-[0.95] tracking-tight md:text-[4.5rem]">
-          FAQ
-        </h1>
+        <Reveal>
+          <p className="mb-4 text-center text-[12px] uppercase tracking-[0.3em] text-white/40">
+            Good to know
+          </p>
+          <h1 className="text-center font-serif text-[3rem] leading-[0.95] tracking-tight md:text-[4.5rem]">
+            FAQ
+          </h1>
+        </Reveal>
 
+        <Reveal delay={0.1}>
         <div className="mt-12 divide-y divide-white/10 border-y border-white/10">
           {FAQ_ITEMS.map((item, i) => (
             <details key={i} className="group py-5">
@@ -2858,7 +3118,9 @@ function FaqPage({ onNavigate }: { onNavigate: (path: string) => void }) {
             </details>
           ))}
         </div>
+        </Reveal>
 
+        <Reveal delay={0.16}>
         <div className="mt-14">
           <h2 className="mb-1 text-[12px] uppercase tracking-[0.25em] text-white/40">
             Downloads
@@ -2879,18 +3141,21 @@ function FaqPage({ onNavigate }: { onNavigate: (path: string) => void }) {
             />
           </div>
         </div>
+        </Reveal>
 
-        <p className="mt-14 border-t border-white/10 pt-6 text-[14px] text-white/50">
-          For full details, please read our{" "}
-          <button
-            onClick={() => onNavigate("/terms")}
-            data-cursor="pointer"
-            className="text-white underline underline-offset-4 transition hover:text-white/70"
-          >
-            Terms &amp; Conditions
-          </button>
-          .
-        </p>
+        <Reveal delay={0.22}>
+          <p className="mt-14 border-t border-white/10 pt-6 text-[14px] text-white/50">
+            For full details, please read our{" "}
+            <button
+              onClick={() => onNavigate("/terms")}
+              data-cursor="pointer"
+              className="text-white underline underline-offset-4 transition hover:text-white/70"
+            >
+              Terms &amp; Conditions
+            </button>
+            .
+          </p>
+        </Reveal>
       </div>
     </main>
   );
@@ -3107,25 +3372,31 @@ function TermsPage() {
   return (
     <main className="relative z-10 min-h-screen px-6 pb-24 pt-28 md:px-16 md:pt-32">
       <div className="mx-auto w-full max-w-3xl">
-        <p className="mb-4 text-[12px] uppercase tracking-[0.3em] text-white/40">
-          Legal
-        </p>
-        <h1 className="font-serif text-[3rem] leading-[0.95] tracking-tight md:text-[4.5rem]">
-          Terms &amp; <span className="italic">Privacy</span>
-        </h1>
-        <p className="mt-5 max-w-lg text-[15px] leading-relaxed text-white/55">
-          The rules of the studio, and how we look after your data.
-        </p>
+        <Reveal>
+          <p className="mb-4 text-[12px] uppercase tracking-[0.3em] text-white/40">
+            Legal
+          </p>
+          <h1 className="font-serif text-[3rem] leading-[0.95] tracking-tight md:text-[4.5rem]">
+            Terms &amp; <span className="italic">Privacy</span>
+          </h1>
+          <p className="mt-5 max-w-lg text-[15px] leading-relaxed text-white/55">
+            The rules of the studio, and how we look after your data.
+          </p>
+        </Reveal>
 
-        <section className="mt-16">
-          <h2 className={sectionHead}>Terms &amp; Conditions</h2>
-          <LegalGroup data={TERMS} />
-        </section>
+        <Reveal delay={0.1}>
+          <section className="mt-16">
+            <h2 className={sectionHead}>Terms &amp; Conditions</h2>
+            <LegalGroup data={TERMS} />
+          </section>
+        </Reveal>
 
-        <section className="mt-24">
-          <h2 className={sectionHead}>Privacy Policy</h2>
-          <LegalGroup data={PRIVACY} />
-        </section>
+        <Reveal delay={0.16}>
+          <section className="mt-24">
+            <h2 className={sectionHead}>Privacy Policy</h2>
+            <LegalGroup data={PRIVACY} />
+          </section>
+        </Reveal>
       </div>
     </main>
   );
@@ -3340,6 +3611,15 @@ export default function App() {
   const finishLoading = useCallback(() => setLoading(false), []);
   const [route, setRoute] = useState(() => window.location.pathname);
 
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const sync = () => setIsMobile(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
   useEffect(() => {
     const onPop = () => setRoute(window.location.pathname);
     window.addEventListener("popstate", onPop);
@@ -3456,7 +3736,11 @@ export default function App() {
             <main className="pointer-events-none relative z-30 min-h-screen">
               <Hero />
             </main>
-            <Carousel onOpenProfile={openProfile} />
+            {isMobile ? (
+              <Smooth3DSlideshow onOpenProfile={openProfile} />
+            ) : (
+              <Carousel onOpenProfile={openProfile} />
+            )}
           </section>
 
           {/* ============ ARTIST SHOWCASE ============ */}
