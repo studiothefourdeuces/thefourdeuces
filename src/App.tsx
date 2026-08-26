@@ -2583,11 +2583,11 @@ function ContactPage({
           <p className="mt-6 max-w-lg text-[15px] leading-relaxed text-white/60">
             Looking to book a tattoo? Appointments are requested on the{" "}
             <button
-              onClick={() => onNavigate("/")}
+              onClick={() => onNavigate("/book")}
               data-cursor="pointer"
               className="text-white underline underline-offset-4 transition hover:text-white/70"
             >
-              home page
+              book page
             </button>
             . For everything else — collaborations, press or general questions —
             drop us a line below.
@@ -2656,9 +2656,7 @@ function ContactPage({
             </button>
           </form>
         )}
-        </Reveal>
 
-        <Reveal delay={0.18}>
           <div className="mt-14 border-t border-white/10 pt-6">
             <p className="mb-1 text-[11px] uppercase tracking-[0.25em] text-white/40">
               Partnerships & collaborations
@@ -2671,9 +2669,7 @@ function ContactPage({
               studio@thefourdeuces.nl
             </a>
           </div>
-        </Reveal>
 
-        <Reveal delay={0.24}>
           <p className="mt-8 text-[13px] text-white/40">
             By contacting us you agree to our{" "}
             <button
