@@ -114,6 +114,19 @@ const workUrls = import.meta.glob("./img/works/*/*.jpg", {
   import: "default",
 }) as Record<string, string>;
 
+// Work videos live in src/vid/ so Vite fingerprints them (content-hashed URLs).
+// That means replacing a clip changes its URL, so browsers/CDN never serve a
+// stale cached copy — the problem plain /public files (fixed URLs) have.
+const videoUrls = import.meta.glob("./vid/*.mp4", {
+  eager: true,
+  query: "?url",
+  import: "default",
+}) as Record<string, string>;
+const VIDEO_BY_FILE: Record<string, string> = {};
+for (const [path, url] of Object.entries(videoUrls)) {
+  VIDEO_BY_FILE[path.split("/").pop() as string] = url;
+}
+
 const WORK_ARTIST_INDEX: Record<string, number> = {
   max: 0,
   eugene: 1,
@@ -124,25 +137,23 @@ const WORK_ARTIST_INDEX: Record<string, number> = {
   selcuk: 6,
 };
 
-// Optional looping video for a work, hosted OFF the repo (e.g. Cloudflare R2 /
-// Stream) so the build stays small. Key = "<artistFolder>/<filename>.jpg" — the
-// same path as the image, which stays the poster. The video only loads when the
-// work becomes the centre card of the carousel or is opened in the lightbox, so
-// it never affects initial page load. Add entries here once the files exist:
-//   "max/1.jpg": "https://media.thefourdeuces.nl/max-1.mp4",
+// Optional looping video for a work. Key = "<artistFolder>/<filename>.jpg" (the
+// same path as the image, which stays the poster); value = the clip's filename
+// in src/vid/. The video only loads when the work becomes the centre card of a
+// carousel or is opened in the lightbox, so it never affects initial page load.
 const WORK_VIDEOS: Record<string, string> = {
-  "max/1a.jpg": "/video/max-1a.mp4",
-  "max/7a.jpg": "/video/max-7a.mp4",
-  "max/13a.jpg": "/video/max-13a.mp4",
-  "eugene/1a.jpg": "/video/eugene-1a.mp4",
-  "eugene/7a.jpg": "/video/eugene-7a.mp4",
-  "eugene/13a.jpg": "/video/eugene-13a.mp4",
-  "daria/1a.jpg": "/video/daria-1a.mp4",
-  "daria/7a.jpg": "/video/daria-7a.mp4",
-  "darya/1a.jpg": "/video/darya-1a.mp4",
-  "mila/1a.jpg": "/video/mila-1a.mp4",
-  "mila/7a.jpg": "/video/mila-7a.mp4",
-  "mila/13a.jpg": "/video/mila-13a.mp4",
+  "max/1a.jpg": "max-1a.mp4",
+  "max/7a.jpg": "max-7a.mp4",
+  "max/13a.jpg": "max-13a.mp4",
+  "eugene/1a.jpg": "eugene-1a.mp4",
+  "eugene/7a.jpg": "eugene-7a.mp4",
+  "eugene/13a.jpg": "eugene-13a.mp4",
+  "daria/1a.jpg": "daria-1a.mp4",
+  "daria/7a.jpg": "daria-7a.mp4",
+  "darya/1a.jpg": "darya-1a.mp4",
+  "mila/1a.jpg": "mila-1a.mp4",
+  "mila/7a.jpg": "mila-7a.mp4",
+  "mila/13a.jpg": "mila-13a.mp4",
 };
 
 type Work = { img: string; artistIdx: number; video?: string; key: string };
@@ -165,7 +176,13 @@ const WORKS: Work[] = (() => {
     const idx = WORK_ARTIST_INDEX[slug];
     if (idx === undefined) continue; // unmapped folder (e.g. guest/)
     const key = `${slug}/${parts[parts.length - 1]}`; // e.g. "max/1.jpg"
-    byArtist[idx].push({ img: url, artistIdx: idx, video: WORK_VIDEOS[key], key });
+    const videoFile = WORK_VIDEOS[key];
+    byArtist[idx].push({
+      img: url,
+      artistIdx: idx,
+      video: videoFile ? VIDEO_BY_FILE[videoFile] : undefined,
+      key,
+    });
   }
   // Interleave round-robin so consecutive cards aren't the same artist.
   const out: Work[] = [];
