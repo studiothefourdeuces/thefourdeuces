@@ -3668,6 +3668,22 @@ export default function App() {
                 : "notfound";
   const isHome = page === "home";
 
+  // Client-side navigation doesn't reload the document, so keep the tab title
+  // in sync with the route (mirrors the per-route titles baked into the
+  // prerendered HTML in vite.config.ts).
+  useEffect(() => {
+    const titles: Record<string, string> = {
+      home: "The Four Deuces - Tattoo Studio & Artspace",
+      book: "Book a Tattoo Appointment | The Four Deuces Amsterdam",
+      artists: "Our Tattoo Artists | The Four Deuces Amsterdam",
+      faq: "Tattoo FAQ | The Four Deuces Amsterdam",
+      contact: "Contact | The Four Deuces Tattoo Studio Amsterdam",
+      terms: "Terms & Privacy | The Four Deuces",
+      notfound: "Page not found | The Four Deuces",
+    };
+    document.title = titles[page] ?? titles.home;
+  }, [page]);
+
   const openProfile = (i: number) => {
     setActiveArtist(i);
     smoothScrollToId("artists", 950);
