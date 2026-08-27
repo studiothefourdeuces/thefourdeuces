@@ -3,6 +3,7 @@ import {
   useEffect,
   useRef,
   useState,
+  type CSSProperties,
   type FormEvent,
   type ReactNode,
 } from "react";
@@ -123,7 +124,28 @@ const WORK_ARTIST_INDEX: Record<string, number> = {
   selcuk: 6,
 };
 
-type Work = { img: string; artistIdx: number };
+// Optional looping video for a work, hosted OFF the repo (e.g. Cloudflare R2 /
+// Stream) so the build stays small. Key = "<artistFolder>/<filename>.jpg" — the
+// same path as the image, which stays the poster. The video only loads when the
+// work becomes the centre card of the carousel or is opened in the lightbox, so
+// it never affects initial page load. Add entries here once the files exist:
+//   "max/1.jpg": "https://media.thefourdeuces.nl/max-1.mp4",
+const WORK_VIDEOS: Record<string, string> = {
+  "max/1a.jpg": "/video/max-1a.mp4",
+  "max/7a.jpg": "/video/max-7a.mp4",
+  "max/13a.jpg": "/video/max-13a.mp4",
+  "eugene/1a.jpg": "/video/eugene-1a.mp4",
+  "eugene/7a.jpg": "/video/eugene-7a.mp4",
+  "eugene/13a.jpg": "/video/eugene-13a.mp4",
+  "daria/1a.jpg": "/video/daria-1a.mp4",
+  "daria/7a.jpg": "/video/daria-7a.mp4",
+  "darya/1a.jpg": "/video/darya-1a.mp4",
+  "mila/1a.jpg": "/video/mila-1a.mp4",
+  "mila/7a.jpg": "/video/mila-7a.mp4",
+  "mila/13a.jpg": "/video/mila-13a.mp4",
+};
+
+type Work = { img: string; artistIdx: number; video?: string; key: string };
 
 // Natural numeric sort of filenames so "2.jpg" comes before "10.jpg".
 const naturalKey = (path: string) => {
@@ -142,7 +164,8 @@ const WORKS: Work[] = (() => {
     const slug = (parts[parts.length - 2] || "").toLowerCase(); // folder name
     const idx = WORK_ARTIST_INDEX[slug];
     if (idx === undefined) continue; // unmapped folder (e.g. guest/)
-    byArtist[idx].push({ img: url, artistIdx: idx });
+    const key = `${slug}/${parts[parts.length - 1]}`; // e.g. "max/1.jpg"
+    byArtist[idx].push({ img: url, artistIdx: idx, video: WORK_VIDEOS[key], key });
   }
   // Interleave round-robin so consecutive cards aren't the same artist.
   const out: Work[] = [];
@@ -152,10 +175,65 @@ const WORKS: Work[] = (() => {
   return out;
 })();
 
-// Every work grouped by its artist (used by the mobile works lightbox).
-const WORKS_BY_ARTIST: string[][] = ARTISTS.map((_, i) =>
-  WORKS.filter((w) => w.artistIdx === i).map((w) => w.img),
+// Every work grouped by its artist (used by the works grid + lightbox).
+const WORKS_BY_ARTIST: Work[][] = ARTISTS.map((_, i) =>
+  WORKS.filter((w) => w.artistIdx === i),
 );
+
+const WORK_BY_KEY = new Map(WORKS.map((w) => [w.key, w]));
+
+// Spread the video-works evenly among the photos rather than letting them
+// cluster (used by both carousels so photos and videos always alternate).
+function interleaveVideos(list: Work[], everyN: number): Work[] {
+  const vids = list.filter((w) => w.video);
+  const pics = list.filter((w) => !w.video);
+  if (!vids.length) return list;
+  const out: Work[] = [];
+  let vi = 0;
+  pics.forEach((p, i) => {
+    out.push(p);
+    if ((i + 1) % everyN === 0 && vi < vids.length) out.push(vids[vi++]);
+  });
+  while (vi < vids.length) out.push(vids[vi++]); // leftovers (shouldn't happen)
+  return out;
+}
+
+// Desktop carousel: all works, videos spread evenly across the whole set so
+// they don't bunch up (and the looping carousel has no long video-less gap).
+const CAROUSEL_WORKS: Work[] = (() => {
+  const nv = WORKS.filter((w) => w.video).length;
+  const np = WORKS.length - nv;
+  return interleaveVideos(WORKS, nv ? Math.max(1, Math.floor(np / nv)) : 1);
+})();
+
+// The specific videos to feature in the mobile hero coverflow (by work key).
+const HERO_VIDEO_KEYS = [
+  "daria/7a.jpg", // daria2
+  "darya/1a.jpg", // darya
+  "max/7a.jpg", // max3
+  "mila/1a.jpg", // mila
+  "eugene/1a.jpg", // eugene
+];
+
+// Mobile hero coverflow: the curated hero videos interleaved with photos (video
+// on every other card). Feature gianluca's 3rd work rather than the 1st.
+const HERO_SLIDES: Work[] = (() => {
+  const heroVids = HERO_VIDEO_KEYS.map((k) => WORK_BY_KEY.get(k)).filter(
+    (w): w is Work => Boolean(w),
+  );
+  const swap: Record<string, string> = { "gianluca/1.jpg": "gianluca/3.jpg" };
+  const pics = WORKS.filter((w) => !w.video).map(
+    (w) => WORK_BY_KEY.get(swap[w.key]) ?? w,
+  );
+  const out: Work[] = [];
+  let vi = 0;
+  let pi = 0;
+  for (let k = 0; k < 12; k++) {
+    if (k % 2 === 1 && vi < heroVids.length) out.push(heroVids[vi++]);
+    else if (pics.length) out.push(pics[pi++ % pics.length]);
+  }
+  return out;
+})();
 
 const TICKER =
   "Follow @the.four.deuces on Instagram — Fresh ink, flash drops, and behind-the-chair moments — Tap through to see our latest work — ";
@@ -556,16 +634,23 @@ function Carousel({
 }: {
   onOpenProfile: (artistIdx: number) => void;
 }) {
-  const items = WORKS;
+  const items = CAROUSEL_WORKS;
   const N = items.length;
   const cardRefs = useRef<Array<HTMLDivElement | null>>([]);
   const wrapRef = useRef<HTMLDivElement>(null);
   const openRef = useRef(onOpenProfile);
   openRef.current = onOpenProfile;
+  // Which card is currently centred — only that one plays its video (if any).
+  const [center, setCenter] = useState(0);
+  const centerRef = useRef(0);
 
   useEffect(() => {
     const wrap = wrapRef.current;
     if (!wrap) return;
+
+    // Only bother tracking the centre (a per-card re-render) if some work
+    // actually has a video to play there.
+    const anyVideo = items.some((it) => it.video);
 
     const DRIFT = 0.00045; // progress units / ms — the standard auto-scroll speed
     const GLIDE = DRIFT * 8; // click-to-centre glides at 8× the drift speed
@@ -621,6 +706,15 @@ function Carousel({
       const sizeChanged = cardW !== lastCardW;
       if (sizeChanged) lastCardW = cardW;
       const cardH = Math.round(cardW * 0.72);
+
+      // Track the centred card so React can mount its video (and only its).
+      if (anyVideo) {
+        const c = (((Math.round(progress) % N) + N) % N);
+        if (c !== centerRef.current) {
+          centerRef.current = c;
+          setCenter(c);
+        }
+      }
 
       for (let i = 0; i < N; i++) {
         const el = cardRefs.current[i];
@@ -750,6 +844,13 @@ function Carousel({
               draggable={false}
               className="pointer-events-none h-full w-full select-none object-cover grayscale"
             />
+            {i === center && a.video && (
+              <LazyVideo
+                src={a.video}
+                poster={a.img}
+                className="pointer-events-none absolute inset-0 h-full w-full select-none object-cover grayscale"
+              />
+            )}
           </div>
         ))}
       </div>
@@ -767,7 +868,7 @@ function Smooth3DSlideshow({
 }: {
   onOpenProfile: (artistIdx: number) => void;
 }) {
-  const slides = WORKS.slice(0, 12);
+  const slides = HERO_SLIDES;
   const n = slides.length;
   const [active, setActive] = useState(0);
   // Size from the viewport up-front so the first paint is already correct —
@@ -947,6 +1048,21 @@ function Smooth3DSlideshow({
                   userSelect: "none",
                 }}
               />
+              {isActive && slide.video && (
+                <LazyVideo
+                  src={slide.video}
+                  poster={slide.img}
+                  className="grayscale"
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    display: "block",
+                  }}
+                />
+              )}
               <div
                 style={{
                   position: "absolute",
@@ -1768,6 +1884,52 @@ function FadeImg({
   );
 }
 
+/* A muted, looping work video. It's mounted only while the work is actually on
+   show (the carousel's centre card, or the lightbox's current slide), so the
+   file never loads until then — the still image acts as the poster meanwhile.
+   Hosted off-repo (Cloudflare R2 / Stream); see WORK_VIDEOS. */
+function LazyVideo({
+  src,
+  poster,
+  className = "",
+  style,
+  play = true,
+}: {
+  src: string;
+  poster?: string;
+  className?: string;
+  style?: CSSProperties;
+  play?: boolean;
+}) {
+  const ref = useRef<HTMLVideoElement>(null);
+  useEffect(() => {
+    const v = ref.current;
+    if (!v) return;
+    if (play) {
+      const p = v.play();
+      if (p && typeof p.catch === "function") p.catch(() => {});
+    } else {
+      v.pause();
+    }
+  }, [play, src]);
+  return (
+    <video
+      ref={ref}
+      src={src}
+      poster={poster}
+      muted
+      loop
+      playsInline
+      autoPlay={play}
+      preload="auto"
+      disablePictureInPicture
+      draggable={false}
+      className={className}
+      style={style}
+    />
+  );
+}
+
 /* Full-screen, swipeable gallery of a single artist's works. Opened by tapping
    an artist's photo (primarily on mobile). Uses native horizontal scroll-snap
    so swiping feels native and needs no drag maths. */
@@ -1894,17 +2056,25 @@ function WorksLightbox({
             onScroll={onScroll}
             className="flex flex-1 snap-x snap-mandatory overflow-y-hidden overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
-            {works.map((src, i) => (
+            {works.map((w, i) => (
               <div
                 key={i}
                 className="flex h-full w-full shrink-0 snap-center items-center justify-center px-4 pb-4"
               >
-                <FadeImg
-                  src={src}
-                  alt={`${artist.name} — work ${i + 1}`}
-                  draggable={false}
-                  className="max-h-full max-w-full rounded-2xl object-contain"
-                />
+                {w.video && i === idx ? (
+                  <LazyVideo
+                    src={w.video}
+                    poster={w.img}
+                    className="max-h-full max-w-full rounded-2xl object-contain"
+                  />
+                ) : (
+                  <FadeImg
+                    src={w.img}
+                    alt={`${artist.name} — work ${i + 1}`}
+                    draggable={false}
+                    className="max-h-full max-w-full rounded-2xl object-contain"
+                  />
+                )}
               </div>
             ))}
           </div>
@@ -2050,7 +2220,7 @@ function ArtistShowcase({
 /* styles, bio and a grid of up to 18 works.                                  */
 /* -------------------------------------------------------------------------- */
 
-const MAX_PORTFOLIO = 18;
+const MAX_PORTFOLIO = 21;
 
 function ArtistsPage({
   active,
@@ -2184,7 +2354,7 @@ function ArtistsPage({
           </h2>
           {works.length > 0 ? (
             <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4">
-              {works.map((src, i) => {
+              {works.map((w, i) => {
                 const eager = isMobile && i < 2;
                 return (
                   <Reveal
@@ -2199,13 +2369,21 @@ function ArtistsPage({
                       data-cursor="pointer"
                       className="group relative block aspect-square w-full overflow-hidden rounded-xl ring-1 ring-white/10 outline-none"
                     >
-                      <FadeImg
-                        src={src}
-                        alt={`${artist.name} — work ${i + 1}`}
-                        draggable={false}
-                        loading={eager ? "eager" : "lazy"}
-                        className="h-full w-full object-cover group-hover:scale-105"
-                      />
+                      {w.video ? (
+                        <LazyVideo
+                          src={w.video}
+                          poster={w.img}
+                          className="h-full w-full object-cover group-hover:scale-105"
+                        />
+                      ) : (
+                        <FadeImg
+                          src={w.img}
+                          alt={`${artist.name} — work ${i + 1}`}
+                          draggable={false}
+                          loading={eager ? "eager" : "lazy"}
+                          className="h-full w-full object-cover group-hover:scale-105"
+                        />
+                      )}
                     </button>
                   </Reveal>
                 );
