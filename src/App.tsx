@@ -1467,7 +1467,7 @@ function LeadForm({
           transition:
             "transform 0.5s cubic-bezier(0.22,1,0.36,1), filter 0.5s cubic-bezier(0.22,1,0.36,1), opacity 0.5s cubic-bezier(0.22,1,0.36,1)",
         }}
-        className="pointer-events-none absolute left-1/2 top-[18%] w-full px-6 text-center font-serif text-[2rem] leading-[1.15] tracking-tight md:top-[calc(50%-150px)] md:text-[2.8rem]"
+        className="pointer-events-none absolute left-1/2 top-[14%] w-full px-6 text-center font-serif text-[2rem] leading-[1.15] tracking-tight md:top-[calc(50%-150px)] md:text-[2.8rem]"
       >
         Ink With Intent.
         <br />
@@ -1477,7 +1477,7 @@ function LeadForm({
       {/* Icon + input — centred (shifted up on mobile so the taller works
           carousel has room below). */}
       <div
-        className="pointer-events-auto absolute left-1/2 top-[35%] md:top-1/2"
+        className="pointer-events-auto absolute left-1/2 top-[31%] md:top-1/2"
         style={{
           transform: engaged
             ? "translate(-50%, calc(-50% - 40px))"
@@ -1489,7 +1489,7 @@ function LeadForm({
       </div>
 
       {/* Button — anchored below the input (shifted up on mobile to match) */}
-      <div className="pointer-events-auto absolute left-1/2 top-[calc(35%+10px)] flex -translate-x-1/2 justify-center md:top-[calc(50%+52px)]">
+      <div className="pointer-events-auto absolute left-1/2 top-[calc(31%+10px)] flex -translate-x-1/2 justify-center md:top-[calc(50%+52px)]">
         {stepButton}
       </div>
     </div>
