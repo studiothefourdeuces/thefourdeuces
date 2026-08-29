@@ -7,6 +7,12 @@
       "runtimeArgs": ["run", "dev"],
       "port": 5173,
       "autoPort": true
+    },
+    {
+      "name": "portfolio",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["/Users/aerdt/Documents/macos-portfolio/server.mjs"],
+      "port": 4599
     }
   ]
 }

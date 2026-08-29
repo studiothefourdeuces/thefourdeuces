@@ -225,30 +225,28 @@ const CAROUSEL_WORKS: Work[] = (() => {
 
 // The specific videos to feature in the mobile hero coverflow (by work key).
 const HERO_VIDEO_KEYS = [
-  "daria/7a.jpg", // daria2
-  "darya/1a.jpg", // darya
-  "max/7a.jpg", // max3
-  "mila/1a.jpg", // mila
-  "eugene/1a.jpg", // eugene
+  "daria/7a.jpg", // daria-7a
+  "max/13a.jpg", // max-13a
+  "eugene/13a.jpg", // eugene-13a
+  "darya/1a.jpg", // darya-1a
+  "mila/7a.jpg", // mila-7a
 ];
 
-// Mobile hero coverflow: the curated hero videos interleaved with photos (video
-// on every other card). Feature gianluca's 3rd work rather than the 1st.
+// Mobile hero coverflow: strictly alternating photo/video, one photo per hero
+// video so the counts are equal. The mila photo slot shows gianluca's 3rd work.
 const HERO_SLIDES: Work[] = (() => {
   const heroVids = HERO_VIDEO_KEYS.map((k) => WORK_BY_KEY.get(k)).filter(
     (w): w is Work => Boolean(w),
   );
-  const swap: Record<string, string> = { "gianluca/1.jpg": "gianluca/3.jpg" };
+  const swap: Record<string, string> = { "mila/1.jpg": "gianluca/3.jpg" };
   const pics = WORKS.filter((w) => !w.video).map(
     (w) => WORK_BY_KEY.get(swap[w.key]) ?? w,
   );
   const out: Work[] = [];
-  let vi = 0;
-  let pi = 0;
-  for (let k = 0; k < 12; k++) {
-    if (k % 2 === 1 && vi < heroVids.length) out.push(heroVids[vi++]);
-    else if (pics.length) out.push(pics[pi++ % pics.length]);
-  }
+  heroVids.forEach((v, i) => {
+    if (pics.length) out.push(pics[i % pics.length]); // one photo…
+    out.push(v); // …then one video
+  });
   return out;
 })();
 
