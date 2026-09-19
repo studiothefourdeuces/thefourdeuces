@@ -1,15 +1,23 @@
 import {
+  createContext,
   useCallback,
+  useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type CSSProperties,
   type FormEvent,
   type ReactNode,
 } from "react";
-import { AnimatePresence, motion, useAnimationControls } from "motion/react";
 import {
-  Euro,
+  AnimatePresence,
+  motion,
+  useAnimationControls,
+  useAnimationFrame,
+  useMotionValue,
+} from "motion/react";
+import {
   Check,
   Cookie,
   Instagram,
@@ -17,7 +25,9 @@ import {
   ChevronDown,
   Download,
   Smartphone,
+  Euro,
   X,
+  Globe,
 } from "lucide-react";
 import dariaImg from "./img/artists/daria.jpg";
 import eugeneImg from "./img/artists/eugene.jpg";
@@ -29,8 +39,47 @@ import daryaImg from "./img/artists/darya.jpg";
 import tattoolandLogo from "./img/partners/tattooland.png";
 import killerinkLogo from "./img/partners/killerink.png";
 import dashaLogo from "./img/partners/tattoodasha.png";
-import { FAQ_ITEMS } from "./faq";
+import { getFaq } from "./faq";
+import {
+  STYLES,
+  stylePathForToken,
+  getAbout,
+  getStyles,
+  getArtistText,
+  localizeRegion,
+} from "./content";
+import {
+  initAnalytics,
+  grantConsent,
+  denyConsent,
+  trackPageview,
+  trackLead,
+  captureAttribution,
+  getAttribution,
+} from "./analytics";
 import AsciiFire from "./AsciiFire";
+import {
+  LANGS,
+  DEFAULT_LANG,
+  splitLangPath,
+  langPath,
+  htmlLangFor,
+  t as translate,
+  type Lang,
+} from "./i18n";
+
+// Current UI language, provided at the app root and read by any component.
+const LangContext = createContext<Lang>(DEFAULT_LANG);
+const useLang = () => useContext(LangContext);
+// Returns a translate function bound to the current language: t("nav.home").
+const useT = () => {
+  const lang = useLang();
+  return (key: string) => translate(lang, key);
+};
+
+// Uppercase only the first letter (unlike CSS `capitalize`, which title-cases
+// every word — wrong for multi-word phrases like "на сеанс").
+const capFirst = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
 
 /* -------------------------------------------------------------------------- */
 /* DATA                                                                       */
@@ -66,7 +115,7 @@ const ARTISTS: Artist[] = [
     name: "Daria",
     img: dariaImg,
     ig: "https://www.instagram.com/tattoo.daria/",
-    role: "Watercolour, Fine Line, Abstract",
+    role: "Fine Line, Minimal, Botanical",
     bio: "Soft watercolour washes, delicate fine-line work, and loose abstract compositions that feel painted onto the skin.",
     since: 2019,
   },
@@ -82,15 +131,15 @@ const ARTISTS: Artist[] = [
     name: "Mila",
     img: milaImg,
     ig: "https://www.instagram.com/mila.delger/",
-    role: "Freehand, Fine Line, Abstract",
-    bio: "Freehand pieces drawn straight onto the skin — fine-line and abstract shapes made to flow with the body.",
+    role: "Freehand, Fluid Line, Abstract",
+    bio: "Freehand pieces drawn straight onto the skin — fluid-line and abstract shapes made to flow with the body.",
     since: 2018,
   },
   {
     name: "Gianluca",
     img: gianlucaImg,
     ig: "https://www.instagram.com/gianluca_tattooer/",
-    role: "Geometric & ornamental blackwork",
+    role: "Ornamental, Blackwork, Geometric",
     bio: "Geometric, optical and ornamental blackwork with elements of abstract calligraphy, dotwork, and engraving-inspired detail.",
     since: 2023,
   },
@@ -253,14 +302,42 @@ const HERO_SLIDES: Work[] = (() => {
 const TICKER =
   "Follow @the.four.deuces on Instagram — Fresh ink, flash drops, and behind-the-chair moments — Tap through to see our latest work — ";
 
-const MENU: { label: string; target: string }[] = [
-  { label: "Home", target: "top" },
-  { label: "Artists", target: "/artists" },
-  { label: "Reviews", target: "#reviews" },
-  { label: "Sponsors", target: "#sponsors" },
-  { label: "Contact", target: "/contact" },
-  { label: "FAQ", target: "/faq" },
+const MENU: { tkey: string; target: string }[] = [
+  { tkey: "nav.home", target: "top" },
+  { tkey: "nav.artists", target: "/artists" },
+  { tkey: "nav.reviews", target: "#reviews" },
+  { tkey: "nav.about", target: "/about" },
+  { tkey: "nav.faq", target: "/faq" },
 ];
+
+// Full native language names (used by the in-menu mobile language picker).
+const LANG_NAMES: Record<string, string> = {
+  en: "English",
+  nl: "Nederlands",
+  de: "Deutsch",
+  ua: "Українська",
+};
+
+// Shared pill button — one size & shape for every pill on the site (based on
+// the language menu). `solid` picks the filled (primary) vs outline (secondary)
+// colour; width comes from the surrounding layout (stretches in a column, auto
+// in a row). Slightly tighter on desktop.
+const PILL = (solid: boolean) =>
+  `inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-full border px-6 py-3.5 text-[15px] transition-colors md:w-auto md:py-3 md:text-[14px] ${
+    solid
+      ? "border-white bg-white font-medium text-black hover:bg-white/90"
+      : "border-white/25 text-white/85 hover:border-white/50 hover:bg-white/5"
+  }`;
+
+// Staggered reveal for the language panel items (mirrors the burger menu).
+const LANG_ITEM = {
+  hidden: { opacity: 0, y: 20 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] as const },
+  },
+};
 
 type ChatMsg = { from: "me" | "them"; text: string; timestamp?: string };
 type ChatThread = { handle: string; messages: ChatMsg[] };
@@ -528,6 +605,58 @@ const fmtBudget = (raw: string) => {
   return d ? Number(d).toLocaleString("en-US") : "";
 };
 
+// International dialling code → ISO-3166 country (for the flag emoji shown when a
+// WhatsApp number is typed with its country code). Shared codes (+1, +7) map to
+// the most common country. Order doesn't matter — the longest matching prefix
+// wins at lookup time.
+const DIAL_CODES: Record<string, string> = {
+  "1": "US", "7": "RU", "20": "EG", "27": "ZA", "30": "GR", "31": "NL",
+  "32": "BE", "33": "FR", "34": "ES", "36": "HU", "39": "IT", "40": "RO",
+  "41": "CH", "43": "AT", "44": "GB", "45": "DK", "46": "SE", "47": "NO",
+  "48": "PL", "49": "DE", "51": "PE", "52": "MX", "53": "CU", "54": "AR",
+  "55": "BR", "56": "CL", "57": "CO", "58": "VE", "60": "MY", "61": "AU",
+  "62": "ID", "63": "PH", "64": "NZ", "65": "SG", "66": "TH", "81": "JP",
+  "82": "KR", "84": "VN", "86": "CN", "90": "TR", "91": "IN", "92": "PK",
+  "93": "AF", "94": "LK", "95": "MM", "98": "IR", "212": "MA", "213": "DZ",
+  "216": "TN", "218": "LY", "220": "GM", "221": "SN", "233": "GH", "234": "NG",
+  "251": "ET", "254": "KE", "255": "TZ", "256": "UG", "260": "ZM", "263": "ZW",
+  "351": "PT", "352": "LU", "353": "IE", "354": "IS", "355": "AL", "356": "MT",
+  "357": "CY", "358": "FI", "359": "BG", "370": "LT", "371": "LV", "372": "EE",
+  "373": "MD", "374": "AM", "375": "BY", "376": "AD", "377": "MC", "378": "SM",
+  "380": "UA", "381": "RS", "382": "ME", "383": "XK", "385": "HR", "386": "SI",
+  "387": "BA", "389": "MK", "420": "CZ", "421": "SK", "423": "LI", "480": "PL",
+  "500": "FK", "501": "BZ", "502": "GT", "503": "SV", "504": "HN", "505": "NI",
+  "506": "CR", "507": "PA", "509": "HT", "590": "GP", "591": "BO", "593": "EC",
+  "595": "PY", "598": "UY", "599": "CW", "670": "TL", "673": "BN", "674": "NR",
+  "675": "PG", "676": "TO", "679": "FJ", "852": "HK", "853": "MO", "855": "KH",
+  "856": "LA", "880": "BD", "886": "TW", "960": "MV", "961": "LB", "962": "JO",
+  "963": "SY", "964": "IQ", "965": "KW", "966": "SA", "967": "YE", "968": "OM",
+  "970": "PS", "971": "AE", "972": "IL", "973": "BH", "974": "QA", "975": "BT",
+  "976": "MN", "977": "NP", "992": "TJ", "993": "TM", "994": "AZ", "995": "GE",
+  "996": "KG", "998": "UZ",
+};
+
+// Dialling codes ordered longest-first so a lookup matches the most specific
+// prefix (e.g. +380 → UA, not +3 → nothing).
+const DIAL_CODES_BY_LEN = Object.keys(DIAL_CODES).sort(
+  (a, b) => b.length - a.length,
+);
+
+// A country's ISO-2 code → its flag emoji (regional-indicator letters).
+const flagEmoji = (iso: string) =>
+  String.fromCodePoint(
+    ...[...iso.toUpperCase()].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65),
+  );
+
+// Flag emoji for a typed WhatsApp number — only once a country code (leading +)
+// is present and recognised; otherwise "".
+const flagForWhatsapp = (whatsapp: string) => {
+  if (!/^\s*\+/.test(whatsapp)) return "";
+  const digits = whatsapp.replace(/\D/g, "");
+  const code = DIAL_CODES_BY_LEN.find((c) => digits.startsWith(c));
+  return code ? flagEmoji(DIAL_CODES[code]) : "";
+};
+
 /* -------------------------------------------------------------------------- */
 /* CUSTOM CURSOR (metallic arrow that follows the pointer)                    */
 /* -------------------------------------------------------------------------- */
@@ -636,6 +765,187 @@ function Reveal({
       }}
     >
       {children}
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* TEXT RING — a phrase repeated around a slowly spinning circle, with the      */
+/* card's own content sitting (border-free) in the middle.                     */
+/* -------------------------------------------------------------------------- */
+
+// Per-glyph widths via a canvas, so the phrase can be spread evenly around the
+// ring. Falls back to rough estimates when there's no document (SSR/build).
+function measureGlyphWidths(
+  letters: string[],
+  fontSizePx: number,
+  fontWeight: string,
+  fontFamily: string,
+): number[] {
+  if (letters.length === 0) return [];
+  if (typeof document === "undefined")
+    return letters.map((l) => (l === " " ? fontSizePx * 0.35 : fontSizePx * 0.55));
+  const ctx = document.createElement("canvas").getContext("2d");
+  if (!ctx)
+    return letters.map((l) => (l === " " ? fontSizePx * 0.35 : fontSizePx * 0.55));
+  ctx.font = `${fontWeight} ${fontSizePx}px ${fontFamily}`;
+  return letters.map((l) => ctx.measureText(l === " " ? " " : l).width);
+}
+
+// Build the letter list (phrase + separator, repeated to fill the circle) and
+// the angle for each letter so the text covers the circumference evenly.
+function buildRingText(
+  phrase: string,
+  separator: string,
+  circumference: number,
+  fontSizePx: number,
+  fontWeight: string,
+  fontFamily: string,
+): { letters: string[]; angles: number[]; spacing: number } {
+  const segment = `${phrase} ${separator} `;
+  const segLetters = Array.from(segment);
+  if (!segLetters.length || circumference <= 0)
+    return { letters: [], angles: [], spacing: 0 };
+
+  const segWidth = measureGlyphWidths(
+    segLetters,
+    fontSizePx,
+    fontWeight,
+    fontFamily,
+  ).reduce((a, b) => a + b, 0);
+
+  let repeats = Math.max(1, Math.round(circumference / Math.max(segWidth, 1)));
+  let letters = Array.from(segment.repeat(repeats));
+  let widths = measureGlyphWidths(letters, fontSizePx, fontWeight, fontFamily);
+  let sum = widths.reduce((a, b) => a + b, 0);
+  // Shrink until at least a hair of positive spacing remains.
+  while (repeats > 1 && circumference - sum < 0) {
+    repeats -= 1;
+    letters = Array.from(segment.repeat(repeats));
+    widths = measureGlyphWidths(letters, fontSizePx, fontWeight, fontFamily);
+    sum = widths.reduce((a, b) => a + b, 0);
+  }
+  const spacing = Math.max(0, (circumference - sum) / letters.length);
+
+  const angles: number[] = [];
+  let cursor = 0;
+  for (let i = 0; i < letters.length; i += 1) {
+    const w = widths[i] ?? 0;
+    angles.push(((cursor + w / 2) / circumference) * 360);
+    cursor += w + spacing;
+  }
+  return { letters, angles, spacing };
+}
+
+function TextRing({
+  text,
+  diameter = 240,
+  fontSizePx = 12,
+  spinSeconds = 28,
+  reverse = false,
+  color = "rgba(255,255,255,0.45)",
+  separator = "✦",
+  className = "",
+  children,
+}: {
+  text: string;
+  diameter?: number;
+  fontSizePx?: number;
+  spinSeconds?: number;
+  reverse?: boolean;
+  color?: string;
+  separator?: string;
+  className?: string;
+  children?: ReactNode;
+}) {
+  const rotation = useMotionValue(0);
+  const radius = diameter / 2 - fontSizePx * 0.9;
+  const circumference = 2 * Math.PI * radius;
+  const phrase = text.trim().toUpperCase();
+
+  const { letters, angles, spacing } = useMemo(
+    () =>
+      buildRingText(
+        phrase,
+        separator,
+        circumference,
+        fontSizePx,
+        "600",
+        "ui-sans-serif, system-ui, sans-serif",
+      ),
+    [phrase, separator, circumference, fontSizePx],
+  );
+
+  useAnimationFrame((_, delta) => {
+    const dps = 360 / spinSeconds;
+    const dir = reverse ? -1 : 1;
+    let next = (rotation.get() + dir * dps * (Math.min(delta, 64) / 1000)) % 360;
+    if (next < 0) next += 360;
+    rotation.set(next);
+  });
+
+  return (
+    <div
+      className={className}
+      style={{
+        position: "relative",
+        width: diameter,
+        height: diameter,
+        flexShrink: 0,
+      }}
+    >
+      <motion.div
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          inset: 0,
+          rotate: rotation,
+          color,
+          fontWeight: 600,
+          fontSize: fontSizePx,
+          letterSpacing: `${spacing}px`,
+          textTransform: "uppercase",
+          pointerEvents: "none",
+        }}
+      >
+        {letters.map((letter, i) => {
+          const angle = angles[i] ?? 0;
+          const rad = (angle * Math.PI) / 180;
+          const x = radius * Math.cos(rad);
+          const y = radius * Math.sin(rad);
+          const t = `translate(-50%, -50%) translate(${x}px, ${y}px) rotate(${angle + 90}deg)`;
+          return (
+            <span
+              key={`${letter}-${i}`}
+              style={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                display: "inline-block",
+                lineHeight: 1,
+                transform: t,
+                WebkitTransform: t,
+              }}
+            >
+              {letter === " " ? " " : letter}
+            </span>
+          );
+        })}
+      </motion.div>
+
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          textAlign: "center",
+          padding: diameter * 0.16,
+        }}
+      >
+        {children}
+      </div>
     </div>
   );
 }
@@ -1103,73 +1413,73 @@ function Smooth3DSlideshow({
 /* field is active, and the input shakes on invalid submit.                   */
 /* -------------------------------------------------------------------------- */
 
-type Step = "idle" | "budget" | "instagram" | "done";
-
 // Lead endpoint — the Cloudflare Worker URL. Set VITE_FORM_ENDPOINT at build
 // time. If unset, the form still works locally; it just doesn't ship the lead.
 const FORM_ENDPOINT = import.meta.env.VITE_FORM_ENDPOINT as string | undefined;
 
-type LeadContext = { source: string; artist?: string; bodyPart?: string };
+type BookingType = "booking" | "consultation";
+type LeadContext = {
+  type: BookingType;
+  source: string;
+  artist?: string;
+  bodyPart?: string;
+};
 
-// The lead form. Reused in two places so the site keeps one shared "book"
-// element: `mode="hero"` renders the centred hero overlay; `mode="modal"`
-// renders the exact same field + button flow inside a full-screen booking
-// overlay (opened from the Book page, an artist, or a body area).
-function LeadForm({
-  mode,
+// The fields a booking can step through (a consultation only asks WhatsApp).
+type BookingField = "whatsapp" | "budget";
+
+// Stepped booking / consultation flow (one big field at a time).
+//   consultation → whatsapp
+//   booking      → budget → whatsapp
+// The artist (from /artists) and placement (from /book) come from context.
+function BookingForm({
   context,
   onClose,
 }: {
-  mode: "hero" | "modal";
   context: LeadContext;
-  onClose?: () => void;
+  onClose: () => void;
 }) {
-  const [step, setStep] = useState<Step>("idle");
+  const t = useT();
+  const isConsult = context.type === "consultation";
+  const steps: BookingField[] = isConsult
+    ? ["whatsapp"]
+    : ["budget", "whatsapp"];
+
+  const [stepIdx, setStepIdx] = useState(0);
   const [budget, setBudget] = useState("");
-  const [instagram, setInstagram] = useState("");
-  const [idleIdx, setIdleIdx] = useState(0);
+  const [whatsapp, setWhatsapp] = useState("");
+  const artist = context.artist || "";
+  const bodyPart = context.bodyPart || "";
   const [focused, setFocused] = useState(false);
-  const [loaded, setLoaded] = useState(mode === "modal");
-  const [hp, setHp] = useState(""); // honeypot — real users leave it empty
+  const [hp, setHp] = useState("");
+  const [sent, setSent] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const shake = useAnimationControls();
 
-  // First-load reveal (hero only) — fade + rise the whole hero in once, on
-  // mount. A short timer lets the hidden state paint so the transition runs.
-  useEffect(() => {
-    if (mode !== "hero") return;
-    const id = setTimeout(() => setLoaded(true), 40);
-    return () => clearTimeout(id);
-  }, [mode]);
+  const cur = steps[stepIdx];
+  const isLast = stepIdx === steps.length - 1;
+  // Require a country code (leading +) and a plausible length.
+  const waDigits = whatsapp.replace(/\D/g, "");
+  const waValid = /^\s*\+/.test(whatsapp) && waDigits.length >= 8;
 
+  // Lock scroll + Escape.
   useEffect(() => {
-    if (step !== "idle") return;
-    const id = setInterval(() => setIdleIdx((v) => (v + 1) % 2), 2600);
-    return () => clearInterval(id);
-  }, [step]);
-
-  useEffect(() => {
-    if (step === "instagram") inputRef.current?.focus();
-  }, [step]);
-
-  // Modal: lock page scroll and close on Escape while open.
-  useEffect(() => {
-    if (mode !== "modal") return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose?.();
+      if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = prev;
       window.removeEventListener("keydown", onKey);
     };
-  }, [mode, onClose]);
+  }, [onClose]);
 
-  const igHandle = instagram.trim().replace(/^@+/, "");
-  const igValid = /^[a-zA-Z0-9._]{1,30}$/.test(igHandle);
-  const engaged = step === "budget" || step === "instagram";
+  // Focus the field on each step.
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, [cur]);
 
   const doShake = () =>
     shake.start({
@@ -1177,51 +1487,53 @@ function LeadForm({
       transition: { duration: 0.45, ease: "easeInOut" },
     });
 
-  const next = () => (budget ? setStep("instagram") : doShake());
-
-  // Fire-and-forget: show the success state immediately, ship the lead in the
-  // background. A failed request must never cost us the visitor's confirmation.
-  const sendLead = () => {
+  const send = () => {
+    trackLead({ source: context.source, value: Number(budget) || 0 });
     if (!FORM_ENDPOINT) return;
     fetch(FORM_ENDPOINT, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        budget,
-        instagram: igHandle,
-        hp,
+        type: context.type,
+        whatsapp: whatsapp.trim(),
+        budget: isConsult ? "" : budget,
+        artist: isConsult ? "" : artist,
+        bodyPart: isConsult ? "" : bodyPart,
         source: context.source,
-        artist: context.artist || "",
-        bodyPart: context.bodyPart || "",
+        // Ad attribution (gclid / UTM captured from the landing URL, if any).
+        ...(getAttribution() || {}),
+        hp,
       }),
     }).catch(() => {});
   };
 
-  const submit = () => {
-    if (!igValid) return doShake();
-    setStep("done");
-    sendLead();
+  const advance = () => {
+    if (cur === "whatsapp" && !waValid) return doShake();
+    if (isLast) {
+      setSent(true);
+      send();
+    } else {
+      setStepIdx((i) => i + 1);
+    }
   };
 
   const big =
-    "font-display font-normal text-[1.5rem] leading-none tracking-tight sm:text-[2.4rem] md:text-[4rem]";
+    "font-display font-normal text-[1.5rem] leading-none tracking-tight sm:text-[2.2rem] md:text-[3.2rem]";
 
-  const isIg = step === "instagram";
-  const value = isIg ? instagram : fmtBudget(budget);
-  const placeholder = isIg
-    ? "enter your instagram"
-    : step === "idle" && idleIdx === 1
-      ? "enter your instagram"
-      : "enter your budget";
-  const Icon = isIg || (step === "idle" && idleIdx === 1) ? Instagram : Euro;
+  // Current text field value + placeholder (budget / whatsapp).
+  const isBudget = cur === "budget";
+  const value = isBudget ? fmtBudget(budget) : whatsapp;
+  const placeholder = isBudget ? t("form.ph.budget") : t("form.ph.whatsapp");
+  const Icon = isBudget ? Euro : Smartphone;
+  const filled = !!value;
+  const waFlag = isBudget ? "" : flagForWhatsapp(whatsapp);
 
   const contextLabel = context.artist
-    ? `with ${context.artist}`
+    ? `${t("form.with")} ${context.artist}`
     : context.bodyPart
       ? context.bodyPart
       : null;
 
-  // ---- Shared inner pieces (identical in both modes) ----
   const honeypot = (
     <input
       type="text"
@@ -1238,211 +1550,213 @@ function LeadForm({
   const fieldGroup = (
     <motion.div animate={shake} className="flex items-center gap-3 md:gap-4">
       <span
-        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-black transition-colors duration-300 md:h-14 md:w-14 ${
-          engaged ? "bg-white" : "bg-white/30"
+        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors duration-300 md:h-14 md:w-14 ${
+          filled ? "bg-white text-black" : "bg-white/30 text-black"
         }`}
       >
-        <Icon className="h-5 w-5 md:h-6 md:w-6" strokeWidth={2.25} />
+        {waFlag ? (
+          <span className="text-[22px] leading-none md:text-[26px]">
+            {waFlag}
+          </span>
+        ) : (
+          <Icon className="h-5 w-5 md:h-6 md:w-6" strokeWidth={2.25} />
+        )}
       </span>
-      <div className="relative grid items-center" style={{ maxWidth: "80vw" }}>
-        {/* Invisible sizer — the field width tracks the text EXACTLY. */}
-        <span
-          aria-hidden
-          className={`${big} invisible col-start-1 row-start-1 whitespace-pre`}
-        >
-          {value || placeholder}
-        </span>
-        <input
-          ref={inputRef}
-          value={value}
-          type="text"
-          inputMode={isIg ? "text" : "numeric"}
-          placeholder={placeholder}
-          data-cursor="text"
-          onFocus={() => {
-            setFocused(true);
-            if (step === "idle") setStep("budget");
-          }}
-          onBlur={() => {
-            setFocused(false);
-            if (step === "budget" && !budget) setStep("idle");
-          }}
-          onChange={(e) =>
-            isIg
-              ? setInstagram(e.target.value.replace(/\s/g, "").slice(0, 31))
-              : setBudget(e.target.value.replace(/\D/g, "").slice(0, 5))
-          }
-          onKeyDown={(e) => {
-            if (e.key !== "Enter") return;
-            isIg ? submit() : next();
-          }}
-          size={1}
-          className={`${big} col-start-1 row-start-1 w-full min-w-0 bg-transparent text-left text-white outline-none placeholder:text-transparent ${value ? "caret-white" : "caret-transparent"}`}
-        />
-        {!value && (
-          <div
-            className={`${big} pointer-events-none absolute inset-0 flex items-center`}
+
+      {
+        <div className="relative grid items-center" style={{ maxWidth: "80vw" }}>
+          <span
+            aria-hidden
+            className={`${big} invisible col-start-1 row-start-1 whitespace-pre`}
           >
-            <span className="whitespace-pre text-white/30">{placeholder}</span>
-            {focused && (
-              <span
-                className="ml-[3px] w-[2px] shrink-0 bg-white"
-                style={{
-                  height: "0.82em",
-                  animation: "caretBlink 1.05s steps(1, end) infinite",
-                }}
-              />
+            {value || placeholder}
+          </span>
+          <input
+            ref={inputRef}
+            value={value}
+            type="text"
+            inputMode={isBudget ? "numeric" : "tel"}
+            placeholder={placeholder}
+            data-cursor="text"
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            onChange={(e) =>
+              isBudget
+                ? setBudget(e.target.value.replace(/\D/g, "").slice(0, 6))
+                : setWhatsapp(
+                    e.target.value.replace(/[^\d+\s()-]/g, "").slice(0, 24),
+                  )
+            }
+            onKeyDown={(e) => {
+              if (e.key === "Enter") advance();
+            }}
+            size={1}
+            className={`${big} col-start-1 row-start-1 w-full min-w-0 bg-transparent text-left text-white outline-none placeholder:text-transparent ${
+              value ? "caret-white" : "caret-transparent"
+            }`}
+          />
+          {!value && (
+            <div
+              className={`${big} pointer-events-none absolute inset-0 flex items-center`}
+            >
+              <span className="whitespace-pre text-white/30">{placeholder}</span>
+              {focused && (
+                <span
+                  className="ml-[3px] w-[2px] shrink-0 bg-white"
+                  style={{
+                    height: "0.82em",
+                    animation: "caretBlink 1.05s steps(1, end) infinite",
+                  }}
+                />
+              )}
+            </div>
+          )}
+        </div>
+      }
+    </motion.div>
+  );
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.25 }}
+      className="fixed inset-0 z-[100] flex flex-col bg-[#050505]"
+    >
+      <div className="flex items-center justify-between px-5 pb-3 pt-5">
+        <span className="font-serif text-[15px] tracking-tight text-white/60">
+          The Four <span className="italic">Deuces</span>
+        </span>
+        <button
+          onClick={onClose}
+          aria-label="Close"
+          data-cursor="pointer"
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 transition hover:bg-white/20"
+        >
+          <X className="h-5 w-5" />
+        </button>
+      </div>
+
+      <div className="flex flex-1 flex-col items-center justify-center px-6 pb-[12vh] text-center">
+        {honeypot}
+        {sent ? (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            className="flex flex-col items-center"
+          >
+            <span className="mb-6 flex h-12 w-12 items-center justify-center rounded-full bg-white text-black">
+              <Check className="h-6 w-6" strokeWidth={2.5} />
+            </span>
+            <h2 className="font-serif text-[2.4rem] leading-[1.05] md:text-[3.4rem]">
+              {isConsult ? (
+                <>
+                  {t("form.done.consult.a")}{" "}
+                  <span className="italic">{t("form.done.consult.b")}</span>
+                </>
+              ) : (
+                <>
+                  {t("form.done.booking.a")}{" "}
+                  <span className="italic">{t("form.done.booking.b")}</span>
+                </>
+              )}
+            </h2>
+            <p className="mt-3 max-w-sm text-[15px] leading-relaxed text-white/70">
+              {t("form.done.msg")}
+            </p>
+            <div className="mt-6 space-y-1 text-[13px]">
+              <div>
+                <span className="text-white/40">whatsapp</span>{" "}
+                <span className="text-white/90">{whatsapp.trim() || "—"}</span>
+              </div>
+              {!isConsult && (
+                <>
+                  <div>
+                    <span className="text-white/40">{t("form.lbl.budget")}</span>{" "}
+                    <span className="text-white/90">
+                      {budget ? "€" + fmtBudget(budget) : "—"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-white/40">{t("form.lbl.artist")}</span>{" "}
+                    <span className="text-white/90">{artist || "—"}</span>
+                  </div>
+                  {bodyPart && (
+                    <div>
+                      <span className="text-white/40">
+                        {t("form.lbl.placement")}
+                      </span>{" "}
+                      <span className="text-white/90">{bodyPart}</span>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </motion.div>
+        ) : (
+          <>
+            <div className="mb-10">
+              <h2 className="font-serif text-[2rem] leading-[1.1] tracking-tight md:text-[2.8rem]">
+                {isConsult ? (
+                  <>
+                    {t("form.consult.a")}{" "}
+                    <span className="italic">{t("form.consult.b")}</span>
+                  </>
+                ) : (
+                  <>
+                    {t("form.booking.a")}{" "}
+                    <span className="italic">{t("form.booking.b")}</span>
+                  </>
+                )}
+              </h2>
+              <p className="mt-3 text-[13px] uppercase tracking-[0.25em] text-white/40">
+                {isConsult
+                  ? t("form.consult.sub")
+                  : contextLabel ||
+                    `${t("form.step")} ${stepIdx + 1} ${t("form.of")} ${steps.length}`}
+              </p>
+            </div>
+            {fieldGroup}
+            {cur === "whatsapp" && (
+              <p className="mt-4 text-[12px] text-white/40">{t("form.hint")}</p>
             )}
-          </div>
+            <div className="mt-8 flex h-12 items-start justify-center">
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={advance}
+                data-cursor="pointer"
+                className={PILL(isLast)}
+              >
+                {isLast
+                  ? isConsult
+                    ? t("form.submit.consult")
+                    : t("form.submit.booking")
+                  : t("form.next")}
+              </button>
+            </div>
+          </>
         )}
       </div>
     </motion.div>
   );
+}
 
-  const stepButton = (
-    <AnimatePresence mode="wait">
-      {step === "budget" && (
-        <motion.button
-          key="next"
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 6 }}
-          transition={{ duration: 0.25 }}
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={next}
-          className="rounded-full bg-white/10 px-7 py-3 text-[14px] text-white/90 backdrop-blur transition hover:bg-white/20"
-        >
-          Okay, next
-        </motion.button>
-      )}
-      {step === "instagram" && (
-        <motion.button
-          key="submit"
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 6 }}
-          transition={{ duration: 0.25 }}
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={submit}
-          className="rounded-full bg-white px-8 py-3 text-[14px] font-medium text-black transition hover:bg-white/90"
-        >
-          Submit
-        </motion.button>
-      )}
-    </AnimatePresence>
-  );
-
-  const doneInner = (
-    <>
-      <span className="mb-6 flex h-12 w-12 items-center justify-center rounded-full bg-white text-black">
-        <Check className="h-6 w-6" strokeWidth={2.5} />
-      </span>
-      <h2 className="font-serif text-[2.4rem] leading-[1.05] md:text-[3.4rem]">
-        Submission <span className="italic">accepted.</span>
-      </h2>
-      <p className="mt-3 text-[15px] text-white/70">We'll be in touch shortly.</p>
-      <div className="mt-6 space-y-1 text-[13px]">
-        <div>
-          <span className="text-white/40">budget</span>{" "}
-          <span className="text-white/90">€{fmtBudget(budget) || "—"}</span>
-        </div>
-        <div>
-          <span className="text-white/40">instagram</span>{" "}
-          <span className="text-white/90">
-            {igHandle ? "@" + igHandle : "—"}
-          </span>
-        </div>
-        {contextLabel && (
-          <div>
-            <span className="text-white/40">
-              {context.artist ? "artist" : "placement"}
-            </span>{" "}
-            <span className="text-white/90">
-              {context.artist || context.bodyPart}
-            </span>
-          </div>
-        )}
-      </div>
-      <p className="mt-5 hidden max-w-sm text-[13px] leading-relaxed text-white/40 md:block">
-        We only use your Instagram to get in touch about your request. It isn't
-        stored anywhere and is deleted from our records as soon as we've
-        contacted you.
-      </p>
-    </>
-  );
-
-  // ---- MODAL MODE ----
-  if (mode === "modal") {
-    return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.25 }}
-        className="fixed inset-0 z-[100] flex flex-col bg-[#050505]"
-      >
-        <div className="flex items-center justify-between px-5 pb-3 pt-5">
-          <span className="font-serif text-[15px] tracking-tight text-white/60">
-            The Four <span className="italic">Deuces</span>
-          </span>
-          <button
-            onClick={onClose}
-            aria-label="Close"
-            data-cursor="pointer"
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 transition hover:bg-white/20"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        <div className="flex flex-1 flex-col items-center justify-center px-6 pb-[12vh] text-center">
-          {honeypot}
-          {step === "done" ? (
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-              className="flex flex-col items-center"
-            >
-              {doneInner}
-            </motion.div>
-          ) : (
-            <>
-              <div className="mb-10">
-                <h2 className="font-serif text-[2rem] leading-[1.1] tracking-tight md:text-[2.8rem]">
-                  Request a <span className="italic">booking</span>
-                </h2>
-                {contextLabel && (
-                  <p className="mt-3 text-[13px] uppercase tracking-[0.25em] text-white/40">
-                    {contextLabel}
-                  </p>
-                )}
-              </div>
-              {fieldGroup}
-              <div className="mt-8 flex h-12 items-start justify-center">
-                {stepButton}
-              </div>
-            </>
-          )}
-        </div>
-      </motion.div>
-    );
-  }
-
-  // ---- HERO MODE ----
-  if (step === "done") {
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-        className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-6 pb-[48vh] text-center md:pb-[26vh]"
-      >
-        {doneInner}
-      </motion.div>
-    );
-  }
-
+function Hero({ onNavigate }: { onNavigate: (path: string) => void }) {
+  const [loaded, setLoaded] = useState(false);
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    const id = setTimeout(() => setLoaded(true), 40);
+    return () => clearTimeout(id);
+  }, []);
+  useEffect(() => {
+    const id = setInterval(() => setIdx((v) => (v + 1) % 2), 2800);
+    return () => clearInterval(id);
+  }, []);
+  const t = useT();
+  const isConsult = idx === 1;
   return (
     <div
       className="pointer-events-none absolute inset-0"
@@ -1453,50 +1767,44 @@ function LeadForm({
           "opacity 0.7s cubic-bezier(0.22,1,0.36,1), transform 0.7s cubic-bezier(0.22,1,0.36,1)",
       }}
     >
-      {honeypot}
-
-      {/* Heading — anchored above the centre; blurs (lightly) while a field is
-          active and shifts up together with the input. */}
-      <h1
-        style={{
-          transform: engaged ? "translate(-50%, -40px)" : "translate(-50%, 0)",
-          filter: engaged ? "blur(1.8px)" : "blur(0px)",
-          opacity: engaged ? 0.4 : 1,
-          transition:
-            "transform 0.5s cubic-bezier(0.22,1,0.36,1), filter 0.5s cubic-bezier(0.22,1,0.36,1), opacity 0.5s cubic-bezier(0.22,1,0.36,1)",
-        }}
-        className="pointer-events-none absolute left-1/2 top-[14%] w-full px-6 text-center font-serif text-[2rem] leading-[1.15] tracking-tight md:top-[calc(50%-150px)] md:text-[2.8rem]"
-      >
+      <h1 className="pointer-events-none absolute left-1/2 top-[14%] w-full -translate-x-1/2 px-6 text-center font-serif text-[2rem] leading-[1.15] tracking-tight md:top-[calc(50%-170px)] md:text-[2.8rem]">
         Ink With Intent.
         <br />
         <span className="italic">Made to Last.</span>
       </h1>
 
-      {/* Icon + input — centred (shifted up on mobile so the taller works
-          carousel has room below). */}
-      <div
-        className="pointer-events-auto absolute left-1/2 top-[31%] md:top-1/2"
-        style={{
-          transform: engaged
-            ? "translate(-50%, calc(-50% - 40px))"
-            : "translate(-50%, -50%)",
-          transition: "transform 0.5s cubic-bezier(0.22,1,0.36,1)",
-        }}
+      {/* Any interaction leads to /book. Plain text CTA with arrow, cycling labels. */}
+      <button
+        type="button"
+        onClick={() => onNavigate("/book")}
+        data-cursor="pointer"
+        className="group pointer-events-auto absolute left-1/2 top-[30%] flex -translate-x-1/2 items-center justify-center gap-2.5 whitespace-nowrap md:top-1/2 md:-translate-y-1/2"
       >
-        {fieldGroup}
-      </div>
-
-      {/* Button — anchored below the input (shifted up on mobile to match) */}
-      <div className="pointer-events-auto absolute left-1/2 top-[calc(31%+10px)] flex -translate-x-1/2 justify-center md:top-[calc(50%+52px)]">
-        {stepButton}
-      </div>
+        <span className="font-serif text-[2.1rem] leading-none text-white md:text-[1.8rem]">
+          {isConsult ? (
+            <>
+              <sup className="mr-1 align-super text-[9px] uppercase tracking-[0.2em] text-white/50">
+                {t("cta.free")}
+              </sup>
+              {t("cta.consult.a") && <>{t("cta.consult.a")} </>}
+              <span className="italic">{capFirst(t("cta.consult.b"))}</span>
+            </>
+          ) : (
+            <>
+              {t("cta.book.a") && <>{t("cta.book.a")} </>}
+              <span className="italic">{capFirst(t("cta.book.b"))}</span>
+            </>
+          )}
+        </span>
+        <ArrowUpRight
+          className="h-5 w-5 shrink-0 text-white/45 transition duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-white md:h-6 md:w-6"
+          strokeWidth={1.75}
+        />
+      </button>
     </div>
   );
 }
 
-function Hero() {
-  return <LeadForm mode="hero" context={{ source: "hero" }} />;
-}
 /* -------------------------------------------------------------------------- */
 /* APP                                                                        */
 /* -------------------------------------------------------------------------- */
@@ -1506,28 +1814,223 @@ function Hero() {
 /* with a hover text-reveal (line rolls up, siblings dim).                      */
 /* -------------------------------------------------------------------------- */
 
-function MenuButton({ open, onClick }: { open: boolean; onClick: () => void }) {
+function MenuButton({
+  open,
+  onClick,
+  disabled = false,
+}: {
+  open: boolean;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
   const t = { duration: 0.35, ease: [0.22, 1, 0.36, 1] as const };
   return (
     <button
       onClick={onClick}
-      data-cursor="pointer"
+      disabled={disabled}
+      data-cursor={disabled ? undefined : "pointer"}
       aria-label={open ? "Close menu" : "Open menu"}
       aria-expanded={open}
       aria-controls="main-menu"
-      className="fixed right-4 top-[9px] z-[60] flex h-12 w-12 items-center justify-center md:right-6 md:h-14 md:w-14"
+      className={`fixed right-4 top-[9px] z-[60] flex h-12 w-12 items-center justify-center transition-opacity duration-300 md:right-6 md:h-14 md:w-14 ${
+        disabled ? "pointer-events-none opacity-30" : "mix-blend-difference"
+      }`}
     >
       <motion.span
         className="absolute h-[2px] w-5 rounded-full bg-white md:w-6"
-        animate={open ? { y: 0, rotate: 45 } : { y: -4, rotate: 0 }}
+        animate={open ? { y: 0, rotate: 45 } : { y: -3.5, rotate: 0 }}
         transition={t}
       />
       <motion.span
         className="absolute h-[2px] w-5 rounded-full bg-white md:w-6"
-        animate={open ? { y: 0, rotate: -45 } : { y: 4, rotate: 0 }}
+        animate={open ? { y: 0, rotate: -45 } : { y: 3.5, rotate: 0 }}
         transition={t}
       />
     </button>
+  );
+}
+
+// Language switcher — current language label + chevron, opening a small
+// dropdown. Sits just left of the burger.
+function LanguageSwitcher({
+  current,
+  onSelect,
+}: {
+  current: Lang;
+  onSelect: (l: Lang) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const cur = LANGS.find((l) => l.code === current) ?? LANGS[0];
+  return (
+    <div className="fixed right-16 top-[9px] z-[60] hidden h-12 items-center md:right-24 md:flex md:h-14">
+      <button
+        type="button"
+        data-cursor="pointer"
+        aria-label="Change language"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        className="flex items-center gap-1 rounded-full px-2 py-1 text-[14px] font-normal tracking-wide text-white transition hover:text-white/70"
+      >
+        {cur.label}
+        <ChevronDown
+          className={`h-4 w-4 transition-transform duration-300 ${open ? "rotate-180" : ""}`}
+          strokeWidth={1.75}
+        />
+      </button>
+      <AnimatePresence>
+        {open && (
+          <>
+            <div className="fixed inset-0" onClick={() => setOpen(false)} />
+            <motion.div
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.15 }}
+              className="absolute right-0 top-full mt-1 flex min-w-[64px] flex-col overflow-hidden rounded-xl border border-white/10 bg-black/90 backdrop-blur"
+            >
+              {LANGS.map((l) => (
+                <button
+                  key={l.code}
+                  type="button"
+                  data-cursor="pointer"
+                  onClick={() => {
+                    onSelect(l.code);
+                    setOpen(false);
+                  }}
+                  className={`px-4 py-2 text-left text-[13px] transition hover:bg-white/10 ${
+                    l.code === current ? "text-white" : "text-white/60"
+                  }`}
+                >
+                  {l.label}
+                </button>
+              ))}
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// Mobile language menu — a globe button beside the burger that opens a
+// full-screen panel explaining the choice + listing the languages.
+function MobileLangMenu({
+  current,
+  onSelect,
+  open,
+  onOpenChange,
+  disabled = false,
+}: {
+  current: Lang;
+  onSelect: (l: Lang) => void;
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  disabled?: boolean;
+}) {
+  const t = useT();
+
+  // Close on Escape + lock background scroll while open.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onOpenChange(false);
+    };
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open, onOpenChange]);
+
+  return (
+    <>
+      {/* Globe trigger — mobile only, just left of the burger. Greyed out and
+          non-clickable while the burger menu is open. */}
+      <button
+        type="button"
+        disabled={disabled}
+        data-cursor={disabled ? undefined : "pointer"}
+        aria-label="Change language"
+        aria-expanded={open}
+        onClick={() => onOpenChange(!open)}
+        className={`fixed right-16 top-[9px] z-[70] flex h-12 w-12 items-center justify-center text-white transition-opacity duration-300 md:hidden ${
+          disabled ? "pointer-events-none opacity-30" : "mix-blend-difference"
+        }`}
+      >
+        <Globe className="h-6 w-6" strokeWidth={1.6} />
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            role="dialog"
+            aria-modal="true"
+            aria-label={t("lang.title")}
+            className="fixed inset-0 z-[55] flex flex-col items-center justify-center bg-black/70 px-8 backdrop-blur-xl md:hidden"
+            onClick={() => onOpenChange(false)}
+          >
+            <motion.div
+              variants={{
+                hidden: {},
+                show: { transition: { staggerChildren: 0.06, delayChildren: 0.08 } },
+              }}
+              initial="hidden"
+              animate="show"
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-sm text-center"
+            >
+              <motion.h2
+                variants={LANG_ITEM}
+                className="font-serif text-[2rem] leading-tight"
+              >
+                {(() => {
+                  const parts = t("lang.title").split(" ");
+                  const last = parts.pop();
+                  return (
+                    <>
+                      {parts.length ? `${parts.join(" ")} ` : ""}
+                      <span className="italic">{last}</span>
+                    </>
+                  );
+                })()}
+              </motion.h2>
+              <motion.p
+                variants={LANG_ITEM}
+                className="mx-auto mt-3 max-w-xs text-[14px] leading-relaxed text-white/50"
+              >
+                {t("lang.desc")}
+              </motion.p>
+              <div className="mt-8 flex flex-col items-center gap-2.5">
+                {LANGS.map((l) => {
+                  const isCurrent = l.code === current;
+                  return (
+                    <motion.button
+                      key={l.code}
+                      variants={LANG_ITEM}
+                      type="button"
+                      data-cursor="pointer"
+                      onClick={() => {
+                        onSelect(l.code);
+                        onOpenChange(false);
+                      }}
+                      className={PILL(isCurrent)}
+                    >
+                      {LANG_NAMES[l.code] ?? l.label}
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
 
@@ -1535,11 +2038,14 @@ function Menu({
   open,
   onClose,
   onNavigate,
+  onConsult,
 }: {
   open: boolean;
   onClose: () => void;
   onNavigate: (path: string) => void;
+  onConsult: () => void;
 }) {
+  const t = useT();
   const [hovered, setHovered] = useState<number | null>(null);
   const anyActive = hovered !== null;
   const reveal = { type: "spring", stiffness: 400, damping: 40, mass: 1 } as const;
@@ -1629,7 +2135,7 @@ function Menu({
                 : "#FFFFFF";
               return (
                 <motion.div
-                  key={item.label}
+                  key={item.tkey}
                   initial={{ opacity: 0, y: 28 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 28 }}
@@ -1649,14 +2155,14 @@ function Menu({
                     transition={reveal}
                   >
                     <span className={line} style={{ color, transition: "color 0.2s ease" }}>
-                      {item.label}
+                      {t(item.tkey)}
                     </span>
                     <span
                       aria-hidden
                       className={`${line} absolute left-0 top-full w-full`}
                       style={{ color, transition: "color 0.2s ease" }}
                     >
-                      {item.label}
+                      {t(item.tkey)}
                     </span>
                   </motion.div>
                 </motion.div>
@@ -1664,9 +2170,9 @@ function Menu({
             })}
           </nav>
 
-          {/* Book CTA — pinned to the bottom, styled like a Sponsors row */}
-          <motion.button
-            type="button"
+          {/* Bottom CTAs — Book · Request consultation · Contact. Stacked on
+              mobile, in a row on desktop; all styled the same. */}
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
@@ -1675,21 +2181,67 @@ function Menu({
               delay: open ? 0.08 + sections.length * 0.06 : 0,
               ease: [0.22, 1, 0.36, 1],
             }}
-            onClick={() => {
-              onClose();
-              onNavigate("/book");
-            }}
-            data-cursor="pointer"
-            className="group flex w-full items-center justify-center gap-3 border-t border-white/10 px-6 py-7 transition-colors hover:bg-white/[0.03] md:py-9"
+            className="flex flex-col divide-y divide-white/10 border-t border-white/10 md:flex-row md:divide-x md:divide-y-0"
           >
-            <span className="font-serif text-[1.8rem] leading-none text-white md:text-[2.6rem]">
-              Book <span className="italic">experience</span>
-            </span>
-            <ArrowUpRight
-              className="h-6 w-6 shrink-0 text-white/45 transition duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-white md:h-7 md:w-7"
-              strokeWidth={1.75}
-            />
-          </motion.button>
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onNavigate("/book");
+              }}
+              data-cursor="pointer"
+              className="group flex flex-1 items-center justify-center gap-2.5 px-6 py-7 transition-colors hover:bg-white/[0.03] md:py-9"
+            >
+              <span className="font-serif text-[1.6rem] leading-none text-white md:text-[1.8rem]">
+                {t("cta.book.a")} <span className="italic">{t("cta.book.b")}</span>
+              </span>
+              <ArrowUpRight
+                className="h-5 w-5 shrink-0 text-white/45 transition duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-white md:h-6 md:w-6"
+                strokeWidth={1.75}
+              />
+            </button>
+
+            <button
+              type="button"
+              onClick={onConsult}
+              data-cursor="pointer"
+              className="group flex flex-1 items-center justify-center gap-2.5 px-6 py-7 transition-colors hover:bg-white/[0.03] md:py-9"
+            >
+              <span className="font-serif text-[1.6rem] leading-none text-white md:text-[1.8rem]">
+                <sup className="mr-1 align-super text-[9px] uppercase tracking-[0.2em] text-white/50">
+                  {t("cta.free")}
+                </sup>
+                {t("cta.consult.a") && <>{t("cta.consult.a")} </>}
+                <span className="italic">
+                  {t("cta.consult.a")
+                    ? t("cta.consult.b")
+                    : capFirst(t("cta.consult.b"))}
+                </span>
+              </span>
+              <ArrowUpRight
+                className="h-5 w-5 shrink-0 text-white/45 transition duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-white md:h-6 md:w-6"
+                strokeWidth={1.75}
+              />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onNavigate("/contact");
+              }}
+              data-cursor="pointer"
+              className="group flex flex-1 items-center justify-center gap-2.5 px-6 py-7 transition-colors hover:bg-white/[0.03] md:py-9"
+            >
+              <span className="font-serif text-[1.6rem] leading-none text-white md:text-[1.8rem]">
+                <span className="italic">{t("cta.contact")}</span>
+              </span>
+              <ArrowUpRight
+                className="h-5 w-5 shrink-0 text-white/45 transition duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-white md:h-6 md:w-6"
+                strokeWidth={1.75}
+              />
+            </button>
+          </motion.div>
 
           {/* Address + local time — mobile only, under the Book CTA */}
           <div className="border-t border-white/10 px-6 py-6 text-center text-[12px] leading-relaxed text-white/45 md:hidden">
@@ -2112,6 +2664,45 @@ function WorksLightbox({
   );
 }
 
+// Renders an artist's "role" string with each recognised style word linking to
+// its style landing page (the rest stays plain text).
+function RoleLinks({
+  role,
+  onNavigate,
+}: {
+  role: string;
+  onNavigate: (path: string) => void;
+}) {
+  const tokens = role
+    .split(/,|&/)
+    .map((t) => t.trim())
+    .filter(Boolean);
+  return (
+    <>
+      {tokens.map((tok, i) => {
+        const path = stylePathForToken(tok);
+        return (
+          <span key={i}>
+            {i > 0 ? ", " : ""}
+            {path ? (
+              <button
+                type="button"
+                onClick={() => onNavigate(path)}
+                data-cursor="pointer"
+                className="uppercase underline-offset-4 transition hover:text-white hover:underline"
+              >
+                {tok}
+              </button>
+            ) : (
+              tok
+            )}
+          </span>
+        );
+      })}
+    </>
+  );
+}
+
 function ArtistShowcase({
   active,
   onSelect,
@@ -2123,8 +2714,13 @@ function ArtistShowcase({
   onNavigate: (path: string) => void;
   onBook: (ctx: { artist?: string; bodyPart?: string }) => void;
 }) {
+  const t = useT();
+  const lang = useLang();
   const M = ARTISTS.length;
   const artist = ARTISTS[active];
+  const at = getArtistText(lang, artist.name);
+  const role = at?.role ?? artist.role;
+  const bio = at?.bio ?? artist.bio;
   const [dir, setDir] = useState(1);
   const prevRef = useRef(active);
   useEffect(() => {
@@ -2143,10 +2739,10 @@ function ArtistShowcase({
       {/* Mobile-only title (matches the /artists page; floats in like Reviews) */}
       <Reveal className="mb-12 md:hidden">
         <p className="mb-4 text-center text-[12px] uppercase tracking-[0.3em] text-white/40">
-          Our artists
+          {t("ui.ourArtists")}
         </p>
         <h2 className="text-center font-serif text-[3rem] leading-[0.95] tracking-tight">
-          Artists
+          {t("ui.artists")}
         </h2>
       </Reveal>
 
@@ -2189,27 +2785,28 @@ function ArtistShowcase({
             transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
           >
             <p className="mb-4 text-[12px] uppercase tracking-[0.3em] text-white/40">
-              {String(active + 1).padStart(2, "0")} — {artist.role}
+              {String(active + 1).padStart(2, "0")} —{" "}
+              <RoleLinks role={role} onNavigate={onNavigate} />
             </p>
             <h2 className="font-serif text-[3rem] leading-[0.95] tracking-tight md:text-[5.5rem]">
               {artist.name}
             </h2>
             <p className="mt-6 max-w-md text-[15px] leading-relaxed text-white/60">
-              {artist.bio}
+              {bio}
             </p>
             {artist.since && (
               <p className="mt-4 text-[12px] uppercase tracking-[0.25em] text-white/40">
-                Tattooing since {artist.since}
+                {t("ui.tattooingSince")} {artist.since}
               </p>
             )}
-            <div className="mt-8 flex flex-wrap items-center gap-3">
+            <div className="mt-8 flex w-full flex-col items-center gap-2.5 md:w-auto md:flex-row md:justify-start md:gap-3">
               <button
                 type="button"
                 onClick={() => onBook({ artist: artist.name })}
                 data-cursor="pointer"
-                className="rounded-full bg-white px-6 py-3 text-[13px] font-medium text-black transition hover:bg-white/90"
+                className={PILL(true)}
               >
-                Book with {artist.name}
+                {t("ui.bookWith")} {artist.name}
               </button>
               <button
                 type="button"
@@ -2218,9 +2815,9 @@ function ArtistShowcase({
                   onNavigate("/artists");
                 }}
                 data-cursor="pointer"
-                className="rounded-full border border-white/25 px-6 py-3 text-[13px] font-medium text-white/90 transition hover:border-white/50 hover:bg-white/5"
+                className={PILL(false)}
               >
-                See {artist.name}'s Portfolio
+                {t("ui.seePortfolio")}
               </button>
             </div>
           </motion.div>
@@ -2242,14 +2839,21 @@ function ArtistsPage({
   onSelect,
   onOpenWorks,
   onBook,
+  onNavigate,
 }: {
   active: number;
   onSelect: (i: number) => void;
   onOpenWorks: (artist: number, startIndex: number) => void;
   onBook: (ctx: { artist?: string; bodyPart?: string }) => void;
+  onNavigate: (path: string) => void;
 }) {
+  const t = useT();
+  const lang = useLang();
   const M = ARTISTS.length;
   const artist = ARTISTS[active];
+  const at = getArtistText(lang, artist.name);
+  const role = at?.role ?? artist.role;
+  const bio = at?.bio ?? artist.bio;
   const works = (WORKS_BY_ARTIST[active] || []).slice(0, MAX_PORTFOLIO);
 
   // On mobile the works grid sits well below the fold, so the first two are
@@ -2283,10 +2887,10 @@ function ArtistsPage({
     <main className="relative z-10 min-h-screen px-6 pb-24 pt-28 md:px-16 md:pt-32">
       <div className="mx-auto w-full max-w-6xl">
         <p className="mb-4 text-center text-[12px] uppercase tracking-[0.3em] text-white/40">
-          Our artists
+          {t("ui.ourArtists")}
         </p>
         <h1 className="text-center font-serif text-[3rem] leading-[0.95] tracking-tight md:text-[4.5rem]">
-          Artists
+          {t("ui.artists")}
         </h1>
 
         {/* Artist showcase — mirrors the home page layout */}
@@ -2326,17 +2930,18 @@ function ArtistsPage({
             transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
           >
             <p className="mb-4 text-[12px] uppercase tracking-[0.3em] text-white/40">
-              {String(active + 1).padStart(2, "0")} — {artist.role}
+              {String(active + 1).padStart(2, "0")} —{" "}
+              <RoleLinks role={role} onNavigate={onNavigate} />
             </p>
             <h2 className="font-serif text-[3rem] leading-[0.95] tracking-tight md:text-[4rem]">
               {artist.name}
             </h2>
             <p className="mt-6 max-w-md text-[15px] leading-relaxed text-white/60">
-              {artist.bio}
+              {bio}
             </p>
             {artist.since && (
               <p className="mt-4 text-[12px] uppercase tracking-[0.25em] text-white/40">
-                Tattooing since {artist.since}
+                {t("ui.tattooingSince")} {artist.since}
               </p>
             )}
             <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -2344,20 +2949,10 @@ function ArtistsPage({
                 type="button"
                 onClick={() => onBook({ artist: artist.name })}
                 data-cursor="pointer"
-                className="rounded-full bg-white px-6 py-3 text-[13px] font-medium text-black transition hover:bg-white/90"
+                className={PILL(true)}
               >
-                Book with {artist.name}
+                {t("ui.bookWith")} {artist.name}
               </button>
-              <a
-                href={artist.ig}
-                target="_blank"
-                rel="noopener noreferrer"
-                data-cursor="pointer"
-                className="inline-flex items-center gap-2 rounded-full border border-white/25 px-6 py-3 text-[13px] font-medium text-white/90 transition hover:border-white/50 hover:bg-white/5"
-              >
-                <Instagram className="h-4 w-4" strokeWidth={2} />
-                Instagram
-              </a>
             </div>
           </motion.div>
         </div>
@@ -2365,7 +2960,7 @@ function ArtistsPage({
         {/* Works grid */}
         <section className="mt-16">
           <h2 className="text-center font-serif text-[1.7rem] leading-[1] tracking-tight md:text-[2.2rem]">
-            {artist.name}'s work
+            {t("ui.worksBy")} {artist.name}
           </h2>
           {works.length > 0 ? (
             <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4">
@@ -2406,7 +3001,7 @@ function ArtistsPage({
             </div>
           ) : (
             <p className="mt-8 text-center text-[14px] text-white/40">
-              Portfolio coming soon.
+              {t("ui.portfolioSoon")}
             </p>
           )}
         </section>
@@ -2626,6 +3221,7 @@ function MobileReviews() {
 }
 
 function Reviews() {
+  const t = useT();
   const left = CHATS.filter((_, i) => i % 2 === 0);
   const right = CHATS.filter((_, i) => i % 2 === 1);
 
@@ -2637,10 +3233,10 @@ function Reviews() {
       <div className="mx-auto w-full max-w-5xl">
         <Reveal>
           <p className="mb-4 text-center text-[12px] uppercase tracking-[0.3em] text-white/40">
-            What people say
+            {t("ui.whatPeopleSay")}
           </p>
           <h2 className="mb-12 text-center font-serif text-[2.6rem] leading-[0.95] tracking-tight md:mb-16 md:text-[4.5rem]">
-            Reviews
+            {t("ui.reviews")}
           </h2>
         </Reveal>
 
@@ -2685,6 +3281,7 @@ const SPONSORS = [
 ];
 
 function Sponsors() {
+  const t = useT();
   return (
     <section id="sponsors" className="relative px-6 py-24 md:px-16 md:py-32">
       <div className="mx-auto w-full max-w-6xl border-t border-white/10">
@@ -2710,7 +3307,7 @@ function Sponsors() {
 
             <div className="flex items-center gap-6 md:gap-12">
               <span className="hidden text-right text-[13px] uppercase tracking-wide text-white/40 md:block">
-                {s.tag}
+                {t("ui.supplyPartner")}
               </span>
               <ArrowUpRight
                 className="h-5 w-5 shrink-0 text-white/45 transition duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-white md:h-6 md:w-6"
@@ -2734,6 +3331,7 @@ function ContactPage({
 }: {
   onNavigate: (path: string) => void;
 }) {
+  const t = useT();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
@@ -2746,11 +3344,12 @@ function ContactPage({
   const submit = (e: FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !emailValid || !message.trim()) {
-      setError("Please add your name, a valid email and a message.");
+      setError(t("contact.error"));
       return;
     }
     setError("");
     setSent(true);
+    trackLead({ source: "contact" });
     if (FORM_ENDPOINT) {
       fetch(FORM_ENDPOINT, {
         method: "POST",
@@ -2768,22 +3367,21 @@ function ContactPage({
       <div className="mx-auto w-full max-w-2xl">
         <Reveal>
           <p className="mb-4 text-[12px] uppercase tracking-[0.3em] text-white/40">
-            Get in touch
+            {t("contact.kicker")}
           </p>
           <h1 className="font-serif text-[3rem] leading-[0.95] tracking-tight md:text-[4.5rem]">
-            Contact
+            {t("contact.title")}
           </h1>
           <p className="mt-6 max-w-lg text-[15px] leading-relaxed text-white/60">
-            Looking to book a tattoo? Appointments are requested on the{" "}
+            {t("contact.intro.pre")}
             <button
               onClick={() => onNavigate("/book")}
               data-cursor="pointer"
               className="text-white underline underline-offset-4 transition hover:text-white/70"
             >
-              book page
+              {t("contact.intro.link")}
             </button>
-            . For everything else — collaborations, press or general questions —
-            drop us a line below.
+            {t("contact.intro.post")}
           </p>
         </Reveal>
 
@@ -2794,12 +3392,11 @@ function ContactPage({
               <Check className="h-6 w-6" strokeWidth={2.5} />
             </span>
             <h2 className="font-serif text-[2rem] leading-[1.05] md:text-[2.6rem]">
-              Message <span className="italic">sent.</span>
+              {t("contact.done.a")}{" "}
+              <span className="italic">{t("contact.done.b")}</span>
             </h2>
             <p className="mx-auto mt-3 max-w-sm text-[13px] leading-relaxed text-white/40">
-              We only use your email to reply to your message. It isn't stored
-              anywhere and is deleted from our records as soon as we've been in
-              touch.
+              {t("contact.done.note")}
             </p>
           </div>
         ) : (
@@ -2808,7 +3405,7 @@ function ContactPage({
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Your name"
+              placeholder={t("contact.ph.name")}
               data-cursor="text"
               className={field}
             />
@@ -2816,14 +3413,14 @@ function ContactPage({
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="Your email"
+              placeholder={t("contact.ph.email")}
               data-cursor="text"
               className={field}
             />
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder="Your message"
+              placeholder={t("contact.ph.message")}
               rows={5}
               data-cursor="text"
               className={`${field} resize-none`}
@@ -2843,16 +3440,16 @@ function ContactPage({
             <button
               type="submit"
               data-cursor="pointer"
-              className="mt-2 self-start rounded-full bg-white px-8 py-3 text-[14px] font-medium text-black transition hover:bg-white/90"
+              className={`${PILL(true)} mt-2 self-start`}
             >
-              Send message
+              {t("contact.send")}
             </button>
           </form>
         )}
 
           <div className="mt-14 border-t border-white/10 pt-6">
             <p className="mb-1 text-[11px] uppercase tracking-[0.25em] text-white/40">
-              Partnerships & collaborations
+              {t("contact.partnerships")}
             </p>
             <a
               href="mailto:studio@thefourdeuces.nl"
@@ -2861,19 +3458,171 @@ function ContactPage({
             >
               studio@thefourdeuces.nl
             </a>
+            <p className="mt-4 text-[13px] text-white/40">
+              {t("contact.agree.pre")}
+              <button
+                onClick={() => onNavigate("/terms")}
+                data-cursor="pointer"
+                className="text-white/70 underline underline-offset-4 transition hover:text-white"
+              >
+                {t("legal.terms")}
+              </button>
+              .
+            </p>
           </div>
 
-          <p className="mt-8 text-[13px] text-white/40">
-            By contacting us you agree to our{" "}
-            <button
-              onClick={() => onNavigate("/terms")}
+          <div className="mt-8 border-t border-white/10 pt-6">
+            <p className="mb-1 text-[11px] uppercase tracking-[0.25em] text-white/40">
+              {t("contact.careers")}
+            </p>
+            <a
+              href="mailto:studio@thefourdeuces.nl"
               data-cursor="pointer"
-              className="text-white/70 underline underline-offset-4 transition hover:text-white"
+              className="text-[15px] text-white/80 transition hover:text-white"
             >
-              Terms &amp; Conditions
-            </button>
-            .
+              studio@thefourdeuces.nl
+            </a>
+            <p className="mt-3 text-[13px] text-white/50">
+              {t("contact.careers.pre")}
+              <button
+                onClick={() => onNavigate("/guests")}
+                data-cursor="pointer"
+                className="text-white/70 underline underline-offset-4 transition hover:text-white"
+              >
+                {t("contact.careers.link")}
+              </button>
+              {t("contact.careers.post")}
+            </p>
+          </div>
+        </Reveal>
+      </div>
+    </main>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* GUESTS PAGE — /guests route: guest-artist terms + careers / recruiting     */
+/* -------------------------------------------------------------------------- */
+
+function GuestsPage() {
+  const t = useT();
+  const faq = [
+    { q: t("guests.faq.supplies.q"), a: t("guests.faq.supplies.a") },
+    { q: t("guests.faq.q1"), a: t("guests.faq.a1") },
+    { q: t("guests.faq.q2"), a: t("guests.faq.a2") },
+    { q: t("guests.faq.q3"), a: t("guests.faq.a3") },
+    { q: t("guests.faq.q4"), a: t("guests.faq.a4") },
+    { q: t("guests.faq.q5"), a: t("guests.faq.a5") },
+    { q: t("guests.faq.q6"), a: t("guests.faq.a6") },
+    { q: t("guests.faq.q7"), a: t("guests.faq.a7") },
+    { q: t("guests.faq.q8"), a: t("guests.faq.a8") },
+  ];
+  // Title with the last word italicised (works across languages).
+  const titleParts = t("guests.title").split(" ");
+  const titleLast = titleParts.pop();
+  return (
+    <main className="relative z-10 min-h-screen px-6 pb-24 pt-28 md:px-16 md:pt-32">
+      <div className="mx-auto w-full max-w-3xl">
+        <Reveal>
+          <p className="mb-4 text-[12px] uppercase tracking-[0.3em] text-white/40">
+            {t("guests.kicker")}
           </p>
+          <h1 className="font-serif text-[3rem] leading-[0.95] tracking-tight md:text-[4.5rem]">
+            {titleParts.length ? `${titleParts.join(" ")} ` : ""}
+            <span className="italic">{titleLast}</span>
+          </h1>
+          <p className="mt-6 max-w-2xl text-[15px] leading-relaxed text-white/60">
+            {t("guests.intro")}
+          </p>
+        </Reveal>
+
+        {/* Join our team — sits directly under the studio intro. */}
+        <Reveal delay={0.1}>
+          <div className="mt-12 border-y border-white/10 py-6">
+            <p className="mb-2 text-[11px] uppercase tracking-[0.25em] text-white/40">
+              {t("guests.emailLabel")}
+            </p>
+            <p className="text-[15px] leading-relaxed text-white/60">
+              {t("guests.emailIntro")}
+              <a
+                href="mailto:studio@thefourdeuces.nl"
+                data-cursor="pointer"
+                className="text-white/90 underline underline-offset-4 transition hover:text-white"
+              >
+                studio@thefourdeuces.nl
+              </a>
+            </p>
+          </div>
+        </Reveal>
+
+        <Reveal delay={0.16}>
+          <div className="mt-12">
+            <h2 className="font-serif text-[1.6rem] leading-tight md:text-[2rem]">
+              {t("guests.guest.title")}
+            </h2>
+            <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-white/60">
+              {t("guests.guest.text")}
+            </p>
+          </div>
+        </Reveal>
+
+        <Reveal delay={0.2}>
+          <div className="mt-10">
+            <h2 className="font-serif text-[1.6rem] leading-tight md:text-[2rem]">
+              {t("guests.careers.title")}
+            </h2>
+            <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-white/60">
+              {t("guests.careers.text")}
+            </p>
+          </div>
+        </Reveal>
+
+        <Reveal delay={0.24} eager>
+          <div className="mt-12">
+            <p className="mb-2 text-[12px] uppercase tracking-[0.3em] text-white/40">
+              {t("guests.faq.title")}
+            </p>
+            <div className="divide-y divide-white/10 border-y border-white/10">
+              {faq.map((item, i) => (
+                <details key={i} className="group py-5">
+                  <summary
+                    data-cursor="pointer"
+                    className="flex cursor-pointer list-none items-center justify-between gap-4 text-[16px] text-white/90 md:text-[18px] [&::-webkit-details-marker]:hidden"
+                  >
+                    {item.q}
+                    <ChevronDown
+                      className="h-5 w-5 shrink-0 text-white/40 transition-transform duration-300 group-open:rotate-180"
+                      strokeWidth={2}
+                    />
+                  </summary>
+                  <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-white/55">
+                    {item.a}
+                  </p>
+                </details>
+              ))}
+            </div>
+          </div>
+        </Reveal>
+
+        {/* Downloadable documents (like the FAQ page). */}
+        <Reveal delay={0.28} eager>
+          <div className="mt-14">
+            <h2 className="mb-5 text-[12px] uppercase tracking-[0.25em] text-white/40">
+              {t("guests.docs.title")}
+            </h2>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <DownloadCard
+                href="/docs/first-aid-guide.pdf"
+                title={t("guests.docs.firstaid")}
+                sub="PDF · EN"
+              />
+              <DownloadCard
+                href="/docs/hygiene-disinfection-guidelines.pdf"
+                title={t("guests.docs.hygiene")}
+                sub="PDF · EN"
+              />
+            </div>
+          </div>
         </Reveal>
       </div>
     </main>
@@ -2937,7 +3686,7 @@ type BodyRegion = {
 
 // Sensible defaults — pain ratings & typical session lengths per area. Edit here.
 const FRONT_REGIONS: BodyRegion[] = [
-  { key: "head", geo: "head", label: "Head & scalp", pain: 4, duration: "2–4 h", note: "Thin skin over bone — sharp and intense." },
+  { key: "head", geo: "head", label: "Head & face", pain: 4, duration: "2–4 h", note: "Thin skin over bone — sharp and intense." },
   { key: "neck", geo: "neck", label: "Neck", pain: 4, duration: "1–3 h", note: "Very sensitive, with lots of nerve endings." },
   { key: "chest", geo: "chest", label: "Chest", pain: 3, duration: "3–6 h", note: "Manageable on the pecs, sharper near the sternum." },
   { key: "shoulder", geo: "shoulder", label: "Shoulder", pain: 2, duration: "2–4 h", note: "One of the easier spots — muscle and even skin." },
@@ -2953,7 +3702,7 @@ const FRONT_REGIONS: BodyRegion[] = [
 ];
 
 const BACK_REGIONS: BodyRegion[] = [
-  { key: "head", geo: "head", label: "Head & scalp", pain: 4, duration: "2–4 h", note: "Thin skin over bone — sharp and intense." },
+  { key: "head", geo: "head", label: "Head", pain: 4, duration: "2–4 h", note: "Thin skin over bone — sharp and intense." },
   { key: "neck", geo: "neck", label: "Nape of neck", pain: 4, duration: "1–3 h", note: "Very sensitive, with lots of nerve endings." },
   { key: "upperBack", geo: "chest", label: "Upper back", pain: 3, duration: "3–6 h", note: "Fine over the shoulder blades, sharp along the spine." },
   { key: "shoulder", geo: "shoulder", label: "Shoulder", pain: 2, duration: "2–4 h", note: "One of the easier spots — muscle and even skin." },
@@ -3109,10 +3858,15 @@ function BodyPain({
 }: {
   onBook?: (ctx: { artist?: string; bodyPart?: string }) => void;
 }) {
+  const t = useT();
+  const lang = useLang();
+  const durUnit =
+    lang === "nl" ? "u" : lang === "de" ? "Std." : lang === "ua" ? "год" : "h";
   const [view, setView] = useState<View>("front");
   const [selected, setSelected] = useState<string | null>(null);
   const regions = REGION_SETS[view];
   const region = regions.find((r) => r.key === selected) || null;
+  const loc = region ? localizeRegion(lang, region.label, region.note) : null;
 
   // When a zone is picked, bring its description + Book button into view —
   // scrolls down on mobile, centres on desktop (like the hero carousel).
@@ -3139,8 +3893,8 @@ function BodyPain({
       {/* Body + view toggle */}
       <div className="flex flex-col items-center gap-5">
         <div className="inline-flex rounded-full border border-white/10 bg-white/[0.04] p-1">
-          <ViewBtn value="front" label="Front" />
-          <ViewBtn value="back" label="Back" />
+          <ViewBtn value="front" label={t("body.front")} />
+          <ViewBtn value="back" label={t("body.back")} />
         </div>
         <div className="h-[520px] w-[156px] md:h-[620px] md:w-[186px]">
           <BodyMap regions={regions} selected={selected} onSelect={setSelected} />
@@ -3155,16 +3909,16 @@ function BodyPain({
         {region ? (
           <div>
             <p className="mb-2 text-[12px] uppercase tracking-[0.3em] text-white/40">
-              Selected area
+              {t("body.selectedArea")}
             </p>
             <h3 className="font-serif text-[2.4rem] leading-[1] md:text-[3rem]">
-              {region.label}
+              {loc?.label ?? region.label}
             </h3>
 
             <div className="mt-8 space-y-6">
               <div>
                 <p className="mb-2 text-[12px] uppercase tracking-[0.25em] text-white/40">
-                  Pain level
+                  {t("body.painLevel")}
                 </p>
                 <div className="flex items-center gap-3">
                   <div className="flex gap-1.5">
@@ -3185,20 +3939,22 @@ function BodyPain({
                     className="text-[15px]"
                     style={{ color: PAIN_LEVELS[region.pain].color }}
                   >
-                    {PAIN_LEVELS[region.pain].label}
+                    {t(`pain.${region.pain}`)}
                   </span>
                 </div>
               </div>
 
               <div>
                 <p className="mb-1 text-[12px] uppercase tracking-[0.25em] text-white/40">
-                  Typical session
+                  {t("body.typicalSession")}
                 </p>
-                <p className="text-[18px] text-white/90">{region.duration}</p>
+                <p className="text-[18px] text-white/90">
+                  {region.duration.replace(/h$/, durUnit)}
+                </p>
               </div>
 
               <p className="max-w-md text-[14px] leading-relaxed text-white/55">
-                {region.note}
+                {loc?.note ?? region.note}
               </p>
 
               {onBook && (
@@ -3206,9 +3962,9 @@ function BodyPain({
                   type="button"
                   onClick={() => onBook({ bodyPart: region.label })}
                   data-cursor="pointer"
-                  className="rounded-full bg-white px-6 py-3 text-[13px] font-medium text-black transition hover:bg-white/90"
+                  className={PILL(true)}
                 >
-                  Book this area
+                  {t("body.bookThis")}
                 </button>
               )}
             </div>
@@ -3216,12 +3972,10 @@ function BodyPain({
         ) : (
           <div className="hidden h-full flex-col justify-center md:flex">
             <h3 className="font-serif text-[1.8rem] leading-[1.1] text-white/80 md:text-[2.2rem]">
-              Tap a body <span className="italic">area</span>
+              {t("book.tap.a")} <span className="italic">{t("book.tap.b")}</span>
             </h3>
             <p className="mt-3 max-w-sm text-[14px] leading-relaxed text-white/50">
-              Select any part of the body to see how much it typically hurts and
-              how long a session tends to take. Switch between front and back
-              with the toggle.
+              {t("book.tap.lead")}
             </p>
           </div>
         )}
@@ -3232,43 +3986,74 @@ function BodyPain({
 
 function BookPage({
   onBook,
+  onConsult,
 }: {
   onBook: (ctx: { artist?: string; bodyPart?: string }) => void;
+  onConsult: () => void;
 }) {
+  const t = useT();
   return (
     <main className="relative z-10 min-h-screen px-6 pb-24 pt-28 md:px-16 md:pt-32">
       <div className="mx-auto w-full max-w-5xl">
         {/* Title + intro — desktop only (mobile jumps straight to the map) */}
         <Reveal className="hidden md:block">
           <p className="mb-4 text-center text-[12px] uppercase tracking-[0.3em] text-white/40">
-            Book an appointment
+            {t("book.kicker")}
           </p>
           <h1 className="text-center font-serif text-[3rem] leading-[0.95] tracking-tight md:text-[4.5rem]">
-            Book
+            {t("book.title")}
           </h1>
           <p className="mx-auto mt-5 max-w-lg text-center text-[15px] leading-relaxed text-white/55">
-            Start by choosing the area you'd like tattooed. Then add your budget
-            and your Instagram.{" "}
-            <span className="italic">We'll be in touch to arrange the rest.</span>
+            {t("book.intro")}{" "}
+            <span className="italic">{t("book.intro.italic")}</span>
           </p>
         </Reveal>
 
-        <section className="md:mt-14">
+        {/* Not ready to book? — desktop shows it under the intro. */}
+        <Reveal className="hidden md:block" delay={0.12}>
+          <div className="mt-8 flex flex-col items-center gap-3 text-center">
+            <p className="text-[13px] text-white/45">{t("book.notsure")}</p>
+            <button
+              type="button"
+              onClick={onConsult}
+              data-cursor="pointer"
+              className={PILL(false)}
+            >
+              {t("book.freeconsult")}
+            </button>
+          </div>
+        </Reveal>
+
+        <section className="mt-8 md:mt-14">
           {/* Mobile lead above the map */}
           <Reveal className="md:hidden">
             <h2 className="text-center font-serif text-[2rem] leading-[1] tracking-tight">
-              Tap a body <span className="italic">area</span>
+              {t("book.tap.a")} <span className="italic">{t("book.tap.b")}</span>
             </h2>
             <p className="mx-auto mt-3 max-w-lg text-center text-[15px] leading-relaxed text-white/55">
-              Select any part of the body to see how much it typically hurts and
-              how long a session tends to take. Switch between front and back
-              with the toggle.
+              {t("book.tap.lead")}
             </p>
           </Reveal>
           <Reveal delay={0.1}>
             <BodyPain onBook={onBook} />
           </Reveal>
         </section>
+
+        {/* Not ready to book? — mobile shows it under the body-part selector,
+            revealed eagerly so it lands together with the top sections. */}
+        <Reveal className="md:hidden" delay={0.12} eager>
+          <div className="mt-12 flex flex-col items-center gap-3 text-center">
+            <p className="text-[13px] text-white/45">{t("book.notsure")}</p>
+            <button
+              type="button"
+              onClick={onConsult}
+              data-cursor="pointer"
+              className={PILL(false)}
+            >
+              {t("book.freeconsult")}
+            </button>
+          </div>
+        </Reveal>
       </div>
     </main>
   );
@@ -3278,13 +4063,50 @@ function BookPage({
 /* FAQ PAGE — /faq route: questions + downloadable documents                  */
 /* -------------------------------------------------------------------------- */
 
-function FaqPage({ onNavigate }: { onNavigate: (path: string) => void }) {
+function FaqPage({
+  onNavigate,
+  onConsult,
+}: {
+  onNavigate: (path: string) => void;
+  onConsult: () => void;
+}) {
+  const t = useT();
+  const lang = useLang();
+  // Answers may contain [[BOOK]] / [[CONSULT]] tokens that render as links.
+  const renderAnswer = (text: string) =>
+    text.split(/(\[\[BOOK\]\]|\[\[CONSULT\]\])/).map((part, i) => {
+      if (part === "[[BOOK]]")
+        return (
+          <button
+            key={i}
+            type="button"
+            onClick={() => onNavigate("/book")}
+            data-cursor="pointer"
+            className="text-white underline underline-offset-4 transition hover:text-white/70"
+          >
+            {t("faq.bookLink")}
+          </button>
+        );
+      if (part === "[[CONSULT]]")
+        return (
+          <button
+            key={i}
+            type="button"
+            onClick={onConsult}
+            data-cursor="pointer"
+            className="text-white underline underline-offset-4 transition hover:text-white/70"
+          >
+            {t("faq.consultCta")}
+          </button>
+        );
+      return part;
+    });
   return (
     <main className="relative z-10 min-h-screen px-6 pb-24 pt-28 md:px-16 md:pt-32">
       <div className="mx-auto w-full max-w-3xl">
         <Reveal>
           <p className="mb-4 text-center text-[12px] uppercase tracking-[0.3em] text-white/40">
-            Good to know
+            {t("faq.kicker")}
           </p>
           <h1 className="text-center font-serif text-[3rem] leading-[0.95] tracking-tight md:text-[4.5rem]">
             FAQ
@@ -3293,7 +4115,7 @@ function FaqPage({ onNavigate }: { onNavigate: (path: string) => void }) {
 
         <Reveal delay={0.1}>
         <div className="mt-12 divide-y divide-white/10 border-y border-white/10">
-          {FAQ_ITEMS.map((item, i) => (
+          {getFaq(lang).map((item, i) => (
             <details key={i} className="group py-5">
               <summary
                 data-cursor="pointer"
@@ -3306,7 +4128,7 @@ function FaqPage({ onNavigate }: { onNavigate: (path: string) => void }) {
                 />
               </summary>
               <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-white/55">
-                {item.a}
+                {renderAnswer(item.a)}
               </p>
             </details>
           ))}
@@ -3316,20 +4138,18 @@ function FaqPage({ onNavigate }: { onNavigate: (path: string) => void }) {
         <Reveal delay={0.16}>
         <div className="mt-14">
           <h2 className="mb-1 text-[12px] uppercase tracking-[0.25em] text-white/40">
-            Downloads
+            {t("faq.downloads")}
           </h2>
-          <p className="mb-5 text-[13px] text-white/40">
-            Available in Dutch (Nederlands) only.
-          </p>
+          <p className="mb-5 text-[13px] text-white/40">{t("faq.dutchOnly")}</p>
           <div className="grid gap-4 sm:grid-cols-2">
             <DownloadCard
               href="/docs/nazorginstructie-tatoeage.pdf"
-              title="Aftercare instructions"
+              title={t("faq.dl.aftercare")}
               sub="Nazorginstructie · PDF · NL"
             />
             <DownloadCard
               href="/docs/informatie-risicos-tatoeage-pmu.pdf"
-              title="Information about risks"
+              title={t("faq.dl.risks")}
               sub="Risico-informatie (PMU) · PDF · NL"
             />
           </div>
@@ -3338,15 +4158,15 @@ function FaqPage({ onNavigate }: { onNavigate: (path: string) => void }) {
 
         <Reveal delay={0.22}>
           <p className="mt-14 border-t border-white/10 pt-6 text-[14px] text-white/50">
-            For full details, please read our{" "}
+            {t("faq.foot.pre")}
             <button
               onClick={() => onNavigate("/terms")}
               data-cursor="pointer"
               className="text-white underline underline-offset-4 transition hover:text-white/70"
             >
-              Terms &amp; Conditions
+              {t("legal.terms")}
             </button>
-            .
+            {t("faq.foot.lang")}.
           </p>
         </Reveal>
       </div>
@@ -3596,6 +4416,335 @@ function TermsPage() {
 }
 
 /* -------------------------------------------------------------------------- */
+/* ABOUT PAGE — /about (SEO + studio story)                                   */
+/* -------------------------------------------------------------------------- */
+
+// The studio address, and a Google Maps link for it (same target as the footer
+// / mobile address). Used to make the address in the location copy clickable.
+const STUDIO_ADDRESS = "Van Baerlestraat 126H";
+const STUDIO_MAPS_URL =
+  "https://www.google.com/maps/search/?api=1&query=The%20Four%20Deuces%20Van%20Baerlestraat%20126H%201071%20BD%20Amsterdam";
+
+// Render a paragraph, turning any occurrence of the studio address into a link.
+function withAddressLink(text: string): ReactNode {
+  const parts = text.split(STUDIO_ADDRESS);
+  if (parts.length === 1) return text;
+  return parts.map((part, i) => (
+    <span key={i}>
+      {i > 0 && (
+        <a
+          href={STUDIO_MAPS_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          data-cursor="pointer"
+          className="text-white/80 underline underline-offset-4 transition hover:text-white"
+        >
+          {STUDIO_ADDRESS}
+        </a>
+      )}
+      {part}
+    </span>
+  ));
+}
+
+function AboutPage({ onNavigate }: { onNavigate: (path: string) => void }) {
+  const ABOUT = getAbout(useLang());
+  const t = useT();
+  return (
+    <main className="relative z-10 min-h-screen px-6 pb-24 pt-28 md:px-16 md:pt-32">
+      <div className="mx-auto w-full max-w-3xl">
+        <Reveal>
+          <p className="mb-4 text-[12px] uppercase tracking-[0.3em] text-white/40">
+            {ABOUT.kicker}
+          </p>
+          <h1 className="font-serif text-[3rem] leading-[0.95] tracking-tight md:text-[4.5rem]">
+            The Four <span className="italic">Deuces</span>
+          </h1>
+          {ABOUT.intro.map((p, i) => (
+            <p
+              key={i}
+              className="mt-6 max-w-2xl text-[15px] leading-relaxed text-white/60"
+            >
+              {p}
+            </p>
+          ))}
+        </Reveal>
+
+        {/* Why + location reveal together (one Reveal) */}
+        <Reveal delay={0.1}>
+          <section className="mt-16">
+            <h2 className="font-serif text-[2rem] leading-[1] tracking-tight md:text-[2.6rem]">
+              {ABOUT.whyTitle}
+            </h2>
+            <div className="mt-10 grid justify-items-center gap-10 sm:grid-cols-3">
+              {ABOUT.why.map((w, i) => (
+                <TextRing
+                  key={w.h}
+                  text={w.h}
+                  diameter={260}
+                  reverse={i % 2 === 1}
+                  spinSeconds={30 + i * 4}
+                  color="rgba(255,255,255,0.3)"
+                >
+                  <p className="text-[12.5px] leading-relaxed text-white/70">
+                    {w.p}
+                  </p>
+                </TextRing>
+              ))}
+            </div>
+          </section>
+
+          <section className="mt-16">
+            <h2 className="font-serif text-[2rem] leading-[1] tracking-tight md:text-[2.6rem]">
+              {ABOUT.locationTitle}
+            </h2>
+            {ABOUT.location.map((p, i) => (
+              <p
+                key={i}
+                className="mt-5 max-w-2xl text-[15px] leading-relaxed text-white/60"
+              >
+                {withAddressLink(p)}
+              </p>
+            ))}
+          </section>
+
+          <section className="mt-14 border-t border-white/10 pt-8">
+            <p className="mb-2 text-[12px] uppercase tracking-[0.3em] text-white/40">
+              {t("contact.careers")}
+            </p>
+            <p className="max-w-2xl text-[15px] leading-relaxed text-white/60">
+              {t("contact.careers.pre")}
+              <button
+                onClick={() => onNavigate("/guests")}
+                data-cursor="pointer"
+                className="text-white/80 underline underline-offset-4 transition hover:text-white"
+              >
+                {t("contact.careers.link")}
+              </button>
+              {t("contact.careers.post")}
+            </p>
+          </section>
+
+          <section className="mt-14 border-t border-white/10 pt-8">
+            <p className="text-[15px] leading-relaxed text-white/60">
+              {t("about.proud")}
+            </p>
+          </section>
+        </Reveal>
+      </div>
+    </main>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* STYLE PAGE — /{style}-tattoo-amsterdam (SEO landing per style)            */
+/* -------------------------------------------------------------------------- */
+
+function StylePage({
+  style,
+  onNavigate,
+  onOpenArtist,
+}: {
+  style: (typeof STYLES)[number];
+  onNavigate: (path: string) => void;
+  onOpenArtist: (i: number) => void;
+}) {
+  const t = useT();
+  const lang = useLang();
+  // Title with its last word in italic (matching the /terms heading style).
+  const words = style.title.trim().split(" ");
+  const lastWord = words.pop();
+  const leadWords = words.join(" ");
+
+  // Artists mapped to this style (explicit list), and a representative work to
+  // use as the style's photo (in black & white).
+  const styleArtistIdxs = style.artists
+    .map((name) => ARTISTS.findIndex((a) => a.name === name))
+    .filter((i) => i >= 0);
+  let photo = "";
+  const keyed = style.photoKey ? WORK_BY_KEY.get(style.photoKey) : undefined;
+  if (keyed) {
+    photo = keyed.img;
+  } else {
+    for (const i of styleArtistIdxs) {
+      const w = (WORKS_BY_ARTIST[i] || [])[0];
+      if (w) {
+        photo = w.img;
+        break;
+      }
+    }
+  }
+  if (!photo && styleArtistIdxs.length) photo = ARTISTS[styleArtistIdxs[0]].img;
+
+  // Artist avatars — shown to the left of the photo on desktop, and again (with
+  // a heading) below the copy on mobile.
+  const artistAvatars = styleArtistIdxs.map((i) => (
+    <button
+      key={i}
+      type="button"
+      onClick={() => onOpenArtist(i)}
+      data-cursor="pointer"
+      aria-label={ARTISTS[i].name}
+      className="group flex flex-col items-center gap-1.5"
+    >
+      <span className="h-14 w-14 overflow-hidden rounded-full ring-1 ring-white/20 transition group-hover:ring-white/60">
+        <img
+          src={ARTISTS[i].img}
+          alt={ARTISTS[i].name}
+          draggable={false}
+          className="h-full w-full object-cover"
+        />
+      </span>
+      <span className="text-[11px] text-white/50 transition group-hover:text-white">
+        {ARTISTS[i].name}
+      </span>
+    </button>
+  ));
+
+  return (
+    <main className="relative z-10 min-h-screen px-6 pb-24 pt-28 md:px-16 md:pt-32">
+      <div className="mx-auto w-full max-w-6xl">
+        <Reveal>
+          <p className="mb-4 text-center text-[12px] uppercase tracking-[0.3em] text-white/40">
+            {t("ui.ourStyles")}
+          </p>
+        </Reveal>
+
+        {/* Showcase — mirrors the /artists layout: artist avatars + photo + text */}
+        <div className="mt-10 flex w-full flex-col items-center gap-8 md:flex-row md:justify-center md:gap-14">
+          {styleArtistIdxs.length > 0 && (
+            <Reveal className="hidden shrink-0 md:block">
+              <div className="flex flex-col items-center justify-center gap-4">
+                {artistAvatars}
+              </div>
+            </Reveal>
+          )}
+
+          <Reveal className="w-full max-w-[300px] shrink-0 md:max-w-md">
+            <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl ring-1 ring-white/10">
+              {photo ? (
+                <FadeImg
+                  src={photo}
+                  alt={`${style.name} tattoo — The Four Deuces Amsterdam`}
+                  draggable={false}
+                  className="absolute inset-0 h-full w-full object-cover grayscale"
+                />
+              ) : null}
+            </div>
+          </Reveal>
+
+          <Reveal className="flex-1" delay={0.12} y={24}>
+            <p className="mb-4 text-[12px] uppercase tracking-[0.3em] text-white/40">
+              {style.kicker}
+            </p>
+            <h1 className="font-serif text-[3rem] leading-[0.95] tracking-tight md:text-[4rem]">
+              {leadWords ? leadWords + " " : ""}
+              <span className="italic">{lastWord}</span>
+            </h1>
+            {style.lead.map((p, i) => (
+              <p
+                key={i}
+                className="mt-6 max-w-md text-[15px] leading-relaxed text-white/60"
+              >
+                {p}
+              </p>
+            ))}
+          </Reveal>
+        </div>
+
+        {/* Mobile-only: artists who work in this style, below the copy */}
+        {styleArtistIdxs.length > 0 && (
+          <Reveal className="md:hidden" delay={0.06}>
+            <section className="mt-14">
+              <h2 className="mb-5 text-center text-[12px] uppercase tracking-[0.25em] text-white/40">
+                {t("ui.madeByArtists")}
+              </h2>
+              <div className="flex flex-row flex-wrap items-start justify-center gap-6">
+                {artistAvatars}
+              </div>
+            </section>
+          </Reveal>
+        )}
+
+        {/* Other styles */}
+        <Reveal delay={0.1}>
+          <section className="mt-16">
+            <h2 className="mb-5 text-center text-[12px] uppercase tracking-[0.25em] text-white/40">
+              {t("ui.otherStyles")}
+            </h2>
+            <div className="flex flex-wrap justify-center gap-2">
+              {getStyles(lang).filter((s) => s.slug !== style.slug).map((s) => (
+                <button
+                  key={s.slug}
+                  type="button"
+                  onClick={() => onNavigate(s.slug)}
+                  data-cursor="pointer"
+                  className="rounded-full border border-white/15 px-4 py-2 text-[13px] text-white/75 transition hover:border-white/40 hover:bg-white/5"
+                >
+                  {s.nav}
+                </button>
+              ))}
+            </div>
+          </section>
+        </Reveal>
+
+        {/* FAQ (also emitted as FAQPage structured data at build time) */}
+        <Reveal delay={0.16}>
+          <section className="mx-auto mt-20 max-w-3xl">
+            <h2 className="font-serif text-[1.9rem] leading-[1] tracking-tight md:text-[2.4rem]">
+              {t("ui.qa")}
+            </h2>
+            <div className="mt-8 divide-y divide-white/10 border-y border-white/10">
+              {style.faq.map((item, i) => (
+                <details key={i} className="group py-5">
+                  <summary
+                    data-cursor="pointer"
+                    className="flex cursor-pointer list-none items-center justify-between gap-4 text-[16px] text-white/90 md:text-[18px] [&::-webkit-details-marker]:hidden"
+                  >
+                    {item.q}
+                    <ChevronDown
+                      className="h-5 w-5 shrink-0 text-white/40 transition-transform duration-300 group-open:rotate-180"
+                      strokeWidth={2}
+                    />
+                  </summary>
+                  <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-white/55">
+                    {item.a}
+                  </p>
+                </details>
+              ))}
+            </div>
+          </section>
+        </Reveal>
+
+        {/* Hidden SEO copy — keyword-rich text for search engines (e.g.
+            "realism tattoo Amsterdam"); visually hidden (sr-only) so it has no
+            effect on the layout. */}
+        <section className="sr-only">
+          <h2>{style.name} Tattoo in Amsterdam — The Four Deuces</h2>
+          <p>
+            The Four Deuces is a tattoo studio in Amsterdam's Museum Quarter
+            (Amsterdam Zuid), at Van Baerlestraat 126H, 1071 BD Amsterdam,
+            specialising in {style.name.toLowerCase()} tattoos. We create
+            fully custom, highly detailed work and welcome clients from across
+            Amsterdam, the Netherlands and abroad.
+          </p>
+          <p>
+            {style.aliases
+              .map((a) => `${a} tattoo Amsterdam`)
+              .join(" · ")}
+          </p>
+          <p>
+            Book a {style.nav.toLowerCase()} tattoo in Amsterdam, or a free
+            consultation, at The Four Deuces — Van Baerlestraat 126H, near
+            Museumplein, the Van Gogh Museum and Vondelpark.
+          </p>
+        </section>
+      </div>
+    </main>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
 /* APP                                                                        */
 /* -------------------------------------------------------------------------- */
 
@@ -3622,6 +4771,7 @@ function smoothScrollToId(id: string, duration = 950) {
 // Fullscreen, non-dismissable notice shown when a phone is held in landscape.
 // It clears itself the moment the device returns to portrait.
 function RotateNotice() {
+  const t = useT();
   const [landscape, setLandscape] = useState(false);
 
   useEffect(() => {
@@ -3648,11 +4798,10 @@ function RotateNotice() {
         <Smartphone className="h-7 w-7 text-white" strokeWidth={1.75} />
       </span>
       <h2 className="font-serif text-[2rem] leading-[1.05]">
-        Please rotate your <span className="italic">device.</span>
+        {t("rotate.a")} <span className="italic">{t("rotate.b")}</span>
       </h2>
       <p className="max-w-sm text-[14px] leading-relaxed text-white/60">
-        The Four Deuces is best experienced in portrait. Turn your phone upright
-        to continue.
+        {t("rotate.msg")}
       </p>
     </div>
   );
@@ -3663,6 +4812,7 @@ function RotateNotice() {
 /* -------------------------------------------------------------------------- */
 
 function NotFoundPage({ onNavigate }: { onNavigate: (path: string) => void }) {
+  const t = useT();
   return (
     <main className="relative z-10 flex min-h-screen flex-col items-center justify-center overflow-hidden px-6 text-center">
       <AsciiFire />
@@ -3676,20 +4826,20 @@ function NotFoundPage({ onNavigate }: { onNavigate: (path: string) => void }) {
       />
       <div className="relative z-10 flex flex-col items-center">
         <p className="mb-4 text-[12px] uppercase tracking-[0.3em] text-white/50">
-          Page not found
+          {t("nf.kicker")}
         </p>
         <h1 className="font-serif text-[6rem] leading-[0.9] tracking-tight md:text-[10rem]">
           404
         </h1>
         <p className="mt-6 max-w-sm text-[15px] leading-relaxed text-white/70">
-          This page went up in smoke. Let's get you back to the studio.
+          {t("nf.msg")}
         </p>
         <button
           onClick={() => onNavigate("/")}
           data-cursor="pointer"
-          className="mt-8 rounded-full bg-white px-8 py-3 text-[14px] font-medium text-black transition hover:bg-white/90"
+          className={`${PILL(true)} mt-8`}
         >
-          Back home
+          {t("nf.back")}
         </button>
       </div>
     </main>
@@ -3789,6 +4939,7 @@ export default function App() {
       : null,
   );
   const [menuOpen, setMenuOpen] = useState(false);
+  const [langMenuOpen, setLangMenuOpen] = useState(false);
   const [activeArtist, setActiveArtist] = useState(0);
   const [worksArtist, setWorksArtist] = useState<number | null>(null);
   const [worksStart, setWorksStart] = useState(0);
@@ -3796,10 +4947,7 @@ export default function App() {
     setWorksStart(startIndex);
     setWorksArtist(artistIdx);
   };
-  const [booking, setBooking] = useState<{
-    artist?: string;
-    bodyPart?: string;
-  } | null>(null);
+  const [booking, setBooking] = useState<LeadContext | null>(null);
   const [loading, setLoading] = useState(true);
   const finishLoading = useCallback(() => setLoading(false), []);
   const [route, setRoute] = useState(() => window.location.pathname);
@@ -3819,9 +4967,19 @@ export default function App() {
     return () => window.removeEventListener("popstate", onPop);
   }, []);
 
-  // Returning visitor who already accepted → start analytics on load.
+  // Set Consent Mode defaults (denied) + load gtag as early as possible, and
+  // capture any ad click id / UTM from the landing URL for lead attribution.
   useEffect(() => {
-    if (consent === "accepted") loadClarity();
+    captureAttribution();
+    initAnalytics();
+  }, []);
+
+  // Returning visitor who already accepted → grant consent + start analytics.
+  useEffect(() => {
+    if (consent === "accepted") {
+      grantConsent();
+      loadClarity();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -3832,62 +4990,130 @@ export default function App() {
     } catch {
       /* ignore */
     }
-    if (choice === "accepted") loadClarity();
+    if (choice === "accepted") {
+      grantConsent();
+      loadClarity();
+    } else {
+      denyConsent();
+    }
   };
 
-  const navigate = (path: string) => {
+  // Current language + the language-agnostic path ("/", "/book", "/realism").
+  const { lang, rest } = splitLangPath(route);
+  // App-level translate (App sits above the LangContext.Provider).
+  const tr = (key: string) => translate(lang, key);
+
+  // Keep the document language in sync for accessibility / SEO.
+  useEffect(() => {
+    document.documentElement.lang = htmlLangFor(lang);
+  }, [lang]);
+
+  // navigate() takes a language-agnostic path and keeps the current language
+  // prefix (e.g. on /nl, navigate("/book") → /nl/book).
+  const navigate = (p: string) => {
     setMenuOpen(false);
-    if (path !== window.location.pathname) {
-      window.history.pushState({}, "", path);
-      setRoute(path);
+    const target = langPath(lang, p);
+    if (target !== window.location.pathname) {
+      window.history.pushState({}, "", target);
+      setRoute(target);
     }
     window.scrollTo(0, 0);
   };
 
-  const path = route.replace(/\/+$/, "") || "/";
+  // Switch language, staying on the same page.
+  const setLang = (next: Lang) => {
+    const target = langPath(next, rest);
+    if (target !== window.location.pathname) {
+      window.history.pushState({}, "", target);
+      setRoute(target);
+    }
+  };
+
+  const path = rest.replace(/\/+$/, "") || "/";
+  // Localised style list for the current language (slug lookup is unchanged).
+  const localizedStyles = useMemo(() => getStyles(lang), [lang]);
+  const stylePage = localizedStyles.find((s) => s.slug === path);
   const page =
     path === "/"
       ? "home"
-      : path === "/contact"
-        ? "contact"
-        : path === "/book" || path === "/guide"
-          ? "book"
-          : path === "/artists"
-            ? "artists"
-            : path === "/faq"
-              ? "faq"
-              : path === "/terms"
-                ? "terms"
-                : "notfound";
+      : path === "/about"
+        ? "about"
+        : path === "/contact"
+          ? "contact"
+          : path === "/book" || path === "/guide"
+            ? "book"
+            : path === "/artists"
+              ? "artists"
+              : path === "/faq"
+                ? "faq"
+                : path === "/terms"
+                  ? "terms"
+                  : path === "/guests"
+                    ? "guests"
+                    : stylePage
+                      ? "style"
+                      : "notfound";
   const isHome = page === "home";
 
   // Client-side navigation doesn't reload the document, so keep the tab title
   // in sync with the route (mirrors the per-route titles baked into the
   // prerendered HTML in vite.config.ts).
   useEffect(() => {
+    if (page === "style" && stylePage) {
+      document.title = stylePage.seoTitle;
+      return;
+    }
     const titles: Record<string, string> = {
-      home: "The Four Deuces - Tattoo Studio & Artspace",
-      book: "Book a Tattoo Appointment | The Four Deuces Amsterdam",
-      artists: "Our Tattoo Artists | The Four Deuces Amsterdam",
-      faq: "Tattoo FAQ | The Four Deuces Amsterdam",
-      contact: "Contact | The Four Deuces Tattoo Studio Amsterdam",
-      terms: "Terms & Privacy | The Four Deuces",
-      notfound: "Page not found | The Four Deuces",
+      home: tr("title.home"),
+      about: getAbout(lang).seoTitle,
+      book: tr("title.book"),
+      artists: tr("title.artists"),
+      faq: tr("title.faq"),
+      contact: tr("title.contact"),
+      terms: tr("title.terms"),
+      guests: tr("title.guests"),
+      notfound: tr("title.notfound"),
     };
     document.title = titles[page] ?? titles.home;
-  }, [page]);
+  }, [page, stylePage, lang]);
+
+  // SPA navigation → GA4 page_view (fires after the title updates above).
+  useEffect(() => {
+    trackPageview(path);
+  }, [path]);
 
   const openProfile = (i: number) => {
     setActiveArtist(i);
     smoothScrollToId("artists", 950);
   };
 
-  const openBooking = (ctx: { artist?: string; bodyPart?: string } = {}) => {
+  // From a style page → open that artist on the /artists page.
+  const openArtist = (i: number) => {
+    setActiveArtist(i);
+    navigate("/artists");
+  };
+
+  const openBooking = (
+    ctx: { source?: string; artist?: string; bodyPart?: string } = {},
+  ) => {
     setMenuOpen(false);
-    setBooking(ctx);
+    const source =
+      ctx.source ?? (ctx.artist ? "artist" : ctx.bodyPart ? "book" : "hero");
+    setBooking({
+      type: "booking",
+      source,
+      artist: ctx.artist,
+      bodyPart: ctx.bodyPart,
+    });
+  };
+
+  const openConsult = (source = "hero") => {
+    setMenuOpen(false);
+    setBooking({ type: "consultation", source });
   };
 
   return (
+    <LangContext.Provider value={lang}>
     <div className="relative w-full overflow-x-hidden bg-[#050505] text-white">
       {/* ===================== LOADER ===================== */}
       <AnimatePresence>
@@ -3930,12 +5156,30 @@ export default function App() {
 
       </header>
 
-      {/* Burger menu — always available (replaces the old back button) */}
-      <MenuButton open={menuOpen} onClick={() => setMenuOpen((o) => !o)} />
+      {/* Burger menu + language switcher — always available. On mobile the
+          language switcher is a globe (MobileLangMenu); while its menu is open
+          the burger is greyed out and non-clickable. */}
+      <LanguageSwitcher current={lang} onSelect={setLang} />
+      <MobileLangMenu
+        current={lang}
+        onSelect={setLang}
+        open={langMenuOpen}
+        disabled={menuOpen}
+        onOpenChange={(v) => {
+          if (v) setMenuOpen(false);
+          setLangMenuOpen(v);
+        }}
+      />
+      <MenuButton
+        open={menuOpen}
+        onClick={() => setMenuOpen((o) => !o)}
+        disabled={langMenuOpen}
+      />
       <Menu
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
         onNavigate={navigate}
+        onConsult={() => openConsult("menu")}
       />
 
       {isHome ? (
@@ -3943,7 +5187,7 @@ export default function App() {
           {/* ============ FIRST SCREEN: hero + carousel ============ */}
           <section className="relative min-h-screen overflow-hidden">
             <main className="pointer-events-none relative z-30 min-h-screen">
-              <Hero />
+              <Hero onNavigate={navigate} />
             </main>
             {isMobile ? (
               <Smooth3DSlideshow onOpenProfile={openProfile} />
@@ -3966,6 +5210,25 @@ export default function App() {
           {/* ============ SPONSORS ============ */}
           <Sponsors />
 
+          {/* Hidden SEO copy — mirrors /about; present in the DOM for crawlers,
+              visually hidden (sr-only) so it doesn't affect the design. */}
+          <section className="sr-only">
+            <h2>{getAbout(lang).title} — Tattoo Studio in Amsterdam</h2>
+            {getAbout(lang).intro.map((p, i) => (
+              <p key={i}>{p}</p>
+            ))}
+            <h3>{getAbout(lang).whyTitle}</h3>
+            {getAbout(lang).why.map((w) => (
+              <p key={w.h}>
+                <strong>{w.h}.</strong> {w.p}
+              </p>
+            ))}
+            <h3>{getAbout(lang).locationTitle}</h3>
+            {getAbout(lang).location.map((p, i) => (
+              <p key={i}>{p}</p>
+            ))}
+          </section>
+
           {/* ===================== FOOTER ===================== */}
           <footer className="px-6 py-14 md:px-16">
             <div className="mx-auto flex max-w-md flex-col items-center gap-5 text-center">
@@ -3973,7 +5236,7 @@ export default function App() {
                 The Four <span className="italic">Deuces</span>
               </p>
               <p className="text-[13px] leading-relaxed text-white/40">
-                Designed &amp; developed by{" "}
+                {tr("footer.designed")}{" "}
                 <a
                   href="https://aerdt.xyz/"
                   target="_blank"
@@ -3991,7 +5254,7 @@ export default function App() {
                   data-cursor="pointer"
                   className="shrink-0 transition hover:text-white/70"
                 >
-                  Terms &amp; Privacy
+                  {tr("footer.terms")}
                 </button>
                 <span>© 2020–{new Date().getFullYear()} The Four Deuces</span>
               </div>
@@ -4002,7 +5265,7 @@ export default function App() {
                   data-cursor="pointer"
                   className="transition hover:text-white/70"
                 >
-                  Terms &amp; Privacy
+                  {tr("footer.terms")}
                 </button>
                 <span className="text-white/15">·</span>
                 <span>© 2020–{new Date().getFullYear()} The Four Deuces</span>
@@ -4013,18 +5276,32 @@ export default function App() {
       ) : page === "contact" ? (
         <ContactPage onNavigate={navigate} />
       ) : page === "book" ? (
-        <BookPage onBook={openBooking} />
+        <BookPage
+          onBook={openBooking}
+          onConsult={() => openConsult("book")}
+        />
       ) : page === "faq" ? (
-        <FaqPage onNavigate={navigate} />
+        <FaqPage onNavigate={navigate} onConsult={() => openConsult("faq")} />
       ) : page === "artists" ? (
         <ArtistsPage
           active={activeArtist}
           onSelect={setActiveArtist}
           onOpenWorks={openWorks}
           onBook={openBooking}
+          onNavigate={navigate}
         />
       ) : page === "terms" ? (
         <TermsPage />
+      ) : page === "guests" ? (
+        <GuestsPage />
+      ) : page === "about" ? (
+        <AboutPage onNavigate={navigate} />
+      ) : page === "style" && stylePage ? (
+        <StylePage
+          style={stylePage}
+          onNavigate={navigate}
+          onOpenArtist={openArtist}
+        />
       ) : (
         <NotFoundPage onNavigate={navigate} />
       )}
@@ -4036,13 +5313,12 @@ export default function App() {
         onClose={() => setWorksArtist(null)}
       />
 
-      {/* ===================== BOOKING OVERLAY ===================== */}
+      {/* ===================== BOOKING / CONSULTATION OVERLAY ============ */}
       <AnimatePresence>
         {booking && (
-          <LeadForm
+          <BookingForm
             key="booking"
-            mode="modal"
-            context={{ source: "book", ...booking }}
+            context={booking}
             onClose={() => setBooking(null)}
           />
         )}
@@ -4063,27 +5339,26 @@ export default function App() {
                 <Cookie className="h-4 w-4 text-white/70" strokeWidth={2} />
               </span>
               <p className="flex-1 text-[11px] leading-tight text-white/60">
-                We use cookies to understand how you use our site. Accept to
-                help us improve.{" "}
+                {tr("cookie.text")}{" "}
                 <button
                   onClick={() => navigate("/terms")}
                   data-cursor="pointer"
                   className="text-white/80 underline underline-offset-2"
                 >
-                  Privacy Policy
+                  {tr("cookie.privacy")}
                 </button>
               </p>
               <button
                 onClick={() => decideConsent("declined")}
                 className="rounded-full px-4 py-2 text-[12px] text-white/70 transition hover:text-white"
               >
-                Decline
+                {tr("cookie.decline")}
               </button>
               <button
                 onClick={() => decideConsent("accepted")}
                 className="rounded-full bg-white px-5 py-2 text-[12px] font-medium text-black transition hover:bg-white/90"
               >
-                Accept
+                {tr("cookie.accept")}
               </button>
             </div>
           </motion.div>
@@ -4093,5 +5368,6 @@ export default function App() {
       <Cursor />
       <RotateNotice />
     </div>
+    </LangContext.Provider>
   );
 }
