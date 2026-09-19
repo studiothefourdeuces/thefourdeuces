@@ -347,6 +347,12 @@ const DICT: Record<string, Entry> = {
     ua: "Горді бути українцями 🇺🇦",
   },
   "nav.faq": { en: "FAQ", nl: "FAQ", de: "FAQ", ua: "FAQ" },
+  "nav.contact": {
+    en: "Contact",
+    nl: "Contact",
+    de: "Kontakt",
+    ua: "Контакти",
+  },
 
   // Hero — the cycling label (two phrases).
   "hero.book": {
@@ -544,6 +550,12 @@ const DICT: Record<string, Entry> = {
     nl: "Boek bij",
     de: "Termin bei",
     ua: "Записатися до",
+  },
+  "ui.bookLead": {
+    en: "Like what you see?",
+    nl: "Bevalt wat je ziet?",
+    de: "Gefällt dir, was du siehst?",
+    ua: "Сподобалось?",
   },
   "ui.seePortfolio": {
     en: "See portfolio",

@@ -308,6 +308,7 @@ const MENU: { tkey: string; target: string }[] = [
   { tkey: "nav.reviews", target: "#reviews" },
   { tkey: "nav.about", target: "/about" },
   { tkey: "nav.faq", target: "/faq" },
+  { tkey: "nav.contact", target: "/contact" },
 ];
 
 // Full native language names (used by the in-menu mobile language picker).
@@ -1278,7 +1279,7 @@ function Smooth3DSlideshow({
 
   return (
     <div
-      className="pointer-events-auto absolute inset-x-0 bottom-[1%] z-20 flex items-center justify-center"
+      className="pointer-events-auto absolute inset-x-0 bottom-[15%] z-20 flex items-center justify-center"
       // pan-y lets the page still scroll vertically while we own horizontal
       // gestures — otherwise the browser hijacks the swipe and fires
       // pointercancel before we see the pointerup.
@@ -1773,14 +1774,16 @@ function Hero({ onNavigate }: { onNavigate: (path: string) => void }) {
         <span className="italic">Made to Last.</span>
       </h1>
 
-      {/* Any interaction leads to /book. Plain text CTA with arrow, cycling labels. */}
+      {/* Any interaction leads to /book. Plain text CTA with arrow, cycling
+          labels. On mobile it sits below the carousel as a bordered bar (framed
+          by hairlines, like the menu CTAs); on desktop it's centred. */}
       <button
         type="button"
         onClick={() => onNavigate("/book")}
         data-cursor="pointer"
-        className="group pointer-events-auto absolute left-1/2 top-[30%] flex -translate-x-1/2 items-center justify-center gap-2.5 whitespace-nowrap md:top-1/2 md:-translate-y-1/2"
+        className="group pointer-events-auto absolute inset-x-0 bottom-[3%] flex items-center justify-center gap-2.5 whitespace-nowrap border-y border-white/10 py-4 md:inset-x-auto md:bottom-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:border-0 md:py-0"
       >
-        <span className="font-serif text-[2.1rem] leading-none text-white md:text-[1.8rem]">
+        <span className="font-serif text-[1.7rem] leading-none text-white md:text-[1.8rem]">
           {isConsult ? (
             <>
               <sup className="mr-1 align-super text-[9px] uppercase tracking-[0.2em] text-white/50">
@@ -2170,7 +2173,7 @@ function Menu({
             })}
           </nav>
 
-          {/* Bottom CTAs — Book · Request consultation · Contact. Stacked on
+          {/* Bottom CTAs — Book · Request consultation. Stacked on
               mobile, in a row on desktop; all styled the same. */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -2217,24 +2220,6 @@ function Menu({
                     ? t("cta.consult.b")
                     : capFirst(t("cta.consult.b"))}
                 </span>
-              </span>
-              <ArrowUpRight
-                className="h-5 w-5 shrink-0 text-white/45 transition duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-white md:h-6 md:w-6"
-                strokeWidth={1.75}
-              />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
-                onNavigate("/contact");
-              }}
-              data-cursor="pointer"
-              className="group flex flex-1 items-center justify-center gap-2.5 px-6 py-7 transition-colors hover:bg-white/[0.03] md:py-9"
-            >
-              <span className="font-serif text-[1.6rem] leading-none text-white md:text-[1.8rem]">
-                <span className="italic">{t("cta.contact")}</span>
               </span>
               <ArrowUpRight
                 className="h-5 w-5 shrink-0 text-white/45 transition duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-white md:h-6 md:w-6"
@@ -2369,7 +2354,7 @@ function ArtistButtons({
   );
 }
 
-// Mobile-only horizontal avatar row (desktop uses the vertical ArtistButtons).
+// Mobile-only horizontal avatar row (used by the home artist showcase).
 function ArtistRow({
   active,
   onSelect,
@@ -2883,25 +2868,63 @@ function ArtistsPage({
     prevRef.current = active;
   }, [active, M]);
 
+  // On mobile the works grid always shows an even number of tiles (a lone
+  // trailing tile on the last row looks unbalanced) — drop the last if odd.
+  const worksToShow =
+    isMobile && works.length % 2 === 1 ? works.slice(0, -1) : works;
+
   return (
     <main className="relative z-10 min-h-screen px-6 pb-24 pt-28 md:px-16 md:pt-32">
       <div className="mx-auto w-full max-w-6xl">
         <p className="mb-4 text-center text-[12px] uppercase tracking-[0.3em] text-white/40">
           {t("ui.ourArtists")}
         </p>
-        <h1 className="text-center font-serif text-[3rem] leading-[0.95] tracking-tight md:text-[4.5rem]">
+        {/* Title — the artist's name on mobile (matches the profile layout),
+            the generic "Artists" heading on desktop. */}
+        <motion.h1
+          key={`m-${active}`}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          className="text-center font-serif text-[3rem] leading-[0.95] tracking-tight md:hidden"
+        >
+          {artist.name}
+        </motion.h1>
+        <h1 className="hidden text-center font-serif leading-[0.95] tracking-tight md:block md:text-[4.5rem]">
           {t("ui.artists")}
         </h1>
 
-        {/* Artist showcase — mirrors the home page layout */}
-        <div className="mt-14 flex w-full flex-col items-center gap-10 md:flex-row md:justify-center md:gap-14">
-          <div className="hidden shrink-0 md:block">
+        {/* ===== MOBILE: name-led text, then a horizontal artist picker ===== */}
+        <motion.div
+          key={`mt-${active}`}
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          className="mt-8 md:hidden"
+        >
+          <p className="mb-3 text-[12px] uppercase tracking-[0.3em] text-white/40">
+            {String(active + 1).padStart(2, "0")} —{" "}
+            <RoleLinks role={role} onNavigate={onNavigate} />
+          </p>
+          <p className="text-[15px] leading-relaxed text-white/60">{bio}</p>
+          {artist.since && (
+            <p className="mt-4 text-[12px] uppercase tracking-[0.25em] text-white/40">
+              {t("ui.tattooingSince")} {artist.since}
+            </p>
+          )}
+        </motion.div>
+        {/* Artist picker — horizontal row of avatars, under the bio/since. */}
+        <div className="mt-8 md:hidden">
+          <ArtistRow active={active} onSelect={onSelect} />
+        </div>
+
+        {/* ===== DESKTOP showcase — mirrors the home page layout ===== */}
+        <div className="mt-14 hidden w-full items-center gap-10 md:flex md:flex-row md:justify-center md:gap-14">
+          <div className="shrink-0">
             <ArtistButtons active={active} onSelect={onSelect} />
           </div>
 
-          {/* Photo — desktop only; on mobile the small-avatar carousel is the
-              only artist picker. */}
-          <div className="hidden w-full max-w-[300px] shrink-0 md:block md:max-w-md">
+          <div className="w-full max-w-[300px] shrink-0 md:max-w-md">
             <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl ring-1 ring-white/10">
               <motion.img
                 key={active}
@@ -2916,12 +2939,6 @@ function ArtistsPage({
             </div>
           </div>
 
-          {/* Mobile-only horizontal selector */}
-          <div className="md:hidden">
-            <ArtistRow active={active} onSelect={onSelect} />
-          </div>
-
-          {/* Text */}
           <motion.div
             key={active}
             className="flex-1"
@@ -2944,16 +2961,6 @@ function ArtistsPage({
                 {t("ui.tattooingSince")} {artist.since}
               </p>
             )}
-            <div className="mt-8 flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={() => onBook({ artist: artist.name })}
-                data-cursor="pointer"
-                className={PILL(true)}
-              >
-                {t("ui.bookWith")} {artist.name}
-              </button>
-            </div>
           </motion.div>
         </div>
 
@@ -2962,9 +2969,9 @@ function ArtistsPage({
           <h2 className="text-center font-serif text-[1.7rem] leading-[1] tracking-tight md:text-[2.2rem]">
             {t("ui.worksBy")} {artist.name}
           </h2>
-          {works.length > 0 ? (
+          {worksToShow.length > 0 ? (
             <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4">
-              {works.map((w, i) => {
+              {worksToShow.map((w, i) => {
                 const eager = isMobile && i < 2;
                 return (
                   <Reveal
@@ -3004,6 +3011,19 @@ function ArtistsPage({
               {t("ui.portfolioSoon")}
             </p>
           )}
+
+          {/* Book CTA — sits under the gallery, with a soft grey prompt above. */}
+          <div className="mt-12 flex flex-col items-center gap-3 text-center">
+            <p className="text-[13px] text-white/45">{t("ui.bookLead")}</p>
+            <button
+              type="button"
+              onClick={() => onBook({ artist: artist.name })}
+              data-cursor="pointer"
+              className={PILL(true)}
+            >
+              {t("ui.bookWith")} {artist.name}
+            </button>
+          </div>
         </section>
       </div>
     </main>
@@ -3993,7 +4013,7 @@ function BookPage({
 }) {
   const t = useT();
   return (
-    <main className="relative z-10 min-h-screen px-6 pb-24 pt-28 md:px-16 md:pt-32">
+    <main className="relative z-10 min-h-screen px-6 pb-24 pt-20 md:px-16 md:pt-32">
       <div className="mx-auto w-full max-w-5xl">
         {/* Title + intro — desktop only (mobile jumps straight to the map) */}
         <Reveal className="hidden md:block">
@@ -4024,7 +4044,7 @@ function BookPage({
           </div>
         </Reveal>
 
-        <section className="mt-8 md:mt-14">
+        <section className="mt-2 md:mt-14">
           {/* Mobile lead above the map */}
           <Reveal className="md:hidden">
             <h2 className="text-center font-serif text-[2rem] leading-[1] tracking-tight">
