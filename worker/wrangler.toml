@@ -7,10 +7,31 @@ compatibility_date = "2024-11-01"
 ALLOWED_ORIGIN = "https://thefourdeuces.nl"
 MAIL_TO = "booking@thefourdeuces.nl"
 MAIL_FROM = "leads@thefourdeuces.nl"
-NOTIFY_HANDLE = "@sashamolchanova02"
+NOTIFY_HANDLE = "Sasha"
+
+# --- WhatsApp Cloud API (Meta) ---------------------------------------------
+# Leave WHATSAPP_PHONE_NUMBER_ID empty to disable WhatsApp entirely (the lead
+# still goes to Telegram / email / sheet). Fill it in + set the WHATSAPP_TOKEN
+# and WHATSAPP_VERIFY_TOKEN secrets to turn the automation on.
+WHATSAPP_PHONE_NUMBER_ID = ""
+WHATSAPP_API_VERSION = "v21.0"
+# Names of your two APPROVED templates in Meta Business Manager, and their
+# language code (must match the template exactly, e.g. "en", "en_US", "uk").
+WA_TEMPLATE_WELCOME = "tfd_welcome"
+WA_TEMPLATE_ASK = "tfd_ask_idea"
+WA_TEMPLATE_LANG = "en"
+# Optional: override the free-form message sent after the client's first reply.
+# WA_FOLLOWUP_TEXT = "..."
+
+# KV — remembers each chat's stage so the after-inspirations reply fires once.
+[[kv_namespaces]]
+binding = "WA_STATE"
+id = "be399006abf148bf9daf1e4336e1622c"
 
 # Secrets are NOT stored here. Set them with:
 #   wrangler secret put TG_TOKEN
 #   wrangler secret put TG_CHAT_ID
-#   wrangler secret put RESEND_KEY   (optional)
-#   wrangler secret put SHEET_URL    (optional)
+#   wrangler secret put RESEND_KEY             (optional)
+#   wrangler secret put SHEET_URL              (optional)
+#   wrangler secret put WHATSAPP_TOKEN         (Meta permanent token)
+#   wrangler secret put WHATSAPP_VERIFY_TOKEN  (any string; also in Meta webhook)
