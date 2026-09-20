@@ -44,6 +44,7 @@ const BASE_SLUGS = [
   "terms",
   "about",
   "guests",
+  "styles",
   ...STYLE_SLUGS,
 ];
 
@@ -80,6 +81,11 @@ function metaFor(slug: string, lang: string): Meta {
       return {
         title: t(lang, "title.guests"),
         description: t(lang, "desc.guests"),
+      };
+    case "styles":
+      return {
+        title: t(lang, "title.styles"),
+        description: t(lang, "desc.styles"),
       };
     case "about": {
       const a = getAbout(lang);

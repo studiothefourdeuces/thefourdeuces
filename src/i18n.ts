@@ -131,6 +131,18 @@ const DICT: Record<string, Entry> = {
     de: "Gastplätze und Karriere im Tattoo-Studio The Four Deuces in Amsterdam — unsere Bedingungen und wie du dabei bist. Schreib an studio@thefourdeuces.nl.",
     ua: "Гостьові місця та кар'єра в тату-студії The Four Deuces в Амстердамі — наші умови та як приєднатися. Пиши на studio@thefourdeuces.nl.",
   },
+  "title.styles": {
+    en: "Tattoo Styles | The Four Deuces Amsterdam",
+    nl: "Tattoostijlen | The Four Deuces Amsterdam",
+    de: "Tattoo-Stile | The Four Deuces Amsterdam",
+    ua: "Стилі тату | The Four Deuces Амстердам",
+  },
+  "desc.styles": {
+    en: "Explore the tattoo styles we specialise in at The Four Deuces Amsterdam — realism, chicano, fine line, anime, fluid line, ornamental and more.",
+    nl: "Ontdek de tattoostijlen waarin we gespecialiseerd zijn bij The Four Deuces Amsterdam — realisme, chicano, fine line, anime, fluid line, ornamenteel en meer.",
+    de: "Entdecke die Tattoo-Stile, auf die wir bei The Four Deuces Amsterdam spezialisiert sind — Realismus, Chicano, Fine Line, Anime, Fluid Line, ornamental und mehr.",
+    ua: "Досліди стилі тату, на яких ми спеціалізуємось у The Four Deuces Амстердам — реалізм, чикано, fine line, аніме, fluid line, орнаментал та інші.",
+  },
 
   // --- Guests & Careers page (/guests) ---
   "guests.kicker": {
@@ -346,12 +358,54 @@ const DICT: Record<string, Entry> = {
     de: "Stolz ukrainisch 🇺🇦",
     ua: "Горді бути українцями 🇺🇦",
   },
+  "about.navigate": {
+    en: "Navigate",
+    nl: "Navigeer",
+    de: "Navigieren",
+    ua: "Прокласти маршрут",
+  },
+  "about.careersText": {
+    en: "Looking to join the team or visit as a guest artist? We're always glad to meet talented artists who share our standards and care for their clients.",
+    nl: "Wil je bij het team komen of langskomen als gastartiest? We ontmoeten graag getalenteerde artiesten die onze standaarden en zorg voor klanten delen.",
+    de: "Du möchtest ins Team kommen oder als Gastkünstler vorbeischauen? Wir freuen uns über talentierte Artists, die unsere Standards und die Sorgfalt für Kunden teilen.",
+    ua: "Хочеш приєднатися до команди чи завітати як запрошений майстер? Ми завжди раді талановитим майстрам, які поділяють наші стандарти й турботу про клієнтів.",
+  },
+  "about.joinTeam": {
+    en: "Join the team",
+    nl: "Kom bij het team",
+    de: "Werde Teil des Teams",
+    ua: "Приєднатися до команди",
+  },
   "nav.faq": { en: "FAQ", nl: "FAQ", de: "FAQ", ua: "FAQ" },
   "nav.contact": {
     en: "Contact",
     nl: "Contact",
     de: "Kontakt",
     ua: "Контакти",
+  },
+  "nav.book": {
+    en: "Book",
+    nl: "Boeken",
+    de: "Buchen",
+    ua: "Запис",
+  },
+  "nav.partners": {
+    en: "Sponsors",
+    nl: "Sponsors",
+    de: "Sponsoren",
+    ua: "Спонсори",
+  },
+  "nav.guests": {
+    en: "Guests & Careers",
+    nl: "Gasten & Vacatures",
+    de: "Gäste & Karriere",
+    ua: "Гості та кар'єра",
+  },
+  "nav.styles": {
+    en: "All styles",
+    nl: "Alle stijlen",
+    de: "Alle Stile",
+    ua: "Усі стилі",
   },
 
   // Hero — the cycling label (two phrases).
@@ -387,7 +441,7 @@ const DICT: Record<string, Entry> = {
     en: "consultation",
     nl: "consult aan",
     de: "anfragen",
-    ua: "консультація",
+    ua: "Консультація",
   },
   "cta.contact": {
     en: "Contact",
@@ -601,6 +655,24 @@ const DICT: Record<string, Entry> = {
     de: "Weitere Stile",
     ua: "Інші стилі",
   },
+  "ui.readMore": {
+    en: "Read more",
+    nl: "Lees meer",
+    de: "Mehr lesen",
+    ua: "Детальніше",
+  },
+  "styles.title": {
+    en: "Tattoo Styles",
+    nl: "Tattoostijlen",
+    de: "Tattoo-Stile",
+    ua: "Стилі тату",
+  },
+  "ui.backToStyles": {
+    en: "Back to all styles",
+    nl: "Terug naar alle stijlen",
+    de: "Zurück zu allen Stilen",
+    ua: "До всіх стилів",
+  },
   "ui.qa": {
     en: "Questions & answers",
     nl: "Vragen & antwoorden",
@@ -626,6 +698,24 @@ const DICT: Record<string, Entry> = {
     nl: "Leverancier",
     de: "Lieferpartner",
     ua: "Партнер-постачальник",
+  },
+  "partners.kicker": {
+    en: "Who we work with",
+    nl: "Met wie we werken",
+    de: "Mit wem wir arbeiten",
+    ua: "З ким ми працюємо",
+  },
+  "partners.title": {
+    en: "Sponsors",
+    nl: "Sponsors",
+    de: "Sponsoren",
+    ua: "Спонсори",
+  },
+  "partners.subtitle": {
+    en: "The brands and studios we work with — for supplies, collaborations and guest spots.",
+    nl: "De merken en studio's waarmee we werken — voor materialen, samenwerkingen en gastplekken.",
+    de: "Die Marken und Studios, mit denen wir arbeiten — für Material, Kooperationen und Gastplätze.",
+    ua: "Бренди та студії, з якими ми працюємо — матеріали, колаборації та гостьові візити.",
   },
 
   // --- FAQ page ---
@@ -833,6 +923,24 @@ const DICT: Record<string, Entry> = {
   },
 
   // --- Footer ---
+  "footer.discover": {
+    en: "Discover",
+    nl: "Ontdek",
+    de: "Entdecken",
+    ua: "Огляд",
+  },
+  "footer.studio": {
+    en: "Studio",
+    nl: "Studio",
+    de: "Studio",
+    ua: "Студія",
+  },
+  "footer.styles": {
+    en: "Tattoo styles",
+    nl: "Tattoostijlen",
+    de: "Tattoo-Stile",
+    ua: "Стилі тату",
+  },
   "footer.designed": {
     en: "Designed & developed by",
     nl: "Ontworpen & ontwikkeld door",

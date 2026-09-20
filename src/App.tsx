@@ -77,9 +77,6 @@ const useT = () => {
   return (key: string) => translate(lang, key);
 };
 
-// Uppercase only the first letter (unlike CSS `capitalize`, which title-cases
-// every word — wrong for multi-word phrases like "на сеанс").
-const capFirst = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
 
 /* -------------------------------------------------------------------------- */
 /* DATA                                                                       */
@@ -248,6 +245,22 @@ const WORKS_BY_ARTIST: Work[][] = ARTISTS.map((_, i) =>
 
 const WORK_BY_KEY = new Map(WORKS.map((w) => [w.key, w]));
 
+// A representative image for a style — its keyed work, else the first work of a
+// mapped artist, else that artist's portrait. Shared by the style page, the
+// styles index and the footer.
+function styleImage(style: (typeof STYLES)[number]): string {
+  const keyed = style.photoKey ? WORK_BY_KEY.get(style.photoKey) : undefined;
+  if (keyed) return keyed.img;
+  const idxs = style.artists
+    .map((name) => ARTISTS.findIndex((a) => a.name === name))
+    .filter((i) => i >= 0);
+  for (const i of idxs) {
+    const w = (WORKS_BY_ARTIST[i] || [])[0];
+    if (w) return w.img;
+  }
+  return idxs.length ? ARTISTS[idxs[0]].img : "";
+}
+
 // Spread the video-works evenly among the photos rather than letting them
 // cluster (used by both carousels so photos and videos always alternate).
 function interleaveVideos(list: Work[], everyN: number): Work[] {
@@ -319,8 +332,9 @@ const LANG_NAMES: Record<string, string> = {
   ua: "Українська",
 };
 
-// Shared pill button — one size & shape for every pill on the site (based on
-// the language menu). `solid` picks the filled (primary) vs outline (secondary)
+// Shared button — one size & shape for every button on the site. Softly rounded
+// rectangle (echoing the rounded corners of the carousel / artist photos) rather
+// than a full pill. `solid` picks the filled (primary) vs outline (secondary)
 // colour; width comes from the surrounding layout (stretches in a column, auto
 // in a row). Slightly tighter on desktop.
 const PILL = (solid: boolean) =>
@@ -329,6 +343,71 @@ const PILL = (solid: boolean) =>
       ? "border-white bg-white font-medium text-black hover:bg-white/90"
       : "border-white/25 text-white/85 hover:border-white/50 hover:bg-white/5"
   }`;
+
+// Call-to-action bar in the site's house style (identical to the menu CTAs):
+// one or more serif labels (last word italic) + an arrow, framed by hairlines
+// with a divider between items.
+type CtaItem = {
+  label: string;
+  onClick?: () => void;
+  href?: string;
+  type?: "button" | "submit";
+};
+
+function CtaBar({
+  items,
+  className = "",
+}: {
+  items: CtaItem[];
+  className?: string;
+}) {
+  const cellCls =
+    "group flex flex-1 items-center justify-center gap-2.5 whitespace-nowrap px-6 py-7 transition-colors hover:bg-white/[0.03] md:py-9";
+  return (
+    <div
+      className={`flex flex-col divide-y divide-white/10 border-y border-white/10 md:flex-row md:divide-x md:divide-y-0 ${className}`}
+    >
+      {items.map((it, i) => {
+        const parts = it.label.trim().split(" ");
+        const last = parts.pop();
+        const inner = (
+          <>
+            <span className="font-serif text-[1.6rem] leading-none text-white md:text-[1.8rem]">
+              {parts.length ? `${parts.join(" ")} ` : ""}
+              <span className="italic">{last}</span>
+            </span>
+            <ArrowUpRight
+              className="h-5 w-5 shrink-0 text-white/45 transition duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-white md:h-6 md:w-6"
+              strokeWidth={1.75}
+            />
+          </>
+        );
+        return it.href ? (
+          <a
+            key={i}
+            href={it.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-cursor="pointer"
+            className={cellCls}
+          >
+            {inner}
+          </a>
+        ) : (
+          <button
+            key={i}
+            type={it.type ?? "button"}
+            onClick={it.onClick}
+            data-cursor="pointer"
+            className={cellCls}
+          >
+            {inner}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 // Staggered reveal for the language panel items (mirrors the burger menu).
 const LANG_ITEM = {
@@ -711,21 +790,52 @@ function Cursor() {
 /* REVEAL — fades/slides content up as it scrolls into view (plays once)       */
 /* -------------------------------------------------------------------------- */
 
+// One shared IntersectionObserver drives every <Reveal>. When several elements
+// enter together (e.g. on page load) they're sorted by vertical position and
+// revealed top-to-bottom with a small incremental delay, so the page cascades
+// in. Elements that enter alone while scrolling reveal immediately (no delay).
+type RevealFn = (delaySec: number) => void;
+const revealCbs = new Map<Element, RevealFn>();
+let revealIO: IntersectionObserver | null = null;
+const REVEAL_STEP = 0.08; // seconds between staggered items
+const REVEAL_MAX_DELAY = 0.5;
+
+function revealObserver(): IntersectionObserver {
+  if (revealIO) return revealIO;
+  revealIO = new IntersectionObserver(
+    (entries) => {
+      const entering = entries.filter((e) => e.isIntersecting);
+      if (!entering.length) return;
+      entering.sort(
+        (a, b) => a.boundingClientRect.top - b.boundingClientRect.top,
+      );
+      entering.forEach((e, i) => {
+        const cb = revealCbs.get(e.target);
+        if (!cb) return;
+        cb(Math.min(i * REVEAL_STEP, REVEAL_MAX_DELAY));
+        revealCbs.delete(e.target);
+        revealIO!.unobserve(e.target);
+      });
+    },
+    { rootMargin: "0px 0px -8% 0px", threshold: 0.01 },
+  );
+  return revealIO;
+}
+
 function Reveal({
   children,
   className,
-  delay = 0,
   y = 24,
   eager = false,
 }: {
   children: ReactNode;
   className?: string;
-  delay?: number;
   y?: number;
   eager?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [shown, setShown] = useState(eager);
+  const [delay, setDelay] = useState(0);
 
   // Show right away when asked (e.g. above-the-fold items that would otherwise
   // wait for a scroll that never happens), and stay in sync if `eager` flips.
@@ -737,22 +847,36 @@ function Reveal({
     if (eager) return;
     const el = ref.current;
     if (!el) return;
-    const check = () => {
-      const r = el.getBoundingClientRect();
-      if (r.top < window.innerHeight * 0.88 && r.bottom > 0) {
-        setShown(true);
-        window.removeEventListener("scroll", check);
-        window.removeEventListener("resize", check);
-      }
+
+    // Elements already in (or near) the viewport reveal straight away, cascading
+    // top-to-bottom by their vertical position. This runs synchronously so it
+    // works even when the tab is hidden (IntersectionObserver wouldn't fire).
+    const vh = window.innerHeight || 800;
+    const r = el.getBoundingClientRect();
+    if (r.top < vh * 0.95 && r.bottom > 0) {
+      setDelay(Math.min((Math.max(r.top, 0) / vh) * 0.5, REVEAL_MAX_DELAY));
+      setShown(true);
+      return;
+    }
+
+    if (typeof IntersectionObserver === "undefined") {
+      setShown(true);
+      return;
+    }
+
+    // Below the fold → reveal on scroll; the shared observer staggers rows that
+    // enter together top-to-bottom.
+    const cb: RevealFn = (d) => {
+      setDelay(d);
+      setShown(true);
     };
-    check(); // reveal immediately if already in view
-    window.addEventListener("scroll", check, { passive: true });
-    window.addEventListener("resize", check);
+    revealCbs.set(el, cb);
+    revealObserver().observe(el);
     return () => {
-      window.removeEventListener("scroll", check);
-      window.removeEventListener("resize", check);
+      revealCbs.delete(el);
+      revealIO?.unobserve(el);
     };
-  }, []);
+  }, [eager]);
 
   return (
     <div
@@ -761,7 +885,7 @@ function Reveal({
       style={{
         opacity: shown ? 1 : 0,
         transform: shown ? "none" : `translateY(${y}px)`,
-        transition: `opacity 0.7s cubic-bezier(0.22,1,0.36,1) ${delay}s, transform 0.7s cubic-bezier(0.22,1,0.36,1) ${delay}s`,
+        transition: `opacity 0.6s cubic-bezier(0.22,1,0.36,1) ${delay}s, transform 0.6s cubic-bezier(0.22,1,0.36,1) ${delay}s`,
         willChange: "opacity, transform",
       }}
     >
@@ -1158,7 +1282,7 @@ function Carousel({
             ref={(el) => {
               cardRefs.current[i] = el;
             }}
-            className="absolute left-1/2 top-1/2 overflow-hidden rounded-2xl ring-1 ring-white/10 shadow-2xl shadow-black/60"
+            className="absolute left-1/2 top-1/2 overflow-hidden rounded-xl ring-1 ring-white/10 shadow-2xl shadow-black/60"
             style={{
               backfaceVisibility: "hidden",
               willChange: "transform, opacity",
@@ -1275,7 +1399,7 @@ function Smooth3DSlideshow({
   const SCALE_STEP = 0.16;
   const MAX_VISIBLE = 2;
   const transitionCss = `transform ${DUR}s ${EASE}, opacity ${DUR}s ${EASE}`;
-  const radius = Math.round((3 / 20) * (Math.min(dim.w, dim.h) / 2));
+  const radius = 12; // matches the site-wide rounded-xl radius
 
   return (
     <div
@@ -1745,7 +1869,13 @@ function BookingForm({
   );
 }
 
-function Hero({ onNavigate }: { onNavigate: (path: string) => void }) {
+function Hero({
+  onNavigate,
+  onConsult,
+}: {
+  onNavigate: (path: string) => void;
+  onConsult: () => void;
+}) {
   const [loaded, setLoaded] = useState(false);
   const [idx, setIdx] = useState(0);
   useEffect(() => {
@@ -1753,7 +1883,7 @@ function Hero({ onNavigate }: { onNavigate: (path: string) => void }) {
     return () => clearTimeout(id);
   }, []);
   useEffect(() => {
-    const id = setInterval(() => setIdx((v) => (v + 1) % 2), 2800);
+    const id = setInterval(() => setIdx((v) => (v + 1) % 2), 3200);
     return () => clearInterval(id);
   }, []);
   const t = useT();
@@ -1774,28 +1904,26 @@ function Hero({ onNavigate }: { onNavigate: (path: string) => void }) {
         <span className="italic">Made to Last.</span>
       </h1>
 
-      {/* Any interaction leads to /book. Plain text CTA with arrow, cycling
-          labels. On mobile it sits below the carousel as a bordered bar (framed
-          by hairlines, like the menu CTAs); on desktop it's centred. */}
+      {/* Plain serif CTA with an arrow; the label cycles between Book and
+          Consult. Centred — below the carousel on mobile, over it on desktop. */}
       <button
         type="button"
-        onClick={() => onNavigate("/book")}
+        onClick={isConsult ? onConsult : () => onNavigate("/book")}
         data-cursor="pointer"
-        className="group pointer-events-auto absolute inset-x-0 bottom-[3%] flex items-center justify-center gap-2.5 whitespace-nowrap border-y border-white/10 py-4 md:inset-x-auto md:bottom-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:border-0 md:py-0"
+        className="group pointer-events-auto absolute inset-x-0 bottom-[5%] flex items-center justify-center gap-2.5 whitespace-nowrap px-6 md:inset-x-auto md:bottom-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2"
       >
-        <span className="font-serif text-[1.7rem] leading-none text-white md:text-[1.8rem]">
+        <span className="font-serif text-[1.9rem] leading-none text-white/45 transition-colors duration-300 group-hover:text-white md:text-[1.8rem]">
           {isConsult ? (
             <>
-              <sup className="mr-1 align-super text-[9px] uppercase tracking-[0.2em] text-white/50">
+              <sup className="mr-1 align-super text-[9px] uppercase tracking-[0.2em] text-white/40">
                 {t("cta.free")}
               </sup>
               {t("cta.consult.a") && <>{t("cta.consult.a")} </>}
-              <span className="italic">{capFirst(t("cta.consult.b"))}</span>
+              <span className="italic">{t("cta.consult.b")}</span>
             </>
           ) : (
             <>
-              {t("cta.book.a") && <>{t("cta.book.a")} </>}
-              <span className="italic">{capFirst(t("cta.book.b"))}</span>
+              {t("cta.book.a")} <span className="italic">{t("cta.book.b")}</span>
             </>
           )}
         </span>
@@ -2173,8 +2301,8 @@ function Menu({
             })}
           </nav>
 
-          {/* Bottom CTAs — Book · Request consultation. Stacked on
-              mobile, in a row on desktop; all styled the same. */}
+          {/* Bottom CTAs — Book · Request consultation. Serif labels with an
+              arrow; stacked on mobile, in a divider row on desktop. */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -2203,7 +2331,6 @@ function Menu({
                 strokeWidth={1.75}
               />
             </button>
-
             <button
               type="button"
               onClick={onConsult}
@@ -2215,11 +2342,7 @@ function Menu({
                   {t("cta.free")}
                 </sup>
                 {t("cta.consult.a") && <>{t("cta.consult.a")} </>}
-                <span className="italic">
-                  {t("cta.consult.a")
-                    ? t("cta.consult.b")
-                    : capFirst(t("cta.consult.b"))}
-                </span>
+                <span className="italic">{t("cta.consult.b")}</span>
               </span>
               <ArrowUpRight
                 className="h-5 w-5 shrink-0 text-white/45 transition duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-white md:h-6 md:w-6"
@@ -2617,14 +2740,14 @@ function WorksLightbox({
                   <LazyVideo
                     src={w.video}
                     poster={w.img}
-                    className="max-h-full max-w-full rounded-2xl object-contain"
+                    className="max-h-full max-w-full rounded-xl object-contain"
                   />
                 ) : (
                   <FadeImg
                     src={w.img}
                     alt={`${artist.name} — work ${i + 1}`}
                     draggable={false}
-                    className="max-h-full max-w-full rounded-2xl object-contain"
+                    className="max-h-full max-w-full rounded-xl object-contain"
                   />
                 )}
               </div>
@@ -2739,10 +2862,9 @@ function ArtistShowcase({
         {/* Photo */}
         <Reveal
           className="w-full max-w-[300px] shrink-0 md:max-w-md"
-          delay={0.12}
           y={24}
         >
-          <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl ring-1 ring-white/10">
+          <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl ring-1 ring-white/10">
             <motion.img
               key={active}
               src={artist.img}
@@ -2757,12 +2879,12 @@ function ArtistShowcase({
         </Reveal>
 
         {/* Mobile-only: horizontal artist selector under the photo */}
-        <Reveal className="md:hidden" delay={0.18}>
+        <Reveal className="md:hidden">
           <ArtistRow active={active} onSelect={onSelect} />
         </Reveal>
 
         {/* Text */}
-        <Reveal className="flex-1" delay={0.24} y={24}>
+        <Reveal className="flex-1" y={24}>
           <motion.div
             key={active}
             initial={{ opacity: 0, y: 14 }}
@@ -2925,7 +3047,7 @@ function ArtistsPage({
           </div>
 
           <div className="w-full max-w-[300px] shrink-0 md:max-w-md">
-            <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl ring-1 ring-white/10">
+            <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl ring-1 ring-white/10">
               <motion.img
                 key={active}
                 src={artist.img}
@@ -2961,6 +3083,16 @@ function ArtistsPage({
                 {t("ui.tattooingSince")} {artist.since}
               </p>
             )}
+            <div className="mt-8">
+              <button
+                type="button"
+                onClick={() => onBook({ artist: artist.name })}
+                data-cursor="pointer"
+                className={PILL(true)}
+              >
+                {t("ui.bookWith")} {artist.name}
+              </button>
+            </div>
           </motion.div>
         </div>
 
@@ -2972,16 +3104,11 @@ function ArtistsPage({
           {worksToShow.length > 0 ? (
             <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4">
               {worksToShow.map((w, i) => {
-                // On mobile the first 4 tiles show straight away; the rest keep
-                // the scroll-reveal fade-in (and load their images lazily).
-                const eager = isMobile && i < 4;
+                // First few images load eagerly; the rest lazily as they near
+                // the viewport. The tile itself reveals via the shared cascade.
+                const eagerImg = i < 4;
                 return (
-                  <Reveal
-                    key={`${active}-${i}`}
-                    delay={eager ? 0 : (i % 3) * 0.08}
-                    y={24}
-                    eager={eager}
-                  >
+                  <Reveal key={`${active}-${i}`} y={24}>
                     <button
                       type="button"
                       onClick={() => onOpenWorks(active, i)}
@@ -2999,7 +3126,7 @@ function ArtistsPage({
                           src={w.img}
                           alt={`${artist.name} — work ${i + 1}`}
                           draggable={false}
-                          loading={eager ? "eager" : "lazy"}
+                          loading={eagerImg ? "eager" : "lazy"}
                           className="h-full w-full object-cover group-hover:scale-105"
                         />
                       )}
@@ -3014,8 +3141,9 @@ function ArtistsPage({
             </p>
           )}
 
-          {/* Book CTA — sits under the gallery, with a soft grey prompt above. */}
-          <div className="mt-12 flex flex-col items-center gap-3 text-center">
+          {/* Book CTA — under the gallery on mobile (desktop shows it in the
+              artist column, under "tattooing since"). */}
+          <div className="mt-12 flex flex-col items-center gap-3 text-center md:hidden">
             <p className="text-[13px] text-white/45">{t("ui.bookLead")}</p>
             <button
               type="button"
@@ -3038,7 +3166,7 @@ function ArtistsPage({
 
 function ChatCard({ chat }: { chat: ChatThread }) {
   return (
-    <div className="mb-6 rounded-[24px] border border-white/10 bg-white/[0.03] p-4 md:p-5">
+    <div className="mb-6 rounded-xl border border-white/10 bg-white/[0.03] p-4 md:p-5">
       <div className="flex flex-col gap-2">
         {chat.messages.map((m, mi) => {
           const isMe = m.from === "me";
@@ -3262,7 +3390,7 @@ function Reviews() {
           </h2>
         </Reveal>
 
-        <Reveal delay={0.1}>
+        <Reveal>
           {/* Mobile: one floating, draggable column with every review. */}
           <MobileReviews />
 
@@ -3306,9 +3434,18 @@ function Sponsors() {
   const t = useT();
   return (
     <section id="sponsors" className="relative px-6 py-24 md:px-16 md:py-32">
-      <div className="mx-auto w-full max-w-6xl border-t border-white/10">
-        {SPONSORS.map((s, i) => (
-          <Reveal key={s.name} delay={i * 0.08}>
+      <div className="mx-auto w-full max-w-6xl">
+        <Reveal>
+          <p className="mb-4 text-center text-[12px] uppercase tracking-[0.3em] text-white/40">
+            {t("partners.kicker")}
+          </p>
+          <h2 className="mb-12 text-center font-serif text-[2.6rem] leading-[0.95] tracking-tight md:mb-16 md:text-[4.5rem]">
+            {t("partners.title")}
+          </h2>
+        </Reveal>
+        <div className="border-t border-white/10">
+          {SPONSORS.map((s) => (
+          <Reveal key={s.name}>
           <a
             href={s.url}
             target="_blank"
@@ -3339,6 +3476,7 @@ function Sponsors() {
           </a>
           </Reveal>
         ))}
+        </div>
       </div>
     </section>
   );
@@ -3382,11 +3520,11 @@ function ContactPage({
   };
 
   const field =
-    "w-full rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 text-[15px] text-white placeholder:text-white/30 outline-none transition focus:border-white/40";
+    "w-full rounded-xl border border-white/15 bg-white/[0.04] px-4 py-3 text-[15px] text-white placeholder:text-white/30 outline-none transition focus:border-white/40";
 
   return (
     <main className="relative z-10 min-h-screen px-6 pb-24 pt-28 md:px-16 md:pt-32">
-      <div className="mx-auto w-full max-w-2xl">
+      <div className="mx-auto w-full max-w-6xl">
         <Reveal>
           <p className="mb-4 text-[12px] uppercase tracking-[0.3em] text-white/40">
             {t("contact.kicker")}
@@ -3394,7 +3532,7 @@ function ContactPage({
           <h1 className="font-serif text-[3rem] leading-[0.95] tracking-tight md:text-[4.5rem]">
             {t("contact.title")}
           </h1>
-          <p className="mt-6 max-w-lg text-[15px] leading-relaxed text-white/60">
+          <p className="mt-6 text-[15px] leading-relaxed text-white/60">
             {t("contact.intro.pre")}
             <button
               onClick={() => onNavigate("/book")}
@@ -3407,9 +3545,9 @@ function ContactPage({
           </p>
         </Reveal>
 
-        <Reveal delay={0.1}>
+        <Reveal>
         {sent ? (
-          <div className="mt-10 rounded-3xl border border-white/10 bg-white/[0.03] p-8 text-center">
+          <div className="mt-10 rounded-xl border border-white/10 bg-white/[0.03] p-8 text-center">
             <span className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-white text-black">
               <Check className="h-6 w-6" strokeWidth={2.5} />
             </span>
@@ -3544,8 +3682,8 @@ function GuestsPage() {
   const titleLast = titleParts.pop();
   return (
     <main className="relative z-10 min-h-screen px-6 pb-24 pt-28 md:px-16 md:pt-32">
-      <div className="mx-auto w-full max-w-3xl">
-        <Reveal eager>
+      <div className="mx-auto w-full max-w-6xl">
+        <Reveal>
           <p className="mb-4 text-[12px] uppercase tracking-[0.3em] text-white/40">
             {t("guests.kicker")}
           </p>
@@ -3553,13 +3691,13 @@ function GuestsPage() {
             {titleParts.length ? `${titleParts.join(" ")} ` : ""}
             <span className="italic">{titleLast}</span>
           </h1>
-          <p className="mt-6 max-w-2xl text-[15px] leading-relaxed text-white/60">
+          <p className="mt-6 text-[15px] leading-relaxed text-white/60">
             {t("guests.intro")}
           </p>
         </Reveal>
 
         {/* Join our team — sits directly under the studio intro. */}
-        <Reveal delay={0.1} eager>
+        <Reveal>
           <div className="mt-12 border-y border-white/10 py-6">
             <p className="mb-2 text-[11px] uppercase tracking-[0.25em] text-white/40">
               {t("guests.emailLabel")}
@@ -3577,31 +3715,31 @@ function GuestsPage() {
           </div>
         </Reveal>
 
-        <Reveal delay={0.16} eager>
+        <Reveal>
           <div className="mt-12">
             <h2 className="font-serif text-[1.6rem] leading-tight md:text-[2rem]">
               {t("guests.guest.title")}
             </h2>
-            <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-white/60">
+            <p className="mt-3 text-[15px] leading-relaxed text-white/60">
               {t("guests.guest.text")}
             </p>
           </div>
         </Reveal>
 
-        <Reveal delay={0.2} eager>
+        <Reveal>
           <div className="mt-10">
             <h2 className="font-serif text-[1.6rem] leading-tight md:text-[2rem]">
               {t("guests.careers.title")}
             </h2>
-            <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-white/60">
+            <p className="mt-3 text-[15px] leading-relaxed text-white/60">
               {t("guests.careers.text")}
             </p>
           </div>
         </Reveal>
 
-        <Reveal delay={0.24} eager>
-          <div className="mt-12">
-            <p className="mb-2 text-[12px] uppercase tracking-[0.3em] text-white/40">
+        <Reveal>
+          <div className="mx-auto mt-12 max-w-3xl">
+            <p className="mb-2 text-center text-[12px] uppercase tracking-[0.3em] text-white/40">
               {t("guests.faq.title")}
             </p>
             <div className="divide-y divide-white/10 border-y border-white/10">
@@ -3617,7 +3755,7 @@ function GuestsPage() {
                       strokeWidth={2}
                     />
                   </summary>
-                  <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-white/55">
+                  <p className="mt-3 max-w-4xl text-[15px] leading-relaxed text-white/55">
                     {item.a}
                   </p>
                 </details>
@@ -3627,7 +3765,7 @@ function GuestsPage() {
         </Reveal>
 
         {/* Downloadable documents (like the FAQ page). */}
-        <Reveal delay={0.28} eager>
+        <Reveal>
           <div className="mt-14">
             <h2 className="mb-5 text-[12px] uppercase tracking-[0.25em] text-white/40">
               {t("guests.docs.title")}
@@ -3671,7 +3809,7 @@ function DownloadCard({
       href={href}
       download
       data-cursor="pointer"
-      className="group flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-5 transition hover:border-white/25 hover:bg-white/[0.06]"
+      className="group flex items-center gap-4 rounded-xl border border-white/10 bg-white/[0.03] p-5 transition hover:border-white/25 hover:bg-white/[0.06]"
     >
       <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10 transition group-hover:bg-white/20">
         <Download className="h-5 w-5 text-white/80" strokeWidth={2} />
@@ -4031,21 +4169,6 @@ function BookPage({
           </p>
         </Reveal>
 
-        {/* Not ready to book? — desktop shows it under the intro. */}
-        <Reveal className="hidden md:block" delay={0.12}>
-          <div className="mt-8 flex flex-col items-center gap-3 text-center">
-            <p className="text-[13px] text-white/45">{t("book.notsure")}</p>
-            <button
-              type="button"
-              onClick={onConsult}
-              data-cursor="pointer"
-              className={PILL(false)}
-            >
-              {t("book.freeconsult")}
-            </button>
-          </div>
-        </Reveal>
-
         <section className="mt-2 md:mt-14">
           {/* Mobile lead above the map */}
           <Reveal className="md:hidden">
@@ -4056,14 +4179,13 @@ function BookPage({
               {t("book.tap.lead")}
             </p>
           </Reveal>
-          <Reveal delay={0.1}>
+          <Reveal>
             <BodyPain onBook={onBook} />
           </Reveal>
         </section>
 
-        {/* Not ready to book? — mobile shows it under the body-part selector,
-            revealed eagerly so it lands together with the top sections. */}
-        <Reveal className="md:hidden" delay={0.12} eager>
+        {/* Not ready to book? — under the body-part selector on every size. */}
+        <Reveal>
           <div className="mt-12 flex flex-col items-center gap-3 text-center">
             <p className="text-[13px] text-white/45">{t("book.notsure")}</p>
             <button
@@ -4125,7 +4247,7 @@ function FaqPage({
     });
   return (
     <main className="relative z-10 min-h-screen px-6 pb-24 pt-28 md:px-16 md:pt-32">
-      <div className="mx-auto w-full max-w-3xl">
+      <div className="mx-auto w-full max-w-6xl">
         <Reveal>
           <p className="mb-4 text-center text-[12px] uppercase tracking-[0.3em] text-white/40">
             {t("faq.kicker")}
@@ -4135,8 +4257,8 @@ function FaqPage({
           </h1>
         </Reveal>
 
-        <Reveal delay={0.1}>
-        <div className="mt-12 divide-y divide-white/10 border-y border-white/10">
+        <Reveal>
+        <div className="mx-auto mt-12 max-w-3xl divide-y divide-white/10 border-y border-white/10">
           {getFaq(lang).map((item, i) => (
             <details key={i} className="group py-5">
               <summary
@@ -4157,7 +4279,7 @@ function FaqPage({
         </div>
         </Reveal>
 
-        <Reveal delay={0.16}>
+        <Reveal>
         <div className="mt-14">
           <h2 className="mb-1 text-[12px] uppercase tracking-[0.25em] text-white/40">
             {t("faq.downloads")}
@@ -4178,7 +4300,7 @@ function FaqPage({
         </div>
         </Reveal>
 
-        <Reveal delay={0.22}>
+        <Reveal>
           <p className="mt-14 border-t border-white/10 pt-6 text-[14px] text-white/50">
             {t("faq.foot.pre")}
             <button
@@ -4406,7 +4528,7 @@ function TermsPage() {
     "font-serif text-[2rem] leading-[1] tracking-tight md:text-[2.8rem]";
   return (
     <main className="relative z-10 min-h-screen px-6 pb-24 pt-28 md:px-16 md:pt-32">
-      <div className="mx-auto w-full max-w-3xl">
+      <div className="mx-auto w-full max-w-6xl">
         <Reveal>
           <p className="mb-4 text-[12px] uppercase tracking-[0.3em] text-white/40">
             Legal
@@ -4419,14 +4541,14 @@ function TermsPage() {
           </p>
         </Reveal>
 
-        <Reveal delay={0.1}>
+        <Reveal>
           <section className="mt-16">
             <h2 className={sectionHead}>Terms &amp; Conditions</h2>
             <LegalGroup data={TERMS} />
           </section>
         </Reveal>
 
-        <Reveal delay={0.16}>
+        <Reveal>
           <section className="mt-24">
             <h2 className={sectionHead}>Privacy Policy</h2>
             <LegalGroup data={PRIVACY} />
@@ -4469,12 +4591,12 @@ function withAddressLink(text: string): ReactNode {
   ));
 }
 
-function AboutPage({ onNavigate }: { onNavigate: (path: string) => void }) {
+function AboutPage() {
   const ABOUT = getAbout(useLang());
   const t = useT();
   return (
     <main className="relative z-10 min-h-screen px-6 pb-24 pt-28 md:px-16 md:pt-32">
-      <div className="mx-auto w-full max-w-3xl">
+      <div className="mx-auto w-full max-w-6xl">
         <Reveal>
           <p className="mb-4 text-[12px] uppercase tracking-[0.3em] text-white/40">
             {ABOUT.kicker}
@@ -4485,7 +4607,7 @@ function AboutPage({ onNavigate }: { onNavigate: (path: string) => void }) {
           {ABOUT.intro.map((p, i) => (
             <p
               key={i}
-              className="mt-6 max-w-2xl text-[15px] leading-relaxed text-white/60"
+              className="mt-6 text-[15px] leading-relaxed text-white/60"
             >
               {p}
             </p>
@@ -4493,7 +4615,7 @@ function AboutPage({ onNavigate }: { onNavigate: (path: string) => void }) {
         </Reveal>
 
         {/* Why + location reveal together (one Reveal) */}
-        <Reveal delay={0.1}>
+        <Reveal>
           <section className="mt-16">
             <h2 className="font-serif text-[2rem] leading-[1] tracking-tight md:text-[2.6rem]">
               {ABOUT.whyTitle}
@@ -4523,7 +4645,7 @@ function AboutPage({ onNavigate }: { onNavigate: (path: string) => void }) {
             {ABOUT.location.map((p, i) => (
               <p
                 key={i}
-                className="mt-5 max-w-2xl text-[15px] leading-relaxed text-white/60"
+                className="mt-5 text-[15px] leading-relaxed text-white/60"
               >
                 {withAddressLink(p)}
               </p>
@@ -4531,28 +4653,103 @@ function AboutPage({ onNavigate }: { onNavigate: (path: string) => void }) {
           </section>
 
           <section className="mt-14 border-t border-white/10 pt-8">
-            <p className="mb-2 text-[12px] uppercase tracking-[0.3em] text-white/40">
-              {t("contact.careers")}
-            </p>
-            <p className="max-w-2xl text-[15px] leading-relaxed text-white/60">
-              {t("contact.careers.pre")}
-              <button
-                onClick={() => onNavigate("/guests")}
-                data-cursor="pointer"
-                className="text-white/80 underline underline-offset-4 transition hover:text-white"
-              >
-                {t("contact.careers.link")}
-              </button>
-              {t("contact.careers.post")}
-            </p>
-          </section>
-
-          <section className="mt-14 border-t border-white/10 pt-8">
-            <p className="text-[15px] leading-relaxed text-white/60">
-              {t("about.proud")}
+            <h2 className="font-serif text-[1.8rem] leading-tight tracking-tight md:text-[2.2rem]">
+              {(() => {
+                const parts = t("contact.careers.link").split(" ");
+                const last = parts.pop();
+                return (
+                  <>
+                    {parts.length ? `${parts.join(" ")} ` : ""}
+                    <span className="italic">{last}</span>
+                  </>
+                );
+              })()}
+            </h2>
+            <p className="mt-4 text-[15px] leading-relaxed text-white/60">
+              {t("about.careersText")}
             </p>
           </section>
         </Reveal>
+      </div>
+    </main>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* STYLES INDEX — /styles: a grid of every tattoo style, each linking out to   */
+/* its own landing page.                                                        */
+/* -------------------------------------------------------------------------- */
+
+function StylesIndexPage({
+  onNavigate,
+}: {
+  onNavigate: (path: string) => void;
+}) {
+  const t = useT();
+  const lang = useLang();
+  const styles = getStyles(lang);
+  return (
+    <main className="relative z-10 min-h-screen px-6 pb-24 pt-28 md:px-16 md:pt-32">
+      <div className="mx-auto w-full max-w-6xl">
+        <Reveal>
+          <p className="mb-4 text-center text-[12px] uppercase tracking-[0.3em] text-white/40">
+            {t("ui.ourStyles")}
+          </p>
+          <h1 className="text-center font-serif text-[3rem] leading-[0.95] tracking-tight md:text-[4.5rem]">
+            {(() => {
+              const parts = t("styles.title").split(" ");
+              const last = parts.pop();
+              return (
+                <>
+                  {parts.length ? `${parts.join(" ")} ` : ""}
+                  <span className="italic">{last}</span>
+                </>
+              );
+            })()}
+          </h1>
+        </Reveal>
+
+        <div className="mt-14 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {styles.map((s) => {
+            const base = STYLES.find((x) => x.slug === s.slug);
+            const img = base ? styleImage(base) : "";
+            return (
+              <Reveal key={s.slug}>
+                <button
+                  type="button"
+                  onClick={() => onNavigate(s.slug)}
+                  data-cursor="pointer"
+                  className="group flex h-full w-full flex-col overflow-hidden rounded-xl border border-white/10 bg-white/[0.02] text-left transition-colors hover:bg-white/[0.04]"
+                >
+                  <div className="relative aspect-[4/3] w-full overflow-hidden">
+                    {img && (
+                      <FadeImg
+                        src={img}
+                        alt={`${s.name} tattoo — The Four Deuces Amsterdam`}
+                        draggable={false}
+                        className="h-full w-full object-cover grayscale transition duration-500 group-hover:scale-105"
+                      />
+                    )}
+                  </div>
+                  <div className="relative flex flex-1 flex-col justify-between gap-6 px-5 py-5">
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="font-serif text-[1.35rem] leading-tight text-white">
+                        {s.name}
+                      </span>
+                      <ArrowUpRight
+                        className="h-5 w-5 shrink-0 text-white/45 transition duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-white"
+                        strokeWidth={1.75}
+                      />
+                    </div>
+                    <span className="text-[11px] uppercase tracking-[0.15em] text-white/55 transition group-hover:text-white">
+                      {t("ui.readMore")}
+                    </span>
+                  </div>
+                </button>
+              </Reveal>
+            );
+          })}
+        </div>
       </div>
     </main>
   );
@@ -4583,20 +4780,7 @@ function StylePage({
   const styleArtistIdxs = style.artists
     .map((name) => ARTISTS.findIndex((a) => a.name === name))
     .filter((i) => i >= 0);
-  let photo = "";
-  const keyed = style.photoKey ? WORK_BY_KEY.get(style.photoKey) : undefined;
-  if (keyed) {
-    photo = keyed.img;
-  } else {
-    for (const i of styleArtistIdxs) {
-      const w = (WORKS_BY_ARTIST[i] || [])[0];
-      if (w) {
-        photo = w.img;
-        break;
-      }
-    }
-  }
-  if (!photo && styleArtistIdxs.length) photo = ARTISTS[styleArtistIdxs[0]].img;
+  const photo = styleImage(style);
 
   // Artist avatars — shown to the left of the photo on desktop, and again (with
   // a heading) below the copy on mobile.
@@ -4643,7 +4827,7 @@ function StylePage({
           )}
 
           <Reveal className="w-full max-w-[300px] shrink-0 md:max-w-md">
-            <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl ring-1 ring-white/10">
+            <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl ring-1 ring-white/10">
               {photo ? (
                 <FadeImg
                   src={photo}
@@ -4655,7 +4839,7 @@ function StylePage({
             </div>
           </Reveal>
 
-          <Reveal className="flex-1" delay={0.12} y={24}>
+          <Reveal className="flex-1" y={24}>
             <p className="mb-4 text-[12px] uppercase tracking-[0.3em] text-white/40">
               {style.kicker}
             </p>
@@ -4676,7 +4860,7 @@ function StylePage({
 
         {/* Mobile-only: artists who work in this style, below the copy */}
         {styleArtistIdxs.length > 0 && (
-          <Reveal className="md:hidden" delay={0.06}>
+          <Reveal className="md:hidden">
             <section className="mt-14">
               <h2 className="mb-5 text-center text-[12px] uppercase tracking-[0.25em] text-white/40">
                 {t("ui.madeByArtists")}
@@ -4688,30 +4872,40 @@ function StylePage({
           </Reveal>
         )}
 
-        {/* Other styles */}
-        <Reveal delay={0.1}>
+        {/* Other styles — All styles first, then the rest. */}
+        <Reveal>
           <section className="mt-16">
             <h2 className="mb-5 text-center text-[12px] uppercase tracking-[0.25em] text-white/40">
               {t("ui.otherStyles")}
             </h2>
             <div className="flex flex-wrap justify-center gap-2">
-              {getStyles(lang).filter((s) => s.slug !== style.slug).map((s) => (
-                <button
-                  key={s.slug}
-                  type="button"
-                  onClick={() => onNavigate(s.slug)}
-                  data-cursor="pointer"
-                  className="rounded-full border border-white/15 px-4 py-2 text-[13px] text-white/75 transition hover:border-white/40 hover:bg-white/5"
-                >
-                  {s.nav}
-                </button>
-              ))}
+              <button
+                type="button"
+                onClick={() => onNavigate("/styles")}
+                data-cursor="pointer"
+                className="rounded-full border border-white/15 px-4 py-2 text-[13px] text-white/75 transition hover:border-white/40 hover:bg-white/5"
+              >
+                {t("nav.styles")}
+              </button>
+              {getStyles(lang)
+                .filter((s) => s.slug !== style.slug)
+                .map((s) => (
+                  <button
+                    key={s.slug}
+                    type="button"
+                    onClick={() => onNavigate(s.slug)}
+                    data-cursor="pointer"
+                    className="rounded-full border border-white/15 px-4 py-2 text-[13px] text-white/75 transition hover:border-white/40 hover:bg-white/5"
+                  >
+                    {s.nav}
+                  </button>
+                ))}
             </div>
           </section>
         </Reveal>
 
         {/* FAQ (also emitted as FAQPage structured data at build time) */}
-        <Reveal delay={0.16}>
+        <Reveal>
           <section className="mx-auto mt-20 max-w-3xl">
             <h2 className="font-serif text-[1.9rem] leading-[1] tracking-tight md:text-[2.4rem]">
               {t("ui.qa")}
@@ -4856,13 +5050,10 @@ function NotFoundPage({ onNavigate }: { onNavigate: (path: string) => void }) {
         <p className="mt-6 max-w-sm text-[15px] leading-relaxed text-white/70">
           {t("nf.msg")}
         </p>
-        <button
-          onClick={() => onNavigate("/")}
-          data-cursor="pointer"
-          className={`${PILL(true)} mt-8`}
-        >
-          {t("nf.back")}
-        </button>
+        <CtaBar
+          className="mt-8"
+          items={[{ label: t("nf.back"), onClick: () => onNavigate("/") }]}
+        />
       </div>
     </main>
   );
@@ -4952,6 +5143,211 @@ function loadClarity() {
   s.src = "https://www.clarity.ms/tag/" + id;
   const first = document.getElementsByTagName("script")[0];
   if (first && first.parentNode) first.parentNode.insertBefore(s, first);
+}
+
+/* -------------------------------------------------------------------------- */
+/* SITE FOOTER — shown on every page. CTAs (from the menu) + nav columns +      */
+/* brand. Same width as the Partners section.                                   */
+/* -------------------------------------------------------------------------- */
+
+function SiteFooter({
+  onNavigate,
+  onConsult,
+  ctaItems,
+}: {
+  onNavigate: (path: string) => void;
+  onConsult: () => void;
+  // undefined → default Book/Consult row; an array → those CTAs; null → no row.
+  ctaItems?: CtaItem[] | null;
+}) {
+  const t = useT();
+  const styles = getStyles(useLang());
+  const linkCls = "text-[14px] text-white/55 transition hover:text-white";
+  const headCls = "mb-4 text-[11px] uppercase tracking-[0.25em] text-white/40";
+  const goAnchor = (sel: string) => {
+    const onHome =
+      window.location.pathname === "/" || window.location.pathname === "";
+    if (onHome) {
+      document.querySelector(sel)?.scrollIntoView({ behavior: "smooth" });
+    } else {
+      onNavigate("/");
+      setTimeout(
+        () => document.querySelector(sel)?.scrollIntoView({ behavior: "smooth" }),
+        140,
+      );
+    }
+  };
+
+  return (
+    <footer className="px-6 py-14 md:px-16">
+      <div className="mx-auto w-full max-w-6xl">
+        {/* CTAs — a custom set when provided, otherwise the default
+            Book · Request consultation row (with the Free tag). null → none. */}
+        {ctaItems ? (
+          <CtaBar items={ctaItems} />
+        ) : ctaItems === null ? null : (
+          <div className="flex flex-col divide-y divide-white/10 border-y border-white/10 md:flex-row md:divide-x md:divide-y-0">
+            <button
+              type="button"
+              onClick={() => onNavigate("/book")}
+              data-cursor="pointer"
+              className="group flex flex-1 items-center justify-center gap-2.5 px-6 py-7 transition-colors hover:bg-white/[0.03] md:py-9"
+            >
+              <span className="font-serif text-[1.6rem] leading-none text-white md:text-[1.8rem]">
+                {t("cta.book.a")}{" "}
+                <span className="italic">{t("cta.book.b")}</span>
+              </span>
+              <ArrowUpRight
+                className="h-5 w-5 shrink-0 text-white/45 transition duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-white md:h-6 md:w-6"
+                strokeWidth={1.75}
+              />
+            </button>
+            <button
+              type="button"
+              onClick={onConsult}
+              data-cursor="pointer"
+              className="group flex flex-1 items-center justify-center gap-2.5 px-6 py-7 transition-colors hover:bg-white/[0.03] md:py-9"
+            >
+              <span className="font-serif text-[1.6rem] leading-none text-white md:text-[1.8rem]">
+                <sup className="mr-1 align-super text-[9px] uppercase tracking-[0.2em] text-white/50">
+                  {t("cta.free")}
+                </sup>
+                {t("cta.consult.a") && <>{t("cta.consult.a")} </>}
+                <span className="italic">{t("cta.consult.b")}</span>
+              </span>
+              <ArrowUpRight
+                className="h-5 w-5 shrink-0 text-white/45 transition duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-white md:h-6 md:w-6"
+                strokeWidth={1.75}
+              />
+            </button>
+          </div>
+        )}
+
+        {/* Nav columns — Discover · Studio · Tattoo styles */}
+        <div className="grid grid-cols-2 gap-x-8 gap-y-10 border-t border-white/10 py-12 text-center sm:text-left md:grid-cols-4 md:gap-x-10">
+          <div>
+            <p className={headCls}>{t("footer.discover")}</p>
+            <ul className="flex flex-col gap-2.5">
+              {[
+                { label: t("nav.home"), path: "/" },
+                { label: t("nav.artists"), path: "/artists" },
+                { label: t("nav.reviews"), path: "#reviews" },
+                { label: t("nav.partners"), path: "#sponsors" },
+              ].map((l) => (
+                <li key={l.path}>
+                  <button
+                    onClick={() =>
+                      l.path.startsWith("#") ? goAnchor(l.path) : onNavigate(l.path)
+                    }
+                    data-cursor="pointer"
+                    className={linkCls}
+                  >
+                    {l.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div>
+            <p className={headCls}>{t("footer.studio")}</p>
+            <ul className="flex flex-col gap-2.5">
+              {[
+                { label: t("nav.about"), path: "/about" },
+                { label: t("nav.faq"), path: "/faq" },
+                { label: t("nav.guests"), path: "/guests" },
+                { label: t("nav.contact"), path: "/contact" },
+              ].map((l) => (
+                <li key={l.path}>
+                  <button
+                    onClick={() => onNavigate(l.path)}
+                    data-cursor="pointer"
+                    className={linkCls}
+                  >
+                    {l.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {(() => {
+            const styleLinks = [
+              { label: t("nav.styles"), path: "/styles" },
+              ...styles.map((s) => ({ label: s.nav, path: s.slug })),
+            ];
+            const half = Math.ceil(styleLinks.length / 2);
+            const groups = [styleLinks.slice(0, half), styleLinks.slice(half)];
+            return groups.map((group, gi) => (
+              <div key={gi}>
+                <p
+                  className={gi === 0 ? headCls : `${headCls} invisible`}
+                  aria-hidden={gi === 1}
+                >
+                  {t("footer.styles")}
+                </p>
+                <ul className="flex flex-col gap-2.5">
+                  {group.map((l) => (
+                    <li key={l.path}>
+                      <button
+                        onClick={() => onNavigate(l.path)}
+                        data-cursor="pointer"
+                        className={linkCls}
+                      >
+                        {l.label}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ));
+          })()}
+        </div>
+
+        {/* Brand + credit */}
+        <div className="border-t border-white/10 pt-10 text-center">
+          <p className="font-serif text-[24px] leading-none tracking-tight text-white/70">
+            The Four <span className="italic">Deuces</span>
+          </p>
+          <p className="mt-3 text-[13px] leading-relaxed text-white/40">
+            {t("footer.designed")}{" "}
+            <a
+              href="https://aerdt.xyz/"
+              target="_blank"
+              rel="noopener noreferrer"
+              data-cursor="pointer"
+              className="text-white/70 underline underline-offset-4 transition hover:text-white"
+            >
+              aerdt
+            </a>
+          </p>
+          {/* Mobile: Terms left, © right */}
+          <div className="mt-6 flex w-full items-center justify-between gap-3 text-[10px] uppercase tracking-[0.12em] text-white/30 md:hidden">
+            <button
+              onClick={() => onNavigate("/terms")}
+              data-cursor="pointer"
+              className="shrink-0 transition hover:text-white/70"
+            >
+              {t("footer.terms")}
+            </button>
+            <span>© 2020–{new Date().getFullYear()} The Four Deuces</span>
+          </div>
+          {/* Desktop: centred */}
+          <div className="mt-6 hidden items-center justify-center gap-3 text-[11px] uppercase tracking-[0.2em] text-white/30 md:flex">
+            <button
+              onClick={() => onNavigate("/terms")}
+              data-cursor="pointer"
+              className="transition hover:text-white/70"
+            >
+              {t("footer.terms")}
+            </button>
+            <span className="text-white/15">·</span>
+            <span>© 2020–{new Date().getFullYear()} The Four Deuces</span>
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
 }
 
 export default function App() {
@@ -5072,9 +5468,11 @@ export default function App() {
                   ? "terms"
                   : path === "/guests"
                     ? "guests"
-                    : stylePage
-                      ? "style"
-                      : "notfound";
+                    : path === "/styles"
+                      ? "styles"
+                      : stylePage
+                        ? "style"
+                        : "notfound";
   const isHome = page === "home";
 
   // Client-side navigation doesn't reload the document, so keep the tab title
@@ -5209,7 +5607,7 @@ export default function App() {
           {/* ============ FIRST SCREEN: hero + carousel ============ */}
           <section className="relative min-h-screen overflow-hidden">
             <main className="pointer-events-none relative z-30 min-h-screen">
-              <Hero onNavigate={navigate} />
+              <Hero onNavigate={navigate} onConsult={() => openConsult("hero")} />
             </main>
             {isMobile ? (
               <Smooth3DSlideshow onOpenProfile={openProfile} />
@@ -5251,49 +5649,6 @@ export default function App() {
             ))}
           </section>
 
-          {/* ===================== FOOTER ===================== */}
-          <footer className="px-6 py-14 md:px-16">
-            <div className="mx-auto flex max-w-md flex-col items-center gap-5 text-center">
-              <p className="font-serif text-[24px] leading-none tracking-tight text-white/70">
-                The Four <span className="italic">Deuces</span>
-              </p>
-              <p className="text-[13px] leading-relaxed text-white/40">
-                {tr("footer.designed")}{" "}
-                <a
-                  href="https://aerdt.xyz/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  data-cursor="pointer"
-                  className="text-white/70 underline underline-offset-4 transition hover:text-white"
-                >
-                  aerdt
-                </a>
-              </p>
-              {/* Mobile: Terms on the left, © on the right */}
-              <div className="flex w-full items-center justify-between gap-3 text-[10px] uppercase tracking-[0.12em] text-white/30 md:hidden">
-                <button
-                  onClick={() => navigate("/terms")}
-                  data-cursor="pointer"
-                  className="shrink-0 transition hover:text-white/70"
-                >
-                  {tr("footer.terms")}
-                </button>
-                <span>© 2020–{new Date().getFullYear()} The Four Deuces</span>
-              </div>
-              {/* Desktop: centred */}
-              <div className="hidden items-center gap-3 text-[11px] uppercase tracking-[0.2em] text-white/30 md:flex">
-                <button
-                  onClick={() => navigate("/terms")}
-                  data-cursor="pointer"
-                  className="transition hover:text-white/70"
-                >
-                  {tr("footer.terms")}
-                </button>
-                <span className="text-white/15">·</span>
-                <span>© 2020–{new Date().getFullYear()} The Four Deuces</span>
-              </div>
-            </div>
-          </footer>
         </>
       ) : page === "contact" ? (
         <ContactPage onNavigate={navigate} />
@@ -5316,8 +5671,10 @@ export default function App() {
         <TermsPage />
       ) : page === "guests" ? (
         <GuestsPage />
+      ) : page === "styles" ? (
+        <StylesIndexPage onNavigate={navigate} />
       ) : page === "about" ? (
-        <AboutPage onNavigate={navigate} />
+        <AboutPage />
       ) : page === "style" && stylePage ? (
         <StylePage
           style={stylePage}
@@ -5327,6 +5684,22 @@ export default function App() {
       ) : (
         <NotFoundPage onNavigate={navigate} />
       )}
+
+      {/* ===================== FOOTER (every page) ===================== */}
+      <SiteFooter
+        onNavigate={navigate}
+        onConsult={() => openConsult("footer")}
+        ctaItems={
+          page === "about"
+            ? [
+                { label: tr("about.joinTeam"), onClick: () => navigate("/guests") },
+                { label: tr("nav.contact"), onClick: () => navigate("/contact") },
+              ]
+            : page === "artists" || page === "book"
+              ? null
+              : undefined
+        }
+      />
 
       {/* ===================== WORKS LIGHTBOX ===================== */}
       <WorksLightbox
