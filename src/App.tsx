@@ -2972,18 +2972,15 @@ function ArtistsPage({
           {worksToShow.length > 0 ? (
             <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4">
               {worksToShow.map((w, i) => {
-                // On mobile every tile renders immediately (no scroll-reveal) so
-                // the grid never shows blank/black gaps below the fold; desktop
-                // keeps the staggered fade-in. Images beyond the first few still
-                // load lazily as they approach the viewport.
-                const revealEager = isMobile;
-                const eagerImg = i < 4;
+                // On mobile the first 4 tiles show straight away; the rest keep
+                // the scroll-reveal fade-in (and load their images lazily).
+                const eager = isMobile && i < 4;
                 return (
                   <Reveal
                     key={`${active}-${i}`}
-                    delay={revealEager ? 0 : (i % 3) * 0.08}
+                    delay={eager ? 0 : (i % 3) * 0.08}
                     y={24}
-                    eager={revealEager}
+                    eager={eager}
                   >
                     <button
                       type="button"
@@ -3002,7 +2999,7 @@ function ArtistsPage({
                           src={w.img}
                           alt={`${artist.name} — work ${i + 1}`}
                           draggable={false}
-                          loading={eagerImg ? "eager" : "lazy"}
+                          loading={eager ? "eager" : "lazy"}
                           className="h-full w-full object-cover group-hover:scale-105"
                         />
                       )}
