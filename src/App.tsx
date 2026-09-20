@@ -2972,13 +2972,18 @@ function ArtistsPage({
           {worksToShow.length > 0 ? (
             <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4">
               {worksToShow.map((w, i) => {
-                const eager = isMobile && i < 2;
+                // On mobile every tile renders immediately (no scroll-reveal) so
+                // the grid never shows blank/black gaps below the fold; desktop
+                // keeps the staggered fade-in. Images beyond the first few still
+                // load lazily as they approach the viewport.
+                const revealEager = isMobile;
+                const eagerImg = i < 4;
                 return (
                   <Reveal
                     key={`${active}-${i}`}
-                    delay={eager ? 0 : (i % 3) * 0.08}
+                    delay={revealEager ? 0 : (i % 3) * 0.08}
                     y={24}
-                    eager={eager}
+                    eager={revealEager}
                   >
                     <button
                       type="button"
@@ -2997,7 +3002,7 @@ function ArtistsPage({
                           src={w.img}
                           alt={`${artist.name} — work ${i + 1}`}
                           draggable={false}
-                          loading={eager ? "eager" : "lazy"}
+                          loading={eagerImg ? "eager" : "lazy"}
                           className="h-full w-full object-cover group-hover:scale-105"
                         />
                       )}
@@ -3543,7 +3548,7 @@ function GuestsPage() {
   return (
     <main className="relative z-10 min-h-screen px-6 pb-24 pt-28 md:px-16 md:pt-32">
       <div className="mx-auto w-full max-w-3xl">
-        <Reveal>
+        <Reveal eager>
           <p className="mb-4 text-[12px] uppercase tracking-[0.3em] text-white/40">
             {t("guests.kicker")}
           </p>
@@ -3557,7 +3562,7 @@ function GuestsPage() {
         </Reveal>
 
         {/* Join our team — sits directly under the studio intro. */}
-        <Reveal delay={0.1}>
+        <Reveal delay={0.1} eager>
           <div className="mt-12 border-y border-white/10 py-6">
             <p className="mb-2 text-[11px] uppercase tracking-[0.25em] text-white/40">
               {t("guests.emailLabel")}
@@ -3575,7 +3580,7 @@ function GuestsPage() {
           </div>
         </Reveal>
 
-        <Reveal delay={0.16}>
+        <Reveal delay={0.16} eager>
           <div className="mt-12">
             <h2 className="font-serif text-[1.6rem] leading-tight md:text-[2rem]">
               {t("guests.guest.title")}
@@ -3586,7 +3591,7 @@ function GuestsPage() {
           </div>
         </Reveal>
 
-        <Reveal delay={0.2}>
+        <Reveal delay={0.2} eager>
           <div className="mt-10">
             <h2 className="font-serif text-[1.6rem] leading-tight md:text-[2rem]">
               {t("guests.careers.title")}
