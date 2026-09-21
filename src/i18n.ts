@@ -413,6 +413,12 @@ const DICT: Record<string, Entry> = {
     de: "Alle Stile",
     ua: "Усі стилі",
   },
+  "nav.stylesMenu": {
+    en: "Styles",
+    nl: "Stijlen",
+    de: "Stile",
+    ua: "Стилі",
+  },
 
   // Hero — the cycling label (two phrases).
   "hero.book": {

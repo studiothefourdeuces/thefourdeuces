@@ -318,6 +318,7 @@ const TICKER =
 const MENU: { tkey: string; target: string }[] = [
   { tkey: "nav.home", target: "top" },
   { tkey: "nav.artists", target: "/artists" },
+  { tkey: "nav.stylesMenu", target: "/styles" },
   { tkey: "nav.reviews", target: "#reviews" },
   { tkey: "nav.about", target: "/about" },
   { tkey: "nav.faq", target: "/faq" },
@@ -1270,7 +1271,7 @@ function Carousel({
             ref={(el) => {
               cardRefs.current[i] = el;
             }}
-            className="absolute left-1/2 top-1/2 overflow-hidden rounded-xl ring-1 ring-white/10 shadow-2xl shadow-black/60"
+            className="absolute left-1/2 top-1/2 overflow-hidden rounded-2xl ring-1 ring-white/10 shadow-2xl shadow-black/60"
             style={{
               backfaceVisibility: "hidden",
               willChange: "transform, opacity",
@@ -1387,7 +1388,7 @@ function Smooth3DSlideshow({
   const SCALE_STEP = 0.16;
   const MAX_VISIBLE = 2;
   const transitionCss = `transform ${DUR}s ${EASE}, opacity ${DUR}s ${EASE}`;
-  const radius = 12; // matches the site-wide rounded-xl radius
+  const radius = Math.round((3 / 20) * (Math.min(dim.w, dim.h) / 2));
 
   return (
     <div
