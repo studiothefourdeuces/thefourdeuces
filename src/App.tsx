@@ -2895,14 +2895,12 @@ function ArtistsPage({
   onSelect,
   onOpenWorks,
   onBook,
-  onConsult,
   onNavigate,
 }: {
   active: number;
   onSelect: (i: number) => void;
   onOpenWorks: (artist: number, startIndex: number) => void;
   onBook: (ctx: { artist?: string; bodyPart?: string }) => void;
-  onConsult: () => void;
   onNavigate: (path: string) => void;
 }) {
   const t = useT();
@@ -3070,14 +3068,15 @@ function ArtistsPage({
               >
                 {t("ui.bookWith")} {artist.name}
               </button>
-              <button
-                type="button"
-                onClick={onConsult}
+              <a
+                href={WHATSAPP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
                 data-cursor="pointer"
                 className={PILL(false)}
               >
                 {t("book.freeconsult")}
-              </button>
+              </a>
             </div>
           </motion.div>
         </div>
@@ -3140,14 +3139,15 @@ function ArtistsPage({
               {t("ui.bookWith")} {artist.name}
             </button>
             <p className="mt-2 text-[13px] text-white/45">{t("book.notsure")}</p>
-            <button
-              type="button"
-              onClick={onConsult}
+            <a
+              href={WHATSAPP_URL}
+              target="_blank"
+              rel="noopener noreferrer"
               data-cursor="pointer"
               className={PILL(false)}
             >
               {t("book.freeconsult")}
-            </button>
+            </a>
           </div>
 
           {/* Style FAQ — under the works on desktop, under the book CTA on
@@ -4153,10 +4153,8 @@ function BodyPain({
 
 function BookPage({
   onBook,
-  onConsult,
 }: {
   onBook: (ctx: { artist?: string; bodyPart?: string }) => void;
-  onConsult: () => void;
 }) {
   const t = useT();
   return (
@@ -4195,14 +4193,15 @@ function BookPage({
         <Reveal>
           <div className="mt-12 flex flex-col items-center gap-3 text-center">
             <p className="text-[13px] text-white/45">{t("book.notsure")}</p>
-            <button
-              type="button"
-              onClick={onConsult}
+            <a
+              href={WHATSAPP_URL}
+              target="_blank"
+              rel="noopener noreferrer"
               data-cursor="pointer"
               className={PILL(false)}
             >
               {t("book.freeconsult")}
-            </button>
+            </a>
           </div>
         </Reveal>
       </div>
@@ -5612,10 +5611,7 @@ export default function App() {
       ) : page === "contact" ? (
         <ContactPage onNavigate={navigate} />
       ) : page === "book" ? (
-        <BookPage
-          onBook={openBooking}
-          onConsult={() => openConsult("book")}
-        />
+        <BookPage onBook={openBooking} />
       ) : page === "faq" ? (
         <FaqPage onNavigate={navigate} onConsult={() => openConsult("faq")} />
       ) : page === "artists" ? (
@@ -5624,7 +5620,6 @@ export default function App() {
           onSelect={setActiveArtist}
           onOpenWorks={openWorks}
           onBook={openBooking}
-          onConsult={() => openConsult("artists")}
           onNavigate={navigate}
         />
       ) : page === "terms" ? (
