@@ -333,15 +333,14 @@ const LANG_NAMES: Record<string, string> = {
   ua: "Українська",
 };
 
-// Shared button — one size & shape for every button on the site. Softly
-// rectangle (echoing the corners of the carousel / artist photos) rather
-// than a full pill. `solid` picks the filled (primary) vs outline (secondary)
-// colour; width comes from the surrounding layout (stretches in a column, auto
-// in a row). Slightly tighter on desktop.
+// Shared button — one size & shape for every button on the site. Full width in
+// a column on mobile, a single uniform width on desktop so every CTA lines up.
+// `solid` picks the primary (white outline + glass fill, like the Instagram
+// chip) vs secondary (faint outline). Slightly tighter on desktop.
 const PILL = (solid: boolean) =>
-  `inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-full border px-6 py-3.5 text-[15px] transition-colors md:w-auto md:py-3 md:text-[14px] ${
+  `inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-full border px-6 py-3.5 text-[15px] transition-colors md:w-[216px] md:py-3 md:text-[14px] lg:w-[264px] ${
     solid
-      ? "border-white bg-white text-black hover:bg-white/90"
+      ? "border-white/25 bg-white/10 text-white backdrop-blur hover:border-white/50 hover:bg-white/15"
       : "border-white/25 text-white/85 hover:border-white/50 hover:bg-white/5"
   }`;
 
@@ -1881,13 +1880,15 @@ function Hero({ onNavigate }: { onNavigate: (path: string) => void }) {
         <span className="italic">Made to Last.</span>
       </h1>
 
-      {/* Primary Book pill + a bold consultation link below (→ WhatsApp). */}
-      <div className="pointer-events-auto absolute inset-x-6 bottom-[3%] flex flex-col items-center gap-4 md:inset-x-auto md:bottom-auto md:left-1/2 md:top-1/2 md:w-[320px] md:-translate-x-1/2 md:-translate-y-1/2">
+      {/* Primary Book pill + a bold consultation link below (→ WhatsApp). On
+          mobile the block matches the carousel's centred card; on desktop it
+          matches the width of the "Ink With Intent." title line. */}
+      <div className="pointer-events-auto absolute bottom-[3%] left-1/2 flex w-[68vw] max-w-[272px] -translate-x-1/2 flex-col items-center gap-4 md:bottom-auto md:top-1/2 md:w-[222px] md:max-w-none md:-translate-y-1/2">
         <button
           type="button"
           onClick={() => onNavigate("/book")}
           data-cursor="pointer"
-          className={PILL(true)}
+          className={`${PILL(true)} w-full!`}
         >
           {[t("cta.book.a"), t("cta.book.b")].filter(Boolean).join(" ")}
         </button>
@@ -3137,6 +3138,7 @@ function ArtistsPage({
             >
               {t("ui.bookWith")} {artist.name}
             </button>
+            <p className="mt-2 text-[13px] text-white/45">{t("book.notsure")}</p>
             <button
               type="button"
               onClick={onConsult}
@@ -3600,10 +3602,22 @@ function ContactPage({
               className="absolute left-[-9999px] h-0 w-0 opacity-0"
             />
             {error && <p className="text-[13px] text-red-400">{error}</p>}
+            <p className="mt-2 text-[13px] text-white/40">
+              {t("contact.agree.send")}
+              <button
+                type="button"
+                onClick={() => onNavigate("/terms")}
+                data-cursor="pointer"
+                className="text-white/70 underline underline-offset-4 transition hover:text-white"
+              >
+                {t("legal.terms")}
+              </button>
+              .
+            </p>
             <button
               type="submit"
               data-cursor="pointer"
-              className={`${PILL(true)} mt-2 self-start`}
+              className={`${PILL(true)} self-start`}
             >
               {t("contact.send")}
             </button>
@@ -3621,17 +3635,6 @@ function ContactPage({
             >
               studio@thefourdeuces.nl
             </a>
-            <p className="mt-4 text-[13px] text-white/40">
-              {t("contact.agree.pre")}
-              <button
-                onClick={() => onNavigate("/terms")}
-                data-cursor="pointer"
-                className="text-white/70 underline underline-offset-4 transition hover:text-white"
-              >
-                {t("legal.terms")}
-              </button>
-              .
-            </p>
           </div>
 
           <div className="mt-8 border-t border-white/10 pt-6">

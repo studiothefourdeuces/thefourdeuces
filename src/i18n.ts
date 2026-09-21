@@ -883,6 +883,12 @@ const DICT: Record<string, Entry> = {
     de: "Mit deiner Kontaktaufnahme akzeptierst du unsere ",
     ua: "Звʼязуючись із нами, ти погоджуєшся з нашими ",
   },
+  "contact.agree.send": {
+    en: "By sending this you agree to our ",
+    nl: "Door dit te versturen ga je akkoord met onze ",
+    de: "Mit dem Absenden akzeptierst du unsere ",
+    ua: "Надсилаючи, ти погоджуєшся з нашими ",
+  },
   "contact.careers": {
     en: "Careers & guests",
     nl: "Vacatures & gastartiesten",
