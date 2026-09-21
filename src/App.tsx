@@ -321,6 +321,7 @@ const MENU: { tkey: string; target: string }[] = [
   { tkey: "nav.reviews", target: "#reviews" },
   { tkey: "nav.about", target: "/about" },
   { tkey: "nav.faq", target: "/faq" },
+  { tkey: "nav.careers", target: "/guests" },
   { tkey: "nav.contact", target: "/contact" },
 ];
 
@@ -332,26 +333,29 @@ const LANG_NAMES: Record<string, string> = {
   ua: "Українська",
 };
 
-// Shared button — one size & shape for every button on the site. Softly rounded
-// rectangle (echoing the rounded corners of the carousel / artist photos) rather
+// Shared button — one size & shape for every button on the site. Softly
+// rectangle (echoing the corners of the carousel / artist photos) rather
 // than a full pill. `solid` picks the filled (primary) vs outline (secondary)
 // colour; width comes from the surrounding layout (stretches in a column, auto
 // in a row). Slightly tighter on desktop.
 const PILL = (solid: boolean) =>
   `inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-full border px-6 py-3.5 text-[15px] transition-colors md:w-auto md:py-3 md:text-[14px] ${
     solid
-      ? "border-white bg-white font-medium text-black hover:bg-white/90"
+      ? "border-white bg-white text-black hover:bg-white/90"
       : "border-white/25 text-white/85 hover:border-white/50 hover:bg-white/5"
   }`;
 
-// Call-to-action bar in the site's house style (identical to the menu CTAs):
-// one or more serif labels (last word italic) + an arrow, framed by hairlines
-// with a divider between items.
+// Studio WhatsApp Business — direct chat link used by the consultation CTAs.
+const WHATSAPP_URL = "https://wa.me/31645052222";
+
+// A row of pill CTAs. The first item is filled (primary) unless `solid` is set
+// explicitly; the rest are outlined. Stacked on mobile, side by side on desktop.
 type CtaItem = {
   label: string;
   onClick?: () => void;
   href?: string;
   type?: "button" | "submit";
+  solid?: boolean;
 };
 
 function CtaBar({
@@ -361,27 +365,12 @@ function CtaBar({
   items: CtaItem[];
   className?: string;
 }) {
-  const cellCls =
-    "group flex flex-1 items-center justify-center gap-2.5 whitespace-nowrap px-6 py-7 transition-colors hover:bg-white/[0.03] md:py-9";
   return (
     <div
-      className={`flex flex-col divide-y divide-white/10 border-y border-white/10 md:flex-row md:divide-x md:divide-y-0 ${className}`}
+      className={`flex flex-col items-center gap-3 md:flex-row md:justify-center ${className}`}
     >
       {items.map((it, i) => {
-        const parts = it.label.trim().split(" ");
-        const last = parts.pop();
-        const inner = (
-          <>
-            <span className="font-serif text-[1.6rem] leading-none text-white md:text-[1.8rem]">
-              {parts.length ? `${parts.join(" ")} ` : ""}
-              <span className="italic">{last}</span>
-            </span>
-            <ArrowUpRight
-              className="h-5 w-5 shrink-0 text-white/45 transition duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-white md:h-6 md:w-6"
-              strokeWidth={1.75}
-            />
-          </>
-        );
+        const cls = PILL(it.solid ?? i === 0);
         return it.href ? (
           <a
             key={i}
@@ -389,9 +378,9 @@ function CtaBar({
             target="_blank"
             rel="noopener noreferrer"
             data-cursor="pointer"
-            className={cellCls}
+            className={cls}
           >
-            {inner}
+            {it.label}
           </a>
         ) : (
           <button
@@ -399,9 +388,9 @@ function CtaBar({
             type={it.type ?? "button"}
             onClick={it.onClick}
             data-cursor="pointer"
-            className={cellCls}
+            className={cls}
           >
-            {inner}
+            {it.label}
           </button>
         );
       })}
@@ -1869,25 +1858,13 @@ function BookingForm({
   );
 }
 
-function Hero({
-  onNavigate,
-  onConsult,
-}: {
-  onNavigate: (path: string) => void;
-  onConsult: () => void;
-}) {
+function Hero({ onNavigate }: { onNavigate: (path: string) => void }) {
   const [loaded, setLoaded] = useState(false);
-  const [idx, setIdx] = useState(0);
   useEffect(() => {
     const id = setTimeout(() => setLoaded(true), 40);
     return () => clearTimeout(id);
   }, []);
-  useEffect(() => {
-    const id = setInterval(() => setIdx((v) => (v + 1) % 2), 3200);
-    return () => clearInterval(id);
-  }, []);
   const t = useT();
-  const isConsult = idx === 1;
   return (
     <div
       className="pointer-events-none absolute inset-0"
@@ -1904,34 +1881,30 @@ function Hero({
         <span className="italic">Made to Last.</span>
       </h1>
 
-      {/* Plain serif CTA with an arrow; the label cycles between Book and
-          Consult. Centred — below the carousel on mobile, over it on desktop. */}
-      <button
-        type="button"
-        onClick={isConsult ? onConsult : () => onNavigate("/book")}
-        data-cursor="pointer"
-        className="group pointer-events-auto absolute inset-x-0 bottom-[5%] flex items-center justify-center gap-2.5 whitespace-nowrap px-6 md:inset-x-auto md:bottom-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2"
-      >
-        <span className="font-serif text-[1.9rem] leading-none text-white/45 transition-colors duration-300 group-hover:text-white md:text-[1.8rem]">
-          {isConsult ? (
-            <>
-              <sup className="mr-1 align-super text-[9px] uppercase tracking-[0.2em] text-white/40">
-                {t("cta.free")}
-              </sup>
-              {t("cta.consult.a") && <>{t("cta.consult.a")} </>}
-              <span className="italic">{t("cta.consult.b")}</span>
-            </>
-          ) : (
-            <>
-              {t("cta.book.a")} <span className="italic">{t("cta.book.b")}</span>
-            </>
-          )}
-        </span>
-        <ArrowUpRight
-          className="h-5 w-5 shrink-0 text-white/45 transition duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-white md:h-6 md:w-6"
-          strokeWidth={1.75}
-        />
-      </button>
+      {/* Primary Book pill + a bold consultation link below (→ WhatsApp). */}
+      <div className="pointer-events-auto absolute inset-x-6 bottom-[3%] flex flex-col items-center gap-4 md:inset-x-auto md:bottom-auto md:left-1/2 md:top-1/2 md:w-[320px] md:-translate-x-1/2 md:-translate-y-1/2">
+        <button
+          type="button"
+          onClick={() => onNavigate("/book")}
+          data-cursor="pointer"
+          className={PILL(true)}
+        >
+          {[t("cta.book.a"), t("cta.book.b")].filter(Boolean).join(" ")}
+        </button>
+        <a
+          href={WHATSAPP_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          data-cursor="pointer"
+          className="group inline-flex items-center gap-1.5 text-[13px] text-white/50 transition hover:text-white"
+        >
+          {t("book.freeconsult")}
+          <ArrowUpRight
+            className="h-3.5 w-3.5 transition duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+            strokeWidth={1.75}
+          />
+        </a>
+      </div>
     </div>
   );
 }
@@ -2169,12 +2142,10 @@ function Menu({
   open,
   onClose,
   onNavigate,
-  onConsult,
 }: {
   open: boolean;
   onClose: () => void;
   onNavigate: (path: string) => void;
-  onConsult: () => void;
 }) {
   const t = useT();
   const [hovered, setHovered] = useState<number | null>(null);
@@ -2301,57 +2272,7 @@ function Menu({
             })}
           </nav>
 
-          {/* Bottom CTAs — Book · Request consultation. Serif labels with an
-              arrow; stacked on mobile, in a divider row on desktop. */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{
-              duration: 0.5,
-              delay: open ? 0.08 + sections.length * 0.06 : 0,
-              ease: [0.22, 1, 0.36, 1],
-            }}
-            className="flex flex-col divide-y divide-white/10 border-t border-white/10 md:flex-row md:divide-x md:divide-y-0"
-          >
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
-                onNavigate("/book");
-              }}
-              data-cursor="pointer"
-              className="group flex flex-1 items-center justify-center gap-2.5 px-6 py-7 transition-colors hover:bg-white/[0.03] md:py-9"
-            >
-              <span className="font-serif text-[1.6rem] leading-none text-white md:text-[1.8rem]">
-                {t("cta.book.a")} <span className="italic">{t("cta.book.b")}</span>
-              </span>
-              <ArrowUpRight
-                className="h-5 w-5 shrink-0 text-white/45 transition duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-white md:h-6 md:w-6"
-                strokeWidth={1.75}
-              />
-            </button>
-            <button
-              type="button"
-              onClick={onConsult}
-              data-cursor="pointer"
-              className="group flex flex-1 items-center justify-center gap-2.5 px-6 py-7 transition-colors hover:bg-white/[0.03] md:py-9"
-            >
-              <span className="font-serif text-[1.6rem] leading-none text-white md:text-[1.8rem]">
-                <sup className="mr-1 align-super text-[9px] uppercase tracking-[0.2em] text-white/50">
-                  {t("cta.free")}
-                </sup>
-                {t("cta.consult.a") && <>{t("cta.consult.a")} </>}
-                <span className="italic">{t("cta.consult.b")}</span>
-              </span>
-              <ArrowUpRight
-                className="h-5 w-5 shrink-0 text-white/45 transition duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-white md:h-6 md:w-6"
-                strokeWidth={1.75}
-              />
-            </button>
-          </motion.div>
-
-          {/* Address + local time — mobile only, under the Book CTA */}
+          {/* Address + local time — mobile only, under the menu links */}
           <div className="border-t border-white/10 px-6 py-6 text-center text-[12px] leading-relaxed text-white/45 md:hidden">
             <a
               href="https://www.google.com/maps/search/?api=1&query=The%20Four%20Deuces%20Van%20Baerlestraat%20126H%201071%20BD%20Amsterdam"
@@ -2972,12 +2893,14 @@ function ArtistsPage({
   onSelect,
   onOpenWorks,
   onBook,
+  onConsult,
   onNavigate,
 }: {
   active: number;
   onSelect: (i: number) => void;
   onOpenWorks: (artist: number, startIndex: number) => void;
   onBook: (ctx: { artist?: string; bodyPart?: string }) => void;
+  onConsult: () => void;
   onNavigate: (path: string) => void;
 }) {
   const t = useT();
@@ -3023,10 +2946,22 @@ function ArtistsPage({
 
   // FAQ pulled from the style pages this artist works in (deduped by question).
   const artistFaq = useMemo(() => {
+    // Order the FAQ by the artist's own listed specialities (their role line)
+    // rather than the global style order, so e.g. Darya leads with Anime/Manga
+    // and Eugene with Chicano. Styles not named in the role fall to the end.
+    const enStyles = getStyles("en");
+    const rolePos = (slug: string) => {
+      const en = enStyles.find((s) => s.slug === slug);
+      if (!en) return 999;
+      const idx = artist.role.toLowerCase().indexOf(en.nav.toLowerCase());
+      return idx === -1 ? 999 : idx;
+    };
     const seen = new Set<string>();
     const out: { q: string; a: string }[] = [];
-    for (const s of getStyles(lang)) {
-      if (!s.artists.includes(artist.name)) continue;
+    const styles = getStyles(lang)
+      .filter((s) => s.artists.includes(artist.name))
+      .sort((a, b) => rolePos(a.slug) - rolePos(b.slug));
+    for (const s of styles) {
       for (const item of s.faq) {
         if (seen.has(item.q)) continue;
         seen.add(item.q);
@@ -3034,7 +2969,7 @@ function ArtistsPage({
       }
     }
     return out;
-  }, [lang, artist.name]);
+  }, [lang, artist.name, artist.role]);
 
   return (
     <main className="relative z-10 min-h-screen px-6 pb-24 pt-28 md:px-16 md:pt-32">
@@ -3124,7 +3059,7 @@ function ArtistsPage({
                 {t("ui.tattooingSince")} {artist.since}
               </p>
             )}
-            <div className="mt-8">
+            <div className="mt-8 flex flex-row items-center gap-3">
               <button
                 type="button"
                 onClick={() => onBook({ artist: artist.name })}
@@ -3132,6 +3067,14 @@ function ArtistsPage({
                 className={PILL(true)}
               >
                 {t("ui.bookWith")} {artist.name}
+              </button>
+              <button
+                type="button"
+                onClick={onConsult}
+                data-cursor="pointer"
+                className={PILL(false)}
+              >
+                {t("book.freeconsult")}
               </button>
             </div>
           </motion.div>
@@ -3193,6 +3136,14 @@ function ArtistsPage({
               className={PILL(true)}
             >
               {t("ui.bookWith")} {artist.name}
+            </button>
+            <button
+              type="button"
+              onClick={onConsult}
+              data-cursor="pointer"
+              className={PILL(false)}
+            >
+              {t("book.freeconsult")}
             </button>
           </div>
 
@@ -5204,13 +5155,8 @@ function loadClarity() {
 
 function SiteFooter({
   onNavigate,
-  onConsult,
-  ctaItems,
 }: {
   onNavigate: (path: string) => void;
-  onConsult: () => void;
-  // undefined → default Book/Consult row; an array → those CTAs; null → no row.
-  ctaItems?: CtaItem[] | null;
 }) {
   const t = useT();
   const styles = getStyles(useLang());
@@ -5233,50 +5179,8 @@ function SiteFooter({
   return (
     <footer className="px-6 py-14 md:px-16">
       <div className="mx-auto w-full max-w-6xl">
-        {/* CTAs — a custom set when provided, otherwise the default
-            Book · Request consultation row (with the Free tag). null → none. */}
-        {ctaItems ? (
-          <CtaBar items={ctaItems} />
-        ) : ctaItems === null ? null : (
-          <div className="flex flex-col divide-y divide-white/10 border-y border-white/10 md:flex-row md:divide-x md:divide-y-0">
-            <button
-              type="button"
-              onClick={() => onNavigate("/book")}
-              data-cursor="pointer"
-              className="group flex flex-1 items-center justify-center gap-2.5 px-6 py-7 transition-colors hover:bg-white/[0.03] md:py-9"
-            >
-              <span className="font-serif text-[1.6rem] leading-none text-white md:text-[1.8rem]">
-                {t("cta.book.a")}{" "}
-                <span className="italic">{t("cta.book.b")}</span>
-              </span>
-              <ArrowUpRight
-                className="h-5 w-5 shrink-0 text-white/45 transition duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-white md:h-6 md:w-6"
-                strokeWidth={1.75}
-              />
-            </button>
-            <button
-              type="button"
-              onClick={onConsult}
-              data-cursor="pointer"
-              className="group flex flex-1 items-center justify-center gap-2.5 px-6 py-7 transition-colors hover:bg-white/[0.03] md:py-9"
-            >
-              <span className="font-serif text-[1.6rem] leading-none text-white md:text-[1.8rem]">
-                <sup className="mr-1 align-super text-[9px] uppercase tracking-[0.2em] text-white/50">
-                  {t("cta.free")}
-                </sup>
-                {t("cta.consult.a") && <>{t("cta.consult.a")} </>}
-                <span className="italic">{t("cta.consult.b")}</span>
-              </span>
-              <ArrowUpRight
-                className="h-5 w-5 shrink-0 text-white/45 transition duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-white md:h-6 md:w-6"
-                strokeWidth={1.75}
-              />
-            </button>
-          </div>
-        )}
-
         {/* Nav columns — Discover · Studio · Tattoo styles */}
-        <div className="grid grid-cols-2 gap-x-8 gap-y-10 border-t border-white/10 py-12 text-center sm:text-left md:grid-cols-4 md:gap-x-10">
+        <div className="grid grid-cols-2 gap-x-8 gap-y-10 pb-12 text-center sm:text-left md:grid-cols-4 md:gap-x-10">
           <div>
             <p className={headCls}>{t("footer.discover")}</p>
             <ul className="flex flex-col gap-2.5">
@@ -5651,7 +5555,6 @@ export default function App() {
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
         onNavigate={navigate}
-        onConsult={() => openConsult("menu")}
       />
 
       {isHome ? (
@@ -5659,7 +5562,7 @@ export default function App() {
           {/* ============ FIRST SCREEN: hero + carousel ============ */}
           <section className="relative min-h-screen overflow-hidden">
             <main className="pointer-events-none relative z-30 min-h-screen">
-              <Hero onNavigate={navigate} onConsult={() => openConsult("hero")} />
+              <Hero onNavigate={navigate} />
             </main>
             {isMobile ? (
               <Smooth3DSlideshow onOpenProfile={openProfile} />
@@ -5717,6 +5620,7 @@ export default function App() {
           onSelect={setActiveArtist}
           onOpenWorks={openWorks}
           onBook={openBooking}
+          onConsult={() => openConsult("artists")}
           onNavigate={navigate}
         />
       ) : page === "terms" ? (
@@ -5738,20 +5642,7 @@ export default function App() {
       )}
 
       {/* ===================== FOOTER (every page) ===================== */}
-      <SiteFooter
-        onNavigate={navigate}
-        onConsult={() => openConsult("footer")}
-        ctaItems={
-          page === "about" || page === "guests"
-            ? [
-                { label: tr("about.joinTeam"), onClick: () => navigate("/guests") },
-                { label: tr("nav.contact"), onClick: () => navigate("/contact") },
-              ]
-            : page === "artists" || page === "book"
-              ? null
-              : undefined
-        }
-      />
+      <SiteFooter onNavigate={navigate} />
 
       {/* ===================== WORKS LIGHTBOX ===================== */}
       <WorksLightbox

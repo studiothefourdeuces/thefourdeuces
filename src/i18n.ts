@@ -401,6 +401,12 @@ const DICT: Record<string, Entry> = {
     de: "Gäste & Karriere",
     ua: "Гості та кар'єра",
   },
+  "nav.careers": {
+    en: "Careers",
+    nl: "Vacatures",
+    de: "Karriere",
+    ua: "Кар'єра",
+  },
   "nav.styles": {
     en: "All styles",
     nl: "Alle stijlen",
@@ -442,6 +448,12 @@ const DICT: Record<string, Entry> = {
     nl: "consult aan",
     de: "anfragen",
     ua: "Консультація",
+  },
+  "cta.consultLink": {
+    en: "or request a free consultation",
+    nl: "of vraag een gratis consult aan",
+    de: "oder eine kostenlose Beratung anfragen",
+    ua: "або замовити безкоштовну консультацію",
   },
   "cta.contact": {
     en: "Contact",
