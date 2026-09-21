@@ -2941,6 +2941,32 @@ function ArtistShowcase({
 
 const MAX_PORTFOLIO = 21;
 
+// Compact FAQ accordion (question + answer), reused on the artists page for the
+// styles each artist works in.
+function FaqList({ items }: { items: { q: string; a: string }[] }) {
+  return (
+    <div className="divide-y divide-white/10 border-y border-white/10">
+      {items.map((item, i) => (
+        <details key={i} className="group py-4">
+          <summary
+            data-cursor="pointer"
+            className="flex cursor-pointer list-none items-center justify-between gap-4 text-[14px] text-white/90 md:text-[15px] [&::-webkit-details-marker]:hidden"
+          >
+            {item.q}
+            <ChevronDown
+              className="h-4 w-4 shrink-0 text-white/40 transition-transform duration-300 group-open:rotate-180"
+              strokeWidth={2}
+            />
+          </summary>
+          <p className="mt-2 text-[13px] leading-relaxed text-white/55">
+            {item.a}
+          </p>
+        </details>
+      ))}
+    </div>
+  );
+}
+
 function ArtistsPage({
   active,
   onSelect,
@@ -2994,6 +3020,21 @@ function ArtistsPage({
   // trailing tile on the last row looks unbalanced) — drop the last if odd.
   const worksToShow =
     isMobile && works.length % 2 === 1 ? works.slice(0, -1) : works;
+
+  // FAQ pulled from the style pages this artist works in (deduped by question).
+  const artistFaq = useMemo(() => {
+    const seen = new Set<string>();
+    const out: { q: string; a: string }[] = [];
+    for (const s of getStyles(lang)) {
+      if (!s.artists.includes(artist.name)) continue;
+      for (const item of s.faq) {
+        if (seen.has(item.q)) continue;
+        seen.add(item.q);
+        out.push({ q: item.q, a: item.a });
+      }
+    }
+    return out;
+  }, [lang, artist.name]);
 
   return (
     <main className="relative z-10 min-h-screen px-6 pb-24 pt-28 md:px-16 md:pt-32">
@@ -3154,6 +3195,17 @@ function ArtistsPage({
               {t("ui.bookWith")} {artist.name}
             </button>
           </div>
+
+          {/* Style FAQ — under the works on desktop, under the book CTA on
+              mobile. Centred, same width as the FAQ page. */}
+          {artistFaq.length > 0 && (
+            <div className="mx-auto mt-16 max-w-3xl">
+              <p className="mb-5 text-center text-[12px] uppercase tracking-[0.25em] text-white/40">
+                {t("guests.faq.title")}
+              </p>
+              <FaqList items={artistFaq} />
+            </div>
+          )}
         </section>
       </div>
     </main>
