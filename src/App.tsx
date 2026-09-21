@@ -5690,7 +5690,7 @@ export default function App() {
         onNavigate={navigate}
         onConsult={() => openConsult("footer")}
         ctaItems={
-          page === "about"
+          page === "about" || page === "guests"
             ? [
                 { label: tr("about.joinTeam"), onClick: () => navigate("/guests") },
                 { label: tr("nav.contact"), onClick: () => navigate("/contact") },

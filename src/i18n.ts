@@ -371,9 +371,9 @@ const DICT: Record<string, Entry> = {
     ua: "Хочеш приєднатися до команди чи завітати як запрошений майстер? Ми завжди раді талановитим майстрам, які поділяють наші стандарти й турботу про клієнтів.",
   },
   "about.joinTeam": {
-    en: "Join the team",
-    nl: "Kom bij het team",
-    de: "Werde Teil des Teams",
+    en: "Join our team",
+    nl: "Kom bij ons team",
+    de: "Werde Teil unseres Teams",
     ua: "Приєднатися до команди",
   },
   "nav.faq": { en: "FAQ", nl: "FAQ", de: "FAQ", ua: "FAQ" },
