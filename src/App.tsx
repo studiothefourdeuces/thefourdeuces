@@ -334,12 +334,12 @@ const LANG_NAMES: Record<string, string> = {
   ua: "Українська",
 };
 
-// Shared button — one size & shape for every button on the site. Full width in
-// a column on mobile, a single uniform width on desktop so every CTA lines up.
-// `solid` picks the primary (white outline + glass fill, like the Instagram
-// chip) vs secondary (faint outline). Slightly tighter on desktop.
+// Shared button — one size & shape for every button on the site. On mobile a
+// single uniform width matching the hero CTA (the carousel card); on desktop it
+// sizes to its label. `solid` picks the primary (white outline + glass fill,
+// like the Instagram chip) vs secondary (faint outline). Tighter on desktop.
 const PILL = (solid: boolean) =>
-  `inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-full border px-6 py-3.5 text-[15px] transition-colors md:w-[216px] md:py-3 md:text-[14px] lg:w-[264px] ${
+  `inline-flex w-[68vw] max-w-[272px] items-center justify-center gap-2 whitespace-nowrap rounded-full border px-6 py-3.5 text-[15px] transition-colors md:w-auto md:max-w-none md:py-3 md:text-[14px] ${
     solid
       ? "border-white/25 bg-white/10 text-white backdrop-blur hover:border-white/50 hover:bg-white/15"
       : "border-white/25 text-white/85 hover:border-white/50 hover:bg-white/5"
