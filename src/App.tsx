@@ -1393,11 +1393,17 @@ function Smooth3DSlideshow({
 
   return (
     <div
-      className="pointer-events-auto absolute inset-x-0 bottom-[15%] z-20 flex items-center justify-center"
+      // In-flow flex child (the mobile hero centres title · carousel · CTA in a
+      // column); sized to the photo height so the column spacing stays even.
+      className="pointer-events-auto relative flex w-full items-center justify-center"
       // pan-y lets the page still scroll vertically while we own horizontal
       // gestures — otherwise the browser hijacks the swipe and fires
       // pointercancel before we see the pointerup.
-      style={{ perspective: "1600px", height: "60vh", touchAction: "pan-y" }}
+      style={{
+        perspective: "1600px",
+        touchAction: "pan-y",
+        height: dim.h,
+      }}
       onPointerDown={(e) => {
         startX.current = e.clientX;
         lastX.current = e.clientX;
@@ -1909,6 +1915,67 @@ function Hero({ onNavigate }: { onNavigate: (path: string) => void }) {
         </a>
       </div>
     </div>
+  );
+}
+
+// Mobile hero — a centred vertical column (title · carousel · CTA) so the photo
+// is the middle element and the gaps between the three stay even and scale with
+// the screen height. Desktop keeps the absolute-positioned Hero + Carousel.
+function MobileHero({
+  onNavigate,
+  onOpenProfile,
+}: {
+  onNavigate: (path: string) => void;
+  onOpenProfile: (artistIdx: number) => void;
+}) {
+  const t = useT();
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => {
+    const id = setTimeout(() => setLoaded(true), 40);
+    return () => clearTimeout(id);
+  }, []);
+  return (
+    <section
+      className="relative flex min-h-[100svh] flex-col items-center justify-center gap-[clamp(1.5rem,4.5vh,3.25rem)] overflow-hidden px-6 pb-8 pt-20"
+      style={{
+        opacity: loaded ? 1 : 0,
+        transform: loaded ? "translateY(0)" : "translateY(26px)",
+        transition:
+          "opacity 0.7s cubic-bezier(0.22,1,0.36,1), transform 0.7s cubic-bezier(0.22,1,0.36,1)",
+      }}
+    >
+      <h1 className="w-full text-center font-serif text-[2rem] leading-[1.15] tracking-tight">
+        Ink With Intent.
+        <br />
+        <span className="italic">Made to Last.</span>
+      </h1>
+
+      <Smooth3DSlideshow onOpenProfile={onOpenProfile} />
+
+      <div className="flex w-[calc(100vw-3rem)] max-w-[300px] flex-col items-center gap-4">
+        <button
+          type="button"
+          onClick={() => onNavigate("/book")}
+          data-cursor="pointer"
+          className={`${PILL(true)} w-full!`}
+        >
+          {[t("cta.book.a"), t("cta.book.b")].filter(Boolean).join(" ")}
+        </button>
+        <a
+          href={WHATSAPP_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          data-cursor="pointer"
+          className="group inline-flex items-center gap-1.5 text-[13px] text-white/50 transition hover:text-white"
+        >
+          {t("book.freeconsult")}
+          <ArrowUpRight
+            className="h-3.5 w-3.5 transition duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+            strokeWidth={1.75}
+          />
+        </a>
+      </div>
+    </section>
   );
 }
 
@@ -5576,7 +5643,7 @@ export default function App() {
       </AnimatePresence>
 
       {/* ===================== HEADER ===================== */}
-      <header className="fixed inset-x-0 top-0 z-30 flex items-start justify-between px-4 py-4 md:px-6 md:py-5">
+      <header className="fixed inset-x-0 top-0 z-40 flex items-start justify-between px-4 py-4 md:px-6 md:py-5">
         <div className="flex items-center gap-3 overflow-hidden">
           <a
             href="https://instagram.com/the.four.deuces"
@@ -5639,16 +5706,16 @@ export default function App() {
       {isHome ? (
         <>
           {/* ============ FIRST SCREEN: hero + carousel ============ */}
-          <section className="relative min-h-screen overflow-hidden">
-            <main className="pointer-events-none relative z-30 min-h-screen">
-              <Hero onNavigate={navigate} />
-            </main>
-            {isMobile ? (
-              <Smooth3DSlideshow onOpenProfile={openProfile} />
-            ) : (
+          {isMobile ? (
+            <MobileHero onNavigate={navigate} onOpenProfile={openProfile} />
+          ) : (
+            <section className="relative min-h-screen overflow-hidden">
+              <main className="pointer-events-none relative z-30 min-h-screen">
+                <Hero onNavigate={navigate} />
+              </main>
               <Carousel onOpenProfile={openProfile} />
-            )}
-          </section>
+            </section>
+          )}
 
           {/* ============ ARTIST SHOWCASE ============ */}
           <ArtistShowcase
