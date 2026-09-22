@@ -28,6 +28,7 @@ import {
   Euro,
   X,
   Globe,
+  Search,
 } from "lucide-react";
 import dariaImg from "./img/artists/daria.jpg";
 import eugeneImg from "./img/artists/eugene.jpg";
@@ -58,6 +59,7 @@ import {
   getAttribution,
 } from "./analytics";
 import AsciiFire from "./AsciiFire";
+import { buildSearchIndex, searchIndex, type SearchResult } from "./search";
 import {
   LANGS,
   DEFAULT_LANG,
@@ -1905,11 +1907,11 @@ function Hero({ onNavigate }: { onNavigate: (path: string) => void }) {
           target="_blank"
           rel="noopener noreferrer"
           data-cursor="pointer"
-          className="group inline-flex items-center gap-1.5 text-[13px] text-white/50 transition hover:text-white"
+          className="group block text-center text-[13px] text-white/50 transition hover:text-white"
         >
           {t("book.freeconsult")}
           <ArrowUpRight
-            className="h-3.5 w-3.5 transition duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+            className="ml-1.5 inline-block h-3.5 w-3.5 -translate-y-px transition duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
             strokeWidth={1.75}
           />
         </a>
@@ -1966,11 +1968,11 @@ function MobileHero({
           target="_blank"
           rel="noopener noreferrer"
           data-cursor="pointer"
-          className="group inline-flex items-center gap-1.5 text-[13px] text-white/50 transition hover:text-white"
+          className="group block text-center text-[13px] text-white/50 transition hover:text-white"
         >
           {t("book.freeconsult")}
           <ArrowUpRight
-            className="h-3.5 w-3.5 transition duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+            className="ml-1.5 inline-block h-3.5 w-3.5 -translate-y-px transition duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
             strokeWidth={1.75}
           />
         </a>
@@ -2208,6 +2210,148 @@ function MobileLangMenu({
   );
 }
 
+const RESULT_TYPE_LABEL: Record<SearchResult["type"], string> = {
+  style: "Style",
+  faq: "FAQ",
+  about: "About",
+  guests: "Guests",
+};
+
+function SearchOverlay({
+  open,
+  onClose,
+  onNavigate,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onNavigate: (path: string) => void;
+}) {
+  const lang = useLang();
+  const [query, setQuery] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const searchIdx = useMemo(() => buildSearchIndex(lang), [lang]);
+  const results = useMemo(
+    () => searchIndex(searchIdx, query),
+    [searchIdx, query],
+  );
+  const showResults = query.trim().length > 0;
+
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open, onClose]);
+
+  useEffect(() => {
+    if (!open) setQuery("");
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const id = setTimeout(() => inputRef.current?.focus(), 150);
+    return () => clearTimeout(id);
+  }, [open]);
+
+  const goToResult = (r: SearchResult) => {
+    onClose();
+    onNavigate(r.path);
+  };
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.25 }}
+          className="fixed inset-0 z-[100] flex flex-col bg-[#050505]"
+        >
+          <div className="flex items-center justify-between px-5 pb-3 pt-5">
+            <span className="font-serif text-[15px] tracking-tight text-white/60">
+              The Four <span className="italic">Deuces</span>
+            </span>
+            <button
+              onClick={onClose}
+              aria-label="Close"
+              data-cursor="pointer"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 transition hover:bg-white/20"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          <div className="flex flex-1 flex-col items-center overflow-y-auto px-6 pb-10">
+            <motion.div
+              className="w-full max-w-md shrink-0"
+              animate={{ marginTop: showResults ? "6vh" : "30vh" }}
+              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
+                <input
+                  ref={inputRef}
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search styles & FAQ..."
+                  data-cursor="text"
+                  className="w-full rounded-full border border-white/15 bg-white/[0.04] py-3 pl-11 pr-4 text-[14px] text-white outline-none transition focus:border-white/40"
+                />
+              </div>
+              {!showResults && (
+                <p className="mt-4 text-center text-[13px] leading-relaxed text-white/40">
+                  Search our tattoo styles, FAQ, studio info and guest-artist details.
+                </p>
+              )}
+            </motion.div>
+
+            {showResults && (
+              <div className="mt-6 w-full max-w-md">
+                {results.length === 0 ? (
+                  <p className="mt-6 text-center text-[13px] text-white/40">
+                    No results for "{query}"
+                  </p>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    {results.map((r, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => goToResult(r)}
+                        data-cursor="pointer"
+                        className="group flex flex-col items-start gap-1 rounded-xl border border-white/10 bg-white/[0.03] p-4 text-left transition hover:border-white/25 hover:bg-white/[0.06]"
+                      >
+                        <span className="text-[11px] uppercase tracking-[0.25em] text-white/40">
+                          {RESULT_TYPE_LABEL[r.type]}
+                        </span>
+                        <span className="text-[15px] text-white/90 transition group-hover:text-white">
+                          {r.title}
+                        </span>
+                        <span className="line-clamp-1 text-[13px] leading-relaxed text-white/50">
+                          {r.snippet}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 function Menu({
   open,
   onClose,
@@ -2242,7 +2386,7 @@ function Menu({
   }, []);
 
   // Close on Escape + lock background scroll while the menu is open.
-  useEffect(() => {
+    useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -5459,6 +5603,7 @@ export default function App() {
       : null,
   );
   const [menuOpen, setMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [langMenuOpen, setLangMenuOpen] = useState(false);
   const [activeArtist, setActiveArtist] = useState(0);
   const [worksArtist, setWorksArtist] = useState<number | null>(null);
@@ -5681,6 +5826,27 @@ export default function App() {
       {/* Burger menu + language switcher — always available. On mobile the
           language switcher is a globe (MobileLangMenu); while its menu is open
           the burger is greyed out and non-clickable. */}
+      <button
+        type="button"
+        onClick={() => setSearchOpen(true)}
+        aria-label="Search"
+        data-cursor="pointer"
+        className="fixed right-32 top-[9px] z-[60] hidden h-12 w-12 items-center justify-center text-white transition-opacity duration-300 md:right-40 md:flex md:h-14 md:w-14"
+      >
+        <Search className="h-5 w-5" strokeWidth={1.75} />
+      </button>
+      <button
+        type="button"
+        disabled={langMenuOpen || menuOpen}
+        onClick={() => setSearchOpen(true)}
+        aria-label="Search"
+        data-cursor={langMenuOpen || menuOpen ? undefined : "pointer"}
+        className={`fixed right-28 top-[9px] z-[70] flex h-12 w-12 items-center justify-center text-white transition-opacity duration-300 md:hidden ${
+          langMenuOpen || menuOpen ? "pointer-events-none opacity-30" : "mix-blend-difference"
+        }`}
+      >
+        <Search className="h-6 w-6" strokeWidth={1.6} />
+      </button>
       <LanguageSwitcher current={lang} onSelect={setLang} />
       <MobileLangMenu
         current={lang}
@@ -5700,6 +5866,11 @@ export default function App() {
       <Menu
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
+        onNavigate={navigate}
+      />
+      <SearchOverlay
+        open={searchOpen}
+        onClose={() => setSearchOpen(false)}
         onNavigate={navigate}
       />
 

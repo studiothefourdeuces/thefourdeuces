@@ -612,7 +612,7 @@ const DICT: Record<string, Entry> = {
     en: "Request free consultation",
     nl: "Vraag gratis consult aan",
     de: "Kostenlose Beratung anfragen",
-    ua: "Замовити безкоштовну консультацію",
+    ua: "Безкоштовна консультація",
   },
 
   // --- Artists (home showcase + /artists) ---
