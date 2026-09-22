@@ -370,6 +370,12 @@ const DICT: Record<string, Entry> = {
     de: "Du möchtest ins Team kommen oder als Gastkünstler vorbeischauen? Wir freuen uns über talentierte Artists, die unsere Standards und die Sorgfalt für Kunden teilen.",
     ua: "Хочеш приєднатися до команди чи завітати як запрошений майстер? Ми завжди раді талановитим майстрам, які поділяють наші стандарти й турботу про клієнтів.",
   },
+  "about.apply": {
+    en: "Apply",
+    nl: "Solliciteer",
+    de: "Bewerben",
+    ua: "Подати заявку",
+  },
   "about.joinTeam": {
     en: "Join our team",
     nl: "Kom bij ons team",

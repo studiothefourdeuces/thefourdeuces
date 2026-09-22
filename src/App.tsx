@@ -323,7 +323,6 @@ const MENU: { tkey: string; target: string }[] = [
   { tkey: "nav.about", target: "/about" },
   { tkey: "nav.faq", target: "/faq" },
   { tkey: "nav.careers", target: "/guests" },
-  { tkey: "nav.contact", target: "/contact" },
 ];
 
 // Full native language names (used by the in-menu mobile language picker).
@@ -335,11 +334,11 @@ const LANG_NAMES: Record<string, string> = {
 };
 
 // Shared button — one size & shape for every button on the site. On mobile a
-// single uniform width matching the hero CTA (the carousel card); on desktop it
-// sizes to its label. `solid` picks the primary (white outline + glass fill,
-// like the Instagram chip) vs secondary (faint outline). Tighter on desktop.
+// single uniform width matching the home "artists" section photo (w-full capped
+// at 300px); on desktop it sizes to its label. `solid` picks the primary (white
+// outline + glass fill, like the Instagram chip) vs secondary (faint outline).
 const PILL = (solid: boolean) =>
-  `inline-flex w-[68vw] max-w-[272px] items-center justify-center gap-2 whitespace-nowrap rounded-full border px-6 py-3.5 text-[15px] transition-colors md:w-auto md:max-w-none md:py-3 md:text-[14px] ${
+  `inline-flex w-full max-w-[300px] items-center justify-center gap-2 whitespace-nowrap rounded-full border px-6 py-3.5 text-[15px] transition-colors md:w-auto md:max-w-none md:py-3 md:text-[14px] ${
     solid
       ? "border-white/25 bg-white/10 text-white backdrop-blur hover:border-white/50 hover:bg-white/15"
       : "border-white/25 text-white/85 hover:border-white/50 hover:bg-white/5"
@@ -1313,7 +1312,9 @@ function Smooth3DSlideshow({
   // Size from the viewport up-front so the first paint is already correct —
   // otherwise a post-mount resize would animate the side cards inward.
   const measure = () => {
-    const w = Math.min(272, Math.round(window.innerWidth * 0.68));
+    // Match the home "artists" section photo: w-full capped at 300px inside a
+    // px-6 (24px) section.
+    const w = Math.min(300, window.innerWidth - 48);
     return { w, h: Math.round(w * 1.45) };
   };
   const [dim, setDim] = useState(measure);
@@ -1884,7 +1885,7 @@ function Hero({ onNavigate }: { onNavigate: (path: string) => void }) {
       {/* Primary Book pill + a bold consultation link below (→ WhatsApp). On
           mobile the block matches the carousel's centred card; on desktop it
           matches the width of the "Ink With Intent." title line. */}
-      <div className="pointer-events-auto absolute bottom-[3%] left-1/2 flex w-[68vw] max-w-[272px] -translate-x-1/2 flex-col items-center gap-4 md:bottom-auto md:top-1/2 md:w-[222px] md:max-w-none md:-translate-y-1/2">
+      <div className="pointer-events-auto absolute bottom-[3%] left-1/2 flex w-[calc(100vw-3rem)] max-w-[300px] -translate-x-1/2 flex-col items-center gap-4 md:bottom-auto md:top-1/2 md:w-[222px] md:max-w-none md:-translate-y-1/2">
         <button
           type="button"
           onClick={() => onNavigate("/book")}
@@ -3532,10 +3533,10 @@ function ContactPage({
     <main className="relative z-10 min-h-screen px-6 pb-24 pt-28 md:px-16 md:pt-32">
       <div className="mx-auto w-full max-w-6xl">
         <Reveal>
-          <p className="mb-4 text-[12px] uppercase tracking-[0.3em] text-white/40">
+          <p className="mb-4 text-center text-[12px] uppercase tracking-[0.3em] text-white/40">
             {t("contact.kicker")}
           </p>
-          <h1 className="font-serif text-[3rem] leading-[0.95] tracking-tight md:text-[4.5rem]">
+          <h1 className="text-center font-serif text-[3rem] leading-[0.95] tracking-tight md:text-[4.5rem]">
             {t("contact.title")}
           </h1>
           <p className="mt-6 text-[15px] leading-relaxed text-white/60">
@@ -3603,7 +3604,7 @@ function ContactPage({
               className="absolute left-[-9999px] h-0 w-0 opacity-0"
             />
             {error && <p className="text-[13px] text-red-400">{error}</p>}
-            <p className="mt-2 text-[13px] text-white/40">
+            <p className="mt-2 text-center text-[13px] text-white/40 md:text-left">
               {t("contact.agree.send")}
               <button
                 type="button"
@@ -3618,7 +3619,7 @@ function ContactPage({
             <button
               type="submit"
               data-cursor="pointer"
-              className={`${PILL(true)} self-start`}
+              className={`${PILL(true)} self-center md:self-start`}
             >
               {t("contact.send")}
             </button>
@@ -3691,10 +3692,10 @@ function GuestsPage() {
     <main className="relative z-10 min-h-screen px-6 pb-24 pt-28 md:px-16 md:pt-32">
       <div className="mx-auto w-full max-w-6xl">
         <Reveal>
-          <p className="mb-4 text-[12px] uppercase tracking-[0.3em] text-white/40">
+          <p className="mb-4 text-center text-[12px] uppercase tracking-[0.3em] text-white/40">
             {t("guests.kicker")}
           </p>
-          <h1 className="font-serif text-[3rem] leading-[0.95] tracking-tight md:text-[4.5rem]">
+          <h1 className="text-center font-serif text-[3rem] leading-[0.95] tracking-tight md:text-[4.5rem]">
             {titleParts.length ? `${titleParts.join(" ")} ` : ""}
             <span className="italic">{titleLast}</span>
           </h1>
@@ -3705,7 +3706,7 @@ function GuestsPage() {
 
         {/* Join our team — sits directly under the studio intro. */}
         <Reveal>
-          <div className="mt-12 border-y border-white/10 py-6">
+          <div className="mt-12 border-y border-white/10 py-6 text-center">
             <p className="mb-2 text-[11px] uppercase tracking-[0.25em] text-white/40">
               {t("guests.emailLabel")}
             </p>
@@ -3724,7 +3725,7 @@ function GuestsPage() {
 
         <Reveal>
           <div className="mt-12">
-            <h2 className="font-serif text-[1.6rem] leading-tight md:text-[2rem]">
+            <h2 className="text-center font-serif text-[1.6rem] leading-tight md:text-[2rem]">
               {t("guests.guest.title")}
             </h2>
             <p className="mt-3 text-[15px] leading-relaxed text-white/60">
@@ -3734,8 +3735,8 @@ function GuestsPage() {
         </Reveal>
 
         <Reveal>
-          <div className="mt-10">
-            <h2 className="font-serif text-[1.6rem] leading-tight md:text-[2rem]">
+          <div className="mt-12 border-t border-white/10 pt-12">
+            <h2 className="text-center font-serif text-[1.6rem] leading-tight md:text-[2rem]">
               {t("guests.careers.title")}
             </h2>
             <p className="mt-3 text-[15px] leading-relaxed text-white/60">
@@ -3749,7 +3750,7 @@ function GuestsPage() {
             <p className="mb-2 text-center text-[12px] uppercase tracking-[0.3em] text-white/40">
               {t("guests.faq.title")}
             </p>
-            <div className="divide-y divide-white/10 border-y border-white/10">
+            <div className="divide-y divide-white/10 border-t border-white/10">
               {faq.map((item, i) => (
                 <details key={i} className="group py-5">
                   <summary
@@ -3773,8 +3774,8 @@ function GuestsPage() {
 
         {/* Downloadable documents (like the FAQ page). */}
         <Reveal>
-          <div className="mt-14">
-            <h2 className="mb-5 text-[12px] uppercase tracking-[0.25em] text-white/40">
+          <div className="mt-14 border-t border-white/10 pt-14">
+            <h2 className="mb-5 text-center text-[12px] uppercase tracking-[0.25em] text-white/40">
               {t("guests.docs.title")}
             </h2>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -4287,10 +4288,10 @@ function FaqPage({
 
         <Reveal>
         <div className="mt-14">
-          <h2 className="mb-1 text-[12px] uppercase tracking-[0.25em] text-white/40">
+          <h2 className="mb-1 text-center text-[12px] uppercase tracking-[0.25em] text-white/40">
             {t("faq.downloads")}
           </h2>
-          <p className="mb-5 text-[13px] text-white/40">{t("faq.dutchOnly")}</p>
+          <p className="mb-5 text-center text-[13px] text-white/40">{t("faq.dutchOnly")}</p>
           <div className="grid gap-4 sm:grid-cols-2">
             <DownloadCard
               href="/docs/nazorginstructie-tatoeage.pdf"
@@ -4531,18 +4532,18 @@ function LegalGroup({ data }: { data: { title: string; items: string[] }[] }) {
 
 function TermsPage() {
   const sectionHead =
-    "font-serif text-[2rem] leading-[1] tracking-tight md:text-[2.8rem]";
+    "text-center font-serif text-[2rem] leading-[1] tracking-tight md:text-[2.8rem]";
   return (
     <main className="relative z-10 min-h-screen px-6 pb-24 pt-28 md:px-16 md:pt-32">
       <div className="mx-auto w-full max-w-6xl">
         <Reveal>
-          <p className="mb-4 text-[12px] uppercase tracking-[0.3em] text-white/40">
+          <p className="mb-4 text-center text-[12px] uppercase tracking-[0.3em] text-white/40">
             Legal
           </p>
-          <h1 className="font-serif text-[3rem] leading-[0.95] tracking-tight md:text-[4.5rem]">
+          <h1 className="text-center font-serif text-[3rem] leading-[0.95] tracking-tight md:text-[4.5rem]">
             Terms &amp; <span className="italic">Privacy</span>
           </h1>
-          <p className="mt-5 max-w-lg text-[15px] leading-relaxed text-white/55">
+          <p className="mx-auto mt-5 max-w-lg text-center text-[15px] leading-relaxed text-white/55">
             The rules of the studio, and how we look after your data.
           </p>
         </Reveal>
@@ -4597,68 +4598,133 @@ function withAddressLink(text: string): ReactNode {
   ));
 }
 
-function AboutPage() {
+function AboutPage({ onNavigate }: { onNavigate: (path: string) => void }) {
   const ABOUT = getAbout(useLang());
   const t = useT();
+
+  // Section headings are centred; body copy stays left. Transport & parking
+  // sub-headings match the size of "How to find us".
+  const subHead =
+    "mt-10 border-t border-white/10 pt-10 text-center font-serif text-[2rem] leading-[1] tracking-tight md:text-[2.6rem]";
+  const para = "mt-5 text-[15px] leading-relaxed text-white/60";
+
+  const renderIntro = () =>
+    ABOUT.intro.map((p, i) => (
+      <p key={i} className="mt-6 text-[15px] leading-relaxed text-white/60">
+        {p}
+      </p>
+    ));
+
+  const renderFindUs = () => (
+    <>
+      <h2 className="text-center font-serif text-[2rem] leading-[1] tracking-tight md:text-[2.6rem]">
+        {ABOUT.locationTitle}
+      </h2>
+      {ABOUT.location.map((p, i) => (
+        <p key={`loc-${i}`} className="mt-5 text-[15px] leading-relaxed text-white/60">
+          {withAddressLink(p)}
+        </p>
+      ))}
+      <p className={subHead}>{ABOUT.transportTitle}</p>
+      {ABOUT.transport.map((p, i) => (
+        <p key={`tr-${i}`} className={para}>
+          {p}
+        </p>
+      ))}
+      <p className={subHead}>{ABOUT.parkingTitle}</p>
+      {ABOUT.parking.map((p, i) => (
+        <p key={`pk-${i}`} className={para}>
+          {p}
+        </p>
+      ))}
+    </>
+  );
+
+  // One cell of the desktop 2×2 grid: centred heading + left body copy.
+  const cell = (
+    title: string,
+    paras: string[],
+    mapper?: (s: string) => ReactNode,
+  ) => (
+    <>
+      <h2 className="text-center font-serif text-[2rem] leading-[1] tracking-tight md:text-[2.6rem]">
+        {title}
+      </h2>
+      {paras.map((p, i) => (
+        <p key={i} className="mt-4 text-[15px] leading-relaxed text-white/60">
+          {mapper ? mapper(p) : p}
+        </p>
+      ))}
+    </>
+  );
+
   return (
     <main className="relative z-10 min-h-screen px-6 pb-24 pt-28 md:px-16 md:pt-32">
       <div className="mx-auto w-full max-w-6xl">
+        {/* Title */}
         <Reveal>
-          <p className="mb-4 text-[12px] uppercase tracking-[0.3em] text-white/40">
+          <p className="mb-4 text-center text-[12px] uppercase tracking-[0.3em] text-white/40">
             {ABOUT.kicker}
           </p>
-          <h1 className="font-serif text-[3rem] leading-[0.95] tracking-tight md:text-[4.5rem]">
+          <h1 className="text-center font-serif text-[3rem] leading-[0.95] tracking-tight md:text-[4.5rem]">
             The Four <span className="italic">Deuces</span>
           </h1>
-          {ABOUT.intro.map((p, i) => (
-            <p
-              key={i}
-              className="mt-6 text-[15px] leading-relaxed text-white/60"
-            >
-              {p}
-            </p>
-          ))}
         </Reveal>
 
-        {/* Why + location reveal together (one Reveal) */}
-        <Reveal>
-          <section className="mt-16">
-            <h2 className="font-serif text-[2rem] leading-[1] tracking-tight md:text-[2.6rem]">
-              {ABOUT.whyTitle}
-            </h2>
-            <div className="mt-10 grid justify-items-center gap-10 sm:grid-cols-3">
-              {ABOUT.why.map((w, i) => (
-                <TextRing
-                  key={w.h}
-                  text={w.h}
-                  diameter={260}
-                  reverse={i % 2 === 1}
-                  spinSeconds={30 + i * 4}
-                  color="rgba(255,255,255,0.3)"
-                >
-                  <p className="text-[12.5px] leading-relaxed text-white/70">
-                    {w.p}
-                  </p>
-                </TextRing>
-              ))}
-            </div>
-          </section>
-
-          <section className="mt-16">
-            <h2 className="font-serif text-[2rem] leading-[1] tracking-tight md:text-[2.6rem]">
-              {ABOUT.locationTitle}
-            </h2>
-            {ABOUT.location.map((p, i) => (
-              <p
-                key={i}
-                className="mt-5 text-[15px] leading-relaxed text-white/60"
+        {/* Why clients choose us — rings, desktop only, directly under the
+            title. */}
+        <Reveal className="hidden md:block">
+          <div className="mt-14 grid justify-items-center gap-10 sm:grid-cols-3">
+            {ABOUT.why.map((w, i) => (
+              <TextRing
+                key={w.h}
+                text={w.h}
+                diameter={260}
+                reverse={i % 2 === 1}
+                spinSeconds={30 + i * 4}
+                color="rgba(255,255,255,0.3)"
               >
-                {withAddressLink(p)}
-              </p>
+                <p className="text-[12.5px] leading-relaxed text-white/70">
+                  {w.p}
+                </p>
+              </TextRing>
             ))}
-          </section>
+          </div>
+        </Reveal>
 
-          <section className="mt-14 border-t border-white/10 pt-8">
+        {/* ===== MOBILE: stacked — story, then How to find us ===== */}
+        <div className="md:hidden">
+          <Reveal>{renderIntro()}</Reveal>
+          <Reveal>
+            <section className="mt-12 border-t border-white/10 pt-12">
+              {renderFindUs()}
+            </section>
+          </Reveal>
+        </div>
+
+        {/* ===== DESKTOP: the four sections in a 2×2 grid (About · How to find
+            us / Public transport · Car & parking), split by an interior cross
+            of divider lines. ===== */}
+        <Reveal className="hidden md:block">
+          <div className="mt-16 grid grid-cols-2 border-t border-white/10 pt-14">
+            <div className="border-b border-r border-white/10 pb-14 pr-14">
+              {cell(t("nav.about"), ABOUT.intro)}
+            </div>
+            <div className="border-b border-white/10 pb-14 pl-14">
+              {cell(ABOUT.locationTitle, ABOUT.location, withAddressLink)}
+            </div>
+            <div className="border-r border-white/10 pt-14 pr-14">
+              {cell(ABOUT.transportTitle, ABOUT.transport)}
+            </div>
+            <div className="pt-14 pl-14">
+              {cell(ABOUT.parkingTitle, ABOUT.parking)}
+            </div>
+          </div>
+        </Reveal>
+
+        {/* Guests & Careers — unchanged, Apply is now a button. */}
+        <Reveal>
+          <section className="mt-16 border-t border-white/10 pt-8 text-center">
             <h2 className="font-serif text-[1.8rem] leading-tight tracking-tight md:text-[2.2rem]">
               {(() => {
                 const parts = t("contact.careers.link").split(" ");
@@ -4671,9 +4737,19 @@ function AboutPage() {
                 );
               })()}
             </h2>
-            <p className="mt-4 text-[15px] leading-relaxed text-white/60">
+            <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-relaxed text-white/60">
               {t("about.careersText")}
             </p>
+            <div className="mt-6 flex justify-center">
+              <button
+                type="button"
+                onClick={() => onNavigate("/guests")}
+                data-cursor="pointer"
+                className={PILL(false)}
+              >
+                {t("about.apply")}
+              </button>
+            </div>
           </section>
         </Reveal>
       </div>
@@ -4846,10 +4922,10 @@ function StylePage({
           </Reveal>
 
           <Reveal className="flex-1" y={24}>
-            <p className="mb-4 text-[12px] uppercase tracking-[0.3em] text-white/40">
+            <p className="mb-4 text-center text-[12px] uppercase tracking-[0.3em] text-white/40 md:text-left">
               {style.kicker}
             </p>
-            <h1 className="font-serif text-[3rem] leading-[0.95] tracking-tight md:text-[4rem]">
+            <h1 className="text-center font-serif text-[3rem] leading-[0.95] tracking-tight md:text-left md:text-[4rem]">
               {leadWords ? leadWords + " " : ""}
               <span className="italic">{lastWord}</span>
             </h1>
@@ -4913,7 +4989,7 @@ function StylePage({
         {/* FAQ (also emitted as FAQPage structured data at build time) */}
         <Reveal>
           <section className="mx-auto mt-20 max-w-3xl">
-            <h2 className="font-serif text-[1.9rem] leading-[1] tracking-tight md:text-[2.4rem]">
+            <h2 className="text-center font-serif text-[1.9rem] leading-[1] tracking-tight md:text-[2.4rem]">
               {t("ui.qa")}
             </h2>
             <div className="mt-8 divide-y divide-white/10 border-y border-white/10">
@@ -5629,7 +5705,7 @@ export default function App() {
       ) : page === "styles" ? (
         <StylesIndexPage onNavigate={navigate} />
       ) : page === "about" ? (
-        <AboutPage />
+        <AboutPage onNavigate={navigate} />
       ) : page === "style" && stylePage ? (
         <StylePage
           style={stylePage}

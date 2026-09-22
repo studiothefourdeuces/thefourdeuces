@@ -37,6 +37,18 @@ export const ABOUT = {
     "Our studio sits in one of Amsterdam's most prestigious and cultural districts — the Museum Quarter (Amsterdam Zuid), at Van Baerlestraat 126H.",
     "We're just a few minutes' walk from Museumplein, the Van Gogh Museum and Vondelpark. On the ground floor (begane grond) and easy to reach by public transport — tram lines run right along Van Baerlestraat — or by car.",
   ],
+  transportTitle: "Public transport",
+  transport: [
+    "Tram: hop off at Concertgebouw (lines 3, 5 and 12) or Museumplein (line 2) — both a 1–2 minute walk from the studio.",
+    "Metro: take line 52 (the North–South line) to De Pijp, then change to tram 3 or 12.",
+    "Bus: several city and regional (Connexxion) buses stop right by the Concertgebouw.",
+  ],
+  parkingTitle: "Car & parking",
+  parking: [
+    "Street parking is paid, at the City of Amsterdam's tariff. There are 2 spaces right in front of the studio, 2 more with EV charging about 100 m down the street, and around 40 spaces 50 m around the corner in the side street.",
+    "Please note: the studio isn't responsible for any vehicle left in street parking — it's governed by the city's rules.",
+    "Pay at the parking meter (paalautomaat) or in an app — Parkmobile, Yellowbrick, EasyPark or Flitsmeister.",
+  ],
 };
 
 // About in the other three languages. English (ABOUT) is the fallback.
@@ -71,6 +83,18 @@ const ABOUT_NL: AboutText = {
     "Onze studio ligt in een van de meest prestigieuze en culturele wijken van Amsterdam — de Museumwijk (Amsterdam Zuid), aan de Van Baerlestraat 126H.",
     "We zitten op een paar minuten lopen van het Museumplein, het Van Gogh Museum en het Vondelpark. Op de begane grond en goed bereikbaar met het openbaar vervoer — er rijden trams langs de Van Baerlestraat — of met de auto.",
   ],
+  transportTitle: "Openbaar vervoer",
+  transport: [
+    "Tram: stap uit bij Concertgebouw (lijn 3, 5 en 12) of Museumplein (lijn 2) — beide op 1 à 2 minuten lopen van de studio.",
+    "Metro: neem lijn 52 (de Noord/Zuidlijn) tot De Pijp en stap daar over op tram 3 of 12.",
+    "Bus: meerdere stads- en streekbussen (Connexxion) stoppen vlak bij het Concertgebouw.",
+  ],
+  parkingTitle: "Auto & parkeren",
+  parking: [
+    "Parkeren op straat is betaald, volgens het tarief van de gemeente Amsterdam. Direct voor de studio zijn er 2 plekken, zo'n 100 m verderop nog 2 met laadpunt voor elektrische auto's, en 50 m om de hoek in het steegje ongeveer 40 plekken.",
+    "Let op: de studio is niet verantwoordelijk voor voertuigen die op straat geparkeerd staan — dit valt onder de regels van de gemeente.",
+    "Betaal bij de parkeerautomaat (paalautomaat) of via een app — Parkmobile, Yellowbrick, EasyPark of Flitsmeister.",
+  ],
 };
 
 const ABOUT_DE: AboutText = {
@@ -102,6 +126,18 @@ const ABOUT_DE: AboutText = {
     "Unser Studio liegt in einem der angesehensten und kulturellsten Viertel Amsterdams — dem Museumsviertel (Amsterdam Zuid), an der Van Baerlestraat 126H.",
     "Wir sind nur wenige Gehminuten vom Museumplein, dem Van-Gogh-Museum und dem Vondelpark entfernt. Im Erdgeschoss und gut mit öffentlichen Verkehrsmitteln erreichbar — entlang der Van Baerlestraat fahren Straßenbahnen — oder mit dem Auto.",
   ],
+  transportTitle: "Öffentliche Verkehrsmittel",
+  transport: [
+    "Tram: Aussteigen an der Haltestelle Concertgebouw (Linien 3, 5 und 12) oder Museumplein (Linie 2) — beide 1 bis 2 Gehminuten vom Studio.",
+    "Metro: Linie 52 (die Nord-Süd-Linie) bis De Pijp, dort in die Tram 3 oder 12 umsteigen.",
+    "Bus: Mehrere Stadt- und Regionalbusse (Connexxion) halten direkt am Concertgebouw.",
+  ],
+  parkingTitle: "Auto & Parken",
+  parking: [
+    "Das Parken auf der Straße ist kostenpflichtig, zum Tarif der Stadt Amsterdam. Direkt vor dem Studio gibt es 2 Plätze, etwa 100 m weiter 2 weitere mit Ladepunkt für E-Autos und 50 m um die Ecke in der Seitengasse rund 40 Plätze.",
+    "Bitte beachte: Das Studio übernimmt keine Verantwortung für Fahrzeuge, die im Straßenparken abgestellt werden — es gelten die Regeln der Stadt.",
+    "Zahle am Parkautomaten (paalautomaat) oder per App — Parkmobile, Yellowbrick, EasyPark oder Flitsmeister.",
+  ],
 };
 
 const ABOUT_UA: AboutText = {
@@ -132,6 +168,18 @@ const ABOUT_UA: AboutText = {
   location: [
     "Наша студія — в одному з найпрестижніших і найкультурніших районів Амстердама, Музейному кварталі (Amsterdam Zuid), на Van Baerlestraat 126H.",
     "Ми за кілька хвилин пішки від Museumplein, музею Ван Гога та Вондельпарку. На першому поверсі (begane grond), легко дістатися громадським транспортом — уздовж Van Baerlestraat ходять трамваї — або авто.",
+  ],
+  transportTitle: "Громадський транспорт",
+  transport: [
+    "Трамвай: виходьте на зупинці Concertgebouw (лінії 3, 5 і 12) або Museumplein (лінія 2) — обидві за 1–2 хвилини пішки від студії.",
+    "Метро: лінія 52 (лінія Північ–Південь) до станції De Pijp, далі пересадка на трамвай 3 або 12.",
+    "Автобус: біля Concertgebouw зупиняються кілька міських і приміських автобусів (Connexxion).",
+  ],
+  parkingTitle: "Авто та парковка",
+  parking: [
+    "Вулична парковка платна, за тарифом міста Амстердам. Прямо перед студією є 2 місця, ще 2 із зарядкою для електромобілів — приблизно за 100 м уздовж вулиці, і близько 40 місць — за 50 м за рогом у провулку.",
+    "Зверніть увагу: студія не несе відповідальності за транспорт, залишений на вуличній парковці, адже він підпорядковується правилам міста.",
+    "Оплатити можна в паркоматі (paalautomaat) або в застосунку — Parkmobile, Yellowbrick, EasyPark чи Flitsmeister.",
   ],
 };
 
