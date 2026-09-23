@@ -2227,6 +2227,7 @@ function SearchOverlay({
   onNavigate: (path: string) => void;
 }) {
   const lang = useLang();
+  const t = useT();
   const [query, setQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -2291,27 +2292,32 @@ function SearchOverlay({
           </div>
 
           <div className="flex flex-1 flex-col items-center overflow-y-auto px-6 pb-10">
-            <motion.div
+                        <motion.div
               className="w-full max-w-md shrink-0"
-              animate={{ marginTop: showResults ? "6vh" : "30vh" }}
+              animate={{ marginTop: showResults ? "6vh" : "22vh" }}
               transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
             >
+              {!showResults && (
+                <div className="mb-6 text-center">
+                  <h2 className="font-serif text-[2rem] leading-tight">
+                    {t("search.title")}
+                  </h2>
+                  <p className="mx-auto mt-3 max-w-xs text-[14px] leading-relaxed text-white/50">
+                    {t("search.desc")}
+                  </p>
+                </div>
+              )}
               <div className="relative">
                 <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
                 <input
                   ref={inputRef}
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="e.g., 'realism', 'aftercare'..."
+                  placeholder={t("search.placeholder")}
                   data-cursor="text"
                   className="w-full rounded-full border border-white/15 bg-white/[0.04] py-3 pl-11 pr-4 text-[16px] text-white outline-none transition focus:border-white/40 md:text-[14px]"
                 />
               </div>
-              {!showResults && (
-                <p className="mt-4 text-center text-[13px] leading-relaxed text-white/40">
-                  Search across tattoo styles, studio information, guest artist details, terms and conditions, faq and more.
-                </p>
-              )}
             </motion.div>
 
             {showResults && (
@@ -4836,6 +4842,11 @@ function AboutPage({ onNavigate }: { onNavigate: (path: string) => void }) {
           {withAddressLink(p)}
         </p>
       ))}
+      <div className="mt-8 flex justify-center">
+        <a href={STUDIO_MAPS_URL} target="_blank" rel="noopener noreferrer" data-cursor="pointer" className={PILL(false)}>
+          {t("about.navigate")}
+        </a>
+      </div>
       <p className={subHead}>{ABOUT.transportTitle}</p>
       {ABOUT.transport.map((p, i) => (
         <p key={`tr-${i}`} className={para}>
