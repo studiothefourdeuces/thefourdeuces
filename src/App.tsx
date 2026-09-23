@@ -2302,14 +2302,14 @@ function SearchOverlay({
                   ref={inputRef}
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search styles & FAQ..."
+                  placeholder="Start typing (e.g., 'realism', 'aftercare')..."
                   data-cursor="text"
                   className="w-full rounded-full border border-white/15 bg-white/[0.04] py-3 pl-11 pr-4 text-[16px] text-white outline-none transition focus:border-white/40 md:text-[14px]"
                 />
               </div>
               {!showResults && (
                 <p className="mt-4 text-center text-[13px] leading-relaxed text-white/40">
-                  Search our tattoo styles, FAQ, studio info and guest-artist details.
+                  Search across tattoo styles, studio information, guest artist details, terms and conditions, faq and more.
                 </p>
               )}
             </motion.div>
