@@ -4848,6 +4848,17 @@ function AboutPage({ onNavigate }: { onNavigate: (path: string) => void }) {
           {p}
         </p>
       ))}
+      <div className="mt-8 flex justify-center">
+        
+          href={STUDIO_MAPS_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          data-cursor="pointer"
+          className={PILL(true)}
+        >
+          {t("about.navigate")}
+        </a>
+      </div>
     </>
   );
 
