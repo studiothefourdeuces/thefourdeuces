@@ -2302,7 +2302,7 @@ function SearchOverlay({
                   ref={inputRef}
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Start typing (e.g., 'realism', 'aftercare')..."
+                  placeholder="e.g., 'realism', 'aftercare'..."
                   data-cursor="text"
                   className="w-full rounded-full border border-white/15 bg-white/[0.04] py-3 pl-11 pr-4 text-[16px] text-white outline-none transition focus:border-white/40 md:text-[14px]"
                 />
@@ -4848,17 +4848,6 @@ function AboutPage({ onNavigate }: { onNavigate: (path: string) => void }) {
           {p}
         </p>
       ))}
-      <div className="mt-8 flex justify-center">
-        
-          href={STUDIO_MAPS_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          data-cursor="pointer"
-          className={PILL(true)}
-        >
-          {t("about.navigate")}
-        </a>
-      </div>
     </>
   );
 
