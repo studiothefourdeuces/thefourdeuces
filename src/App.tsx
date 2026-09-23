@@ -2304,7 +2304,7 @@ function SearchOverlay({
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search styles & FAQ..."
                   data-cursor="text"
-                  className="w-full rounded-full border border-white/15 bg-white/[0.04] py-3 pl-11 pr-4 text-[14px] text-white outline-none transition focus:border-white/40"
+                  className="w-full rounded-full border border-white/15 bg-white/[0.04] py-3 pl-11 pr-4 text-[16px] text-white outline-none transition focus:border-white/40 md:text-[14px]"
                 />
               </div>
               {!showResults && (
