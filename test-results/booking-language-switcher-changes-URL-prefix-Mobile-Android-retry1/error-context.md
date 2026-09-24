@@ -1,0 +1,580 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: booking.spec.ts >> language switcher changes URL prefix
+- Location: tests/booking.spec.ts:20:1
+
+# Error details
+
+```
+Test timeout of 30000ms exceeded.
+```
+
+```
+Error: locator.click: Test timeout of 30000ms exceeded.
+Call log:
+  - waiting for getByText('Nederlands')
+
+```
+
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - link "@the.four.deuces" [ref=e6] [cursor=pointer]:
+      - /url: https://instagram.com/the.four.deuces
+  - button "Search" [ref=e12]
+  - button "Change language" [ref=e16]
+  - button "Open menu" [ref=e20]
+  - generic [ref=e23]:
+    - heading "Ink With Intent. Made to Last." [level=1] [ref=e24]: Ink With Intent.Made to Last.
+    - generic [ref=e26]:
+      - img "Max" [ref=e28]
+      - img "Daria" [ref=e30]
+      - generic:
+        - img "Eugene"
+      - generic:
+        - img "Max"
+      - generic:
+        - img "Daria"
+      - generic:
+        - img "Eugene"
+      - generic:
+        - img "Darya"
+      - img "Darya" [ref=e32]
+      - img "Gianluca" [ref=e34]
+      - img "Mila" [ref=e36]
+    - generic [ref=e38]:
+      - button "Book experience" [ref=e39]
+      - link "Request free consultation" [ref=e40] [cursor=pointer]:
+        - /url: https://wa.me/31645052222
+  - generic [ref=e44]:
+    - generic [ref=e45]:
+      - paragraph [ref=e46]: Our artists
+      - heading "Artists" [level=2] [ref=e47]
+    - generic [ref=e48]:
+      - img "Gianluca" [ref=e51]
+      - generic [ref=e53]:
+        - button "Max" [ref=e54]
+        - button "Eugene" [ref=e55]
+        - button "Daria" [ref=e56]
+        - button "Darya" [ref=e57]
+        - button "Mila" [ref=e58]
+        - button "Gianluca" [active] [ref=e59]
+        - button "Selçuk" [ref=e60]
+      - generic [ref=e62]:
+        - paragraph [ref=e63]:
+          - text: 06 —
+          - button "Ornamental" [ref=e65]
+          - generic [ref=e66]:
+            - text: ","
+            - button "Blackwork" [ref=e67]
+          - generic [ref=e68]:
+            - text: ","
+            - button "Geometric" [ref=e69]
+        - heading "Gianluca" [level=2] [ref=e70]
+        - paragraph [ref=e71]: Geometric, optical and ornamental blackwork with elements of abstract calligraphy, dotwork, and engraving-inspired detail.
+        - paragraph [ref=e72]: Tattooing since 2023
+        - generic [ref=e73]:
+          - button "Book with Gianluca" [ref=e74]
+          - button "See portfolio" [ref=e75]
+  - generic [ref=e77]:
+    - generic [ref=e78]:
+      - paragraph [ref=e79]: What people say
+      - heading "Reviews" [level=2] [ref=e80]
+    - generic [ref=e83]:
+      - generic [ref=e84]:
+        - generic [ref=e85]:
+          - generic [ref=e86]:
+            - generic [ref=e87]: Session was great! Daria is super organized, professional, and creative. I love love love the custom tattoo that she designed for me. She captured all the elements I wanted. I'm super happy with the tattoo ☺️
+            - generic [ref=e90]: I will be seeing her again for another tattoo. I'm looking maybe December or January
+            - generic [ref=e93]: Great to hear it! Thank you so much for your feedback and will be glad to see you for more sessions with us ☺️
+          - generic [ref=e96]:
+            - text: "#tfdfeedback"
+            - link "@tattoo.daria" [ref=e97] [cursor=pointer]:
+              - /url: https://instagram.com/tattoo.daria
+        - generic [ref=e98]:
+          - generic [ref=e99]:
+            - generic [ref=e100]: Hey! Yes thanks! I'm really happy — all of the tattoos are exactly what I expected and Max was very kind and professional 🥰 It's the 3rd time with Max and I'll come back next year for sure 👌!
+            - generic [ref=e103]: Perfect! Really glad to see you here with us, hope to see you soon again, thanks for trusting us ☺️ ❤️
+          - generic [ref=e106]:
+            - text: "#tfdfeedback"
+            - link "@maxxonk_tattoo" [ref=e107] [cursor=pointer]:
+              - /url: https://instagram.com/maxxonk_tattoo
+        - generic [ref=e108]:
+          - generic [ref=e109]:
+            - generic [ref=e110]: Everything good, the session was nice and the tattoo is healing good, it's almost completely healed
+            - generic [ref=e113]: Many thanks for your feedback 😊
+          - generic [ref=e116]:
+            - text: "#tfdfeedback"
+            - link "@novohatskytattoo" [ref=e117] [cursor=pointer]:
+              - /url: https://instagram.com/novohatskytattoo
+        - generic [ref=e118]:
+          - generic [ref=e119]:
+            - generic [ref=e120]: Hey!! I thought I'd send you a picture of the tattoo 1.5 months after the session. It looks amazing and makes me wanna have more tattoos haha. Thank you again for the great session
+            - generic [ref=e123]: Hey))) I am very pleased to hear your feedback!!! The tattoo looks wonderful)
+          - generic [ref=e126]:
+            - text: "#tfdfeedback"
+            - link "@bazhina_tatoonl" [ref=e127] [cursor=pointer]:
+              - /url: https://instagram.com/bazhina_tatoonl
+        - generic [ref=e128]:
+          - generic [ref=e131]:
+            - generic [ref=e132]: 3:07 PM
+            - generic [ref=e133]: Thank you Mila for this incredible piece of art! Can't wait for the next session, was a pleasure to meet you ❤️
+          - generic [ref=e134]:
+            - text: "#tfdfeedback"
+            - link "@mila.delger" [ref=e135] [cursor=pointer]:
+              - /url: https://instagram.com/mila.delger
+        - generic [ref=e136]:
+          - generic [ref=e137]:
+            - generic [ref=e138]: Hi! Everything went good! I'm happy with the results and the healing going good as well
+            - generic [ref=e141]: Glad to hear it! Thanks for sharing your feedback and thanks for coming to us 😊
+            - generic [ref=e144]: See u next time 🙏🏻 ❤️
+          - generic [ref=e147]:
+            - text: "#tfdfeedback"
+            - link "@maxxonk_tattoo" [ref=e148] [cursor=pointer]:
+              - /url: https://instagram.com/maxxonk_tattoo
+        - generic [ref=e149]:
+          - generic [ref=e150]:
+            - generic [ref=e151]: I am a happy men! Thanks bro for the result! 🙏🏽
+            - generic [ref=e154]: Thanks man! I'm glad to read it! I don't want to be happy alone 😂 ❤️
+          - generic [ref=e157]:
+            - text: "#tfdfeedback"
+            - link "@novohatskytattoo" [ref=e158] [cursor=pointer]:
+              - /url: https://instagram.com/novohatskytattoo
+        - generic [ref=e159]:
+          - generic [ref=e160]:
+            - generic [ref=e161]: It healed very well. Super happy with the result, yes!
+            - generic [ref=e164]: Wow! Thanks la for sharing, glad to hear that's it went good 🤗 ❤️
+          - generic [ref=e167]:
+            - text: "#tfdfeedback"
+            - link "@novohatskytattoo" [ref=e168] [cursor=pointer]:
+              - /url: https://instagram.com/novohatskytattoo
+        - generic [ref=e169]:
+          - generic [ref=e170]:
+            - generic [ref=e171]: Hi, sorry for the delay, I'm not here often. I am very satisfied and the healing went perfectly :)
+            - generic [ref=e174]: Glad to hear it! Thanks for your feedback ☺️👌🏻
+          - generic [ref=e177]:
+            - text: "#tfdfeedback"
+            - link "@maxxonk_tattoo" [ref=e178] [cursor=pointer]:
+              - /url: https://instagram.com/maxxonk_tattoo
+        - generic [ref=e179]:
+          - generic [ref=e180]:
+            - generic [ref=e182]:
+              - generic [ref=e183]: 18:40
+              - generic [ref=e184]: The whole experience was really good. I will send you a pic of the healed version. Thank you so much dear Daria! ❤️
+            - generic [ref=e185]: Also a reminder for sending me the pics and videos please 🤗
+            - generic [ref=e188]: thank you so much 🫶
+          - generic [ref=e191]:
+            - text: "#tfdfeedback"
+            - link "@tattoo.daria" [ref=e192] [cursor=pointer]:
+              - /url: https://instagram.com/tattoo.daria
+        - generic [ref=e193]:
+          - generic [ref=e194]:
+            - generic [ref=e195]: Hi Daria! I hope you had an amazing day off ❤️ Thank you so so much again for your incredible work and for being such a kind person to be around — I enjoyed our appointment a lot 🥰
+            - generic [ref=e198]: Hi, thank you too ❤️
+          - generic [ref=e201]:
+            - text: "#tfdfeedback"
+            - link "@tattoo.daria" [ref=e202] [cursor=pointer]:
+              - /url: https://instagram.com/tattoo.daria
+        - generic [ref=e203]:
+          - generic [ref=e204]:
+            - generic [ref=e205]: Hey, happy New Year! I hope you had a great start to the new year. Yes, I'm very happy with Eugene. It's just wonderful. Only my elbow might need a touch-up because the colour didn't stay in the skin very well there. Thank you so much again for everything! 😊💪🏻
+            - generic [ref=e208]: Many thanks for your feedback! Happy New Year too 🤗🙏
+          - generic [ref=e211]:
+            - text: "#tfdfeedback"
+            - link "@novohatskytattoo" [ref=e212] [cursor=pointer]:
+              - /url: https://instagram.com/novohatskytattoo
+        - generic [ref=e213]:
+          - generic [ref=e214]: I still wanted to thank you for everything, and the whole team — you are super nice, smiling and I really like it. You take care of your customers and I see that you are fully involved. Thank you again and I'll keep you informed of all the progress!
+          - generic [ref=e218]:
+            - text: "#tfdfeedback"
+            - link "@novohatskytattoo" [ref=e219] [cursor=pointer]:
+              - /url: https://instagram.com/novohatskytattoo
+        - generic [ref=e220]:
+          - generic [ref=e221]:
+            - generic [ref=e222]: Hey!! Yes very happy with it. It has healed great actually. Thinking about my next one
+            - generic [ref=e225]: Many thanks for your feedback! Glad to hear it :) Let us know when you'd like to do the next one ☺️
+          - generic [ref=e228]:
+            - text: "#tfdfeedback"
+            - link "@maxxonk_tattoo" [ref=e229] [cursor=pointer]:
+              - /url: https://instagram.com/maxxonk_tattoo
+        - generic [ref=e230]:
+          - generic [ref=e231]:
+            - generic [ref=e232]: Hiii, here are a few pictures of my tattoo. I also want to say thank you again. I love my tattoo so so much and I felt really comfortable at the studio with you 🥰
+            - generic [ref=e235]: Hi! Thank you so much for the healed tattoo photo, it looks amazing 😍 And thanks for your kind words, I hope we'll see each other again 😁
+          - generic [ref=e238]:
+            - text: "#tfdfeedback"
+            - link "@tattoo.daria" [ref=e239] [cursor=pointer]:
+              - /url: https://instagram.com/tattoo.daria
+        - generic [ref=e240]:
+          - generic [ref=e241]:
+            - generic [ref=e242]: Thank you again for the amazing tat! 🤩 and I would love to get the pictures once you have them :)
+            - generic [ref=e245]: Thank you for your trust as well ☺️ I'll send the photos a bit later once I receive them, so let's stay in touch ✨
+          - generic [ref=e248]:
+            - text: "#tfdfeedback"
+            - link "@tattoo.daria" [ref=e249] [cursor=pointer]:
+              - /url: https://instagram.com/tattoo.daria
+        - generic [ref=e250]:
+          - generic [ref=e251]: Hi man! Thanks for yesterday! I had a good day and I'm really happy with the result! Super tired now, so I'll take it easy today! Was nice to meet you and let's keep in touch! Also if you want to visit the natural history museum 😉 ❤️
+          - generic [ref=e255]:
+            - text: "#tfdfeedback"
+            - link "@novohatskytattoo" [ref=e256] [cursor=pointer]:
+              - /url: https://instagram.com/novohatskytattoo
+        - generic [ref=e257]:
+          - generic [ref=e258]: It was a great experience for the first tattoo. Probably will do a next one soon hahaaa
+          - generic [ref=e262]:
+            - text: "#tfdfeedback"
+            - link "@tattoo.daria" [ref=e263] [cursor=pointer]:
+              - /url: https://instagram.com/tattoo.daria
+        - generic [ref=e264]:
+          - generic [ref=e265]:
+            - generic [ref=e266]: I'm so so happy with the tattoo, thank you ❤️❤️❤️
+            - generic [ref=e269]: Thank you too 🥹
+          - generic [ref=e272]:
+            - text: "#tfdfeedback"
+            - link "@tattoo.daria" [ref=e273] [cursor=pointer]:
+              - /url: https://instagram.com/tattoo.daria
+        - generic [ref=e274]:
+          - generic [ref=e275]: Hi Max, hope you're doing well! Just wanted to thank you again for your amazing work — I'm genuinely super happy with the final result. It's fully healed now; I followed all your aftercare instructions and the skin recovered smoothly with no issues at all.
+          - generic [ref=e279]:
+            - text: "#tfdfeedback"
+            - link "@maxxonk_tattoo" [ref=e280] [cursor=pointer]:
+              - /url: https://instagram.com/maxxonk_tattoo
+        - generic [ref=e281]:
+          - generic [ref=e282]:
+            - generic [ref=e283]: Session was nice! I was really happy with the designing process. Healing is going great so far — I'm keeping it moisturized and clean! Thanks for checking in! ❤️
+            - generic [ref=e286]: Really glad to hear it, thanks for choosing us 🤗 ❤️
+          - generic [ref=e289]:
+            - text: "#tfdfeedback"
+            - link "@maxxonk_tattoo" [ref=e290] [cursor=pointer]:
+              - /url: https://instagram.com/maxxonk_tattoo
+        - generic [ref=e291]:
+          - generic [ref=e292]:
+            - generic [ref=e293]: Yes all good, second skin is still on
+            - generic [ref=e296]: Session was perfect
+            - generic [ref=e299]: Great! Thanks for your feedback 🤗
+          - generic [ref=e302]:
+            - text: "#tfdfeedback"
+            - link "@novohatskytattoo" [ref=e303] [cursor=pointer]:
+              - /url: https://instagram.com/novohatskytattoo
+        - generic [ref=e304]:
+          - generic [ref=e305]:
+            - generic [ref=e306]: Hey, thank you for the message, it's all going great. I messaged Eugene already — really happy with the results so far!
+            - generic [ref=e309]: Glad to know it! Thanks for coming to us ☺️ ❤️
+          - generic [ref=e312]:
+            - text: "#tfdfeedback"
+            - link "@novohatskytattoo" [ref=e313] [cursor=pointer]:
+              - /url: https://instagram.com/novohatskytattoo
+      - generic [ref=e314]:
+        - generic [ref=e315]:
+          - generic [ref=e316]:
+            - generic [ref=e317]: Session was great! Daria is super organized, professional, and creative. I love love love the custom tattoo that she designed for me. She captured all the elements I wanted. I'm super happy with the tattoo ☺️
+            - generic [ref=e320]: I will be seeing her again for another tattoo. I'm looking maybe December or January
+            - generic [ref=e323]: Great to hear it! Thank you so much for your feedback and will be glad to see you for more sessions with us ☺️
+          - generic [ref=e326]:
+            - text: "#tfdfeedback"
+            - link "@tattoo.daria" [ref=e327] [cursor=pointer]:
+              - /url: https://instagram.com/tattoo.daria
+        - generic [ref=e328]:
+          - generic [ref=e329]:
+            - generic [ref=e330]: Hey! Yes thanks! I'm really happy — all of the tattoos are exactly what I expected and Max was very kind and professional 🥰 It's the 3rd time with Max and I'll come back next year for sure 👌!
+            - generic [ref=e333]: Perfect! Really glad to see you here with us, hope to see you soon again, thanks for trusting us ☺️ ❤️
+          - generic [ref=e336]:
+            - text: "#tfdfeedback"
+            - link "@maxxonk_tattoo" [ref=e337] [cursor=pointer]:
+              - /url: https://instagram.com/maxxonk_tattoo
+        - generic [ref=e338]:
+          - generic [ref=e339]:
+            - generic [ref=e340]: Everything good, the session was nice and the tattoo is healing good, it's almost completely healed
+            - generic [ref=e343]: Many thanks for your feedback 😊
+          - generic [ref=e346]:
+            - text: "#tfdfeedback"
+            - link "@novohatskytattoo" [ref=e347] [cursor=pointer]:
+              - /url: https://instagram.com/novohatskytattoo
+        - generic [ref=e348]:
+          - generic [ref=e349]:
+            - generic [ref=e350]: Hey!! I thought I'd send you a picture of the tattoo 1.5 months after the session. It looks amazing and makes me wanna have more tattoos haha. Thank you again for the great session
+            - generic [ref=e353]: Hey))) I am very pleased to hear your feedback!!! The tattoo looks wonderful)
+          - generic [ref=e356]:
+            - text: "#tfdfeedback"
+            - link "@bazhina_tatoonl" [ref=e357] [cursor=pointer]:
+              - /url: https://instagram.com/bazhina_tatoonl
+        - generic [ref=e358]:
+          - generic [ref=e361]:
+            - generic [ref=e362]: 3:07 PM
+            - generic [ref=e363]: Thank you Mila for this incredible piece of art! Can't wait for the next session, was a pleasure to meet you ❤️
+          - generic [ref=e364]:
+            - text: "#tfdfeedback"
+            - link "@mila.delger" [ref=e365] [cursor=pointer]:
+              - /url: https://instagram.com/mila.delger
+        - generic [ref=e366]:
+          - generic [ref=e367]:
+            - generic [ref=e368]: Hi! Everything went good! I'm happy with the results and the healing going good as well
+            - generic [ref=e371]: Glad to hear it! Thanks for sharing your feedback and thanks for coming to us 😊
+            - generic [ref=e374]: See u next time 🙏🏻 ❤️
+          - generic [ref=e377]:
+            - text: "#tfdfeedback"
+            - link "@maxxonk_tattoo" [ref=e378] [cursor=pointer]:
+              - /url: https://instagram.com/maxxonk_tattoo
+        - generic [ref=e379]:
+          - generic [ref=e380]:
+            - generic [ref=e381]: I am a happy men! Thanks bro for the result! 🙏🏽
+            - generic [ref=e384]: Thanks man! I'm glad to read it! I don't want to be happy alone 😂 ❤️
+          - generic [ref=e387]:
+            - text: "#tfdfeedback"
+            - link "@novohatskytattoo" [ref=e388] [cursor=pointer]:
+              - /url: https://instagram.com/novohatskytattoo
+        - generic [ref=e389]:
+          - generic [ref=e390]:
+            - generic [ref=e391]: It healed very well. Super happy with the result, yes!
+            - generic [ref=e394]: Wow! Thanks la for sharing, glad to hear that's it went good 🤗 ❤️
+          - generic [ref=e397]:
+            - text: "#tfdfeedback"
+            - link "@novohatskytattoo" [ref=e398] [cursor=pointer]:
+              - /url: https://instagram.com/novohatskytattoo
+        - generic [ref=e399]:
+          - generic [ref=e400]:
+            - generic [ref=e401]: Hi, sorry for the delay, I'm not here often. I am very satisfied and the healing went perfectly :)
+            - generic [ref=e404]: Glad to hear it! Thanks for your feedback ☺️👌🏻
+          - generic [ref=e407]:
+            - text: "#tfdfeedback"
+            - link "@maxxonk_tattoo" [ref=e408] [cursor=pointer]:
+              - /url: https://instagram.com/maxxonk_tattoo
+        - generic [ref=e409]:
+          - generic [ref=e410]:
+            - generic [ref=e412]:
+              - generic [ref=e413]: 18:40
+              - generic [ref=e414]: The whole experience was really good. I will send you a pic of the healed version. Thank you so much dear Daria! ❤️
+            - generic [ref=e415]: Also a reminder for sending me the pics and videos please 🤗
+            - generic [ref=e418]: thank you so much 🫶
+          - generic [ref=e421]:
+            - text: "#tfdfeedback"
+            - link "@tattoo.daria" [ref=e422] [cursor=pointer]:
+              - /url: https://instagram.com/tattoo.daria
+        - generic [ref=e423]:
+          - generic [ref=e424]:
+            - generic [ref=e425]: Hi Daria! I hope you had an amazing day off ❤️ Thank you so so much again for your incredible work and for being such a kind person to be around — I enjoyed our appointment a lot 🥰
+            - generic [ref=e428]: Hi, thank you too ❤️
+          - generic [ref=e431]:
+            - text: "#tfdfeedback"
+            - link "@tattoo.daria" [ref=e432] [cursor=pointer]:
+              - /url: https://instagram.com/tattoo.daria
+        - generic [ref=e433]:
+          - generic [ref=e434]:
+            - generic [ref=e435]: Hey, happy New Year! I hope you had a great start to the new year. Yes, I'm very happy with Eugene. It's just wonderful. Only my elbow might need a touch-up because the colour didn't stay in the skin very well there. Thank you so much again for everything! 😊💪🏻
+            - generic [ref=e438]: Many thanks for your feedback! Happy New Year too 🤗🙏
+          - generic [ref=e441]:
+            - text: "#tfdfeedback"
+            - link "@novohatskytattoo" [ref=e442] [cursor=pointer]:
+              - /url: https://instagram.com/novohatskytattoo
+        - generic [ref=e443]:
+          - generic [ref=e444]: I still wanted to thank you for everything, and the whole team — you are super nice, smiling and I really like it. You take care of your customers and I see that you are fully involved. Thank you again and I'll keep you informed of all the progress!
+          - generic [ref=e448]:
+            - text: "#tfdfeedback"
+            - link "@novohatskytattoo" [ref=e449] [cursor=pointer]:
+              - /url: https://instagram.com/novohatskytattoo
+        - generic [ref=e450]:
+          - generic [ref=e451]:
+            - generic [ref=e452]: Hey!! Yes very happy with it. It has healed great actually. Thinking about my next one
+            - generic [ref=e455]: Many thanks for your feedback! Glad to hear it :) Let us know when you'd like to do the next one ☺️
+          - generic [ref=e458]:
+            - text: "#tfdfeedback"
+            - link "@maxxonk_tattoo" [ref=e459] [cursor=pointer]:
+              - /url: https://instagram.com/maxxonk_tattoo
+        - generic [ref=e460]:
+          - generic [ref=e461]:
+            - generic [ref=e462]: Hiii, here are a few pictures of my tattoo. I also want to say thank you again. I love my tattoo so so much and I felt really comfortable at the studio with you 🥰
+            - generic [ref=e465]: Hi! Thank you so much for the healed tattoo photo, it looks amazing 😍 And thanks for your kind words, I hope we'll see each other again 😁
+          - generic [ref=e468]:
+            - text: "#tfdfeedback"
+            - link "@tattoo.daria" [ref=e469] [cursor=pointer]:
+              - /url: https://instagram.com/tattoo.daria
+        - generic [ref=e470]:
+          - generic [ref=e471]:
+            - generic [ref=e472]: Thank you again for the amazing tat! 🤩 and I would love to get the pictures once you have them :)
+            - generic [ref=e475]: Thank you for your trust as well ☺️ I'll send the photos a bit later once I receive them, so let's stay in touch ✨
+          - generic [ref=e478]:
+            - text: "#tfdfeedback"
+            - link "@tattoo.daria" [ref=e479] [cursor=pointer]:
+              - /url: https://instagram.com/tattoo.daria
+        - generic [ref=e480]:
+          - generic [ref=e481]: Hi man! Thanks for yesterday! I had a good day and I'm really happy with the result! Super tired now, so I'll take it easy today! Was nice to meet you and let's keep in touch! Also if you want to visit the natural history museum 😉 ❤️
+          - generic [ref=e485]:
+            - text: "#tfdfeedback"
+            - link "@novohatskytattoo" [ref=e486] [cursor=pointer]:
+              - /url: https://instagram.com/novohatskytattoo
+        - generic [ref=e487]:
+          - generic [ref=e488]: It was a great experience for the first tattoo. Probably will do a next one soon hahaaa
+          - generic [ref=e492]:
+            - text: "#tfdfeedback"
+            - link "@tattoo.daria" [ref=e493] [cursor=pointer]:
+              - /url: https://instagram.com/tattoo.daria
+        - generic [ref=e494]:
+          - generic [ref=e495]:
+            - generic [ref=e496]: I'm so so happy with the tattoo, thank you ❤️❤️❤️
+            - generic [ref=e499]: Thank you too 🥹
+          - generic [ref=e502]:
+            - text: "#tfdfeedback"
+            - link "@tattoo.daria" [ref=e503] [cursor=pointer]:
+              - /url: https://instagram.com/tattoo.daria
+        - generic [ref=e504]:
+          - generic [ref=e505]: Hi Max, hope you're doing well! Just wanted to thank you again for your amazing work — I'm genuinely super happy with the final result. It's fully healed now; I followed all your aftercare instructions and the skin recovered smoothly with no issues at all.
+          - generic [ref=e509]:
+            - text: "#tfdfeedback"
+            - link "@maxxonk_tattoo" [ref=e510] [cursor=pointer]:
+              - /url: https://instagram.com/maxxonk_tattoo
+        - generic [ref=e511]:
+          - generic [ref=e512]:
+            - generic [ref=e513]: Session was nice! I was really happy with the designing process. Healing is going great so far — I'm keeping it moisturized and clean! Thanks for checking in! ❤️
+            - generic [ref=e516]: Really glad to hear it, thanks for choosing us 🤗 ❤️
+          - generic [ref=e519]:
+            - text: "#tfdfeedback"
+            - link "@maxxonk_tattoo" [ref=e520] [cursor=pointer]:
+              - /url: https://instagram.com/maxxonk_tattoo
+        - generic [ref=e521]:
+          - generic [ref=e522]:
+            - generic [ref=e523]: Yes all good, second skin is still on
+            - generic [ref=e526]: Session was perfect
+            - generic [ref=e529]: Great! Thanks for your feedback 🤗
+          - generic [ref=e532]:
+            - text: "#tfdfeedback"
+            - link "@novohatskytattoo" [ref=e533] [cursor=pointer]:
+              - /url: https://instagram.com/novohatskytattoo
+        - generic [ref=e534]:
+          - generic [ref=e535]:
+            - generic [ref=e536]: Hey, thank you for the message, it's all going great. I messaged Eugene already — really happy with the results so far!
+            - generic [ref=e539]: Glad to know it! Thanks for coming to us ☺️ ❤️
+          - generic [ref=e542]:
+            - text: "#tfdfeedback"
+            - link "@novohatskytattoo" [ref=e543] [cursor=pointer]:
+              - /url: https://instagram.com/novohatskytattoo
+  - generic [ref=e545]:
+    - generic [ref=e546]:
+      - paragraph [ref=e547]: Who we work with
+      - heading "Sponsors" [level=2] [ref=e548]
+    - generic [ref=e549]:
+      - link "Tattooland" [ref=e551] [cursor=pointer]:
+        - /url: https://www.tattooland.com/
+      - link "Killer Ink" [ref=e559] [cursor=pointer]:
+        - /url: https://www.killerinktattoo.com/
+      - link "Dasha Tattoo Supplies" [ref=e567] [cursor=pointer]:
+        - /url: https://dashatattoo.com/
+  - generic [ref=e574]:
+    - heading "The Four Deuces — Tattoo Studio in Amsterdam" [level=2] [ref=e575]
+    - paragraph [ref=e576]: Our studio specialises in creating highly detailed, artistic tattoos from fully custom designs. We work across realism and microrealism, fine line, chicano, anime, abstract, and both black-and-grey and colour tattooing — and we take on cover-ups of poor-quality work and scars.
+    - heading "Why clients choose us" [level=3] [ref=e577]
+    - paragraph [ref=e578]:
+      - strong [ref=e579]: An anatomical approach.
+      - text: Every design is developed around your body's anatomy and the natural movement of your muscles, so the tattoo sits and flows the way it should.
+    - paragraph [ref=e580]:
+      - strong [ref=e581]: Safety & sterility.
+      - text: Single-use sterile cartridges, professional equipment and certified hypoallergenic pigments that meet European (EU REACH) safety standards.
+    - paragraph [ref=e582]:
+      - strong [ref=e583]: Complex work & cover-ups.
+      - text: We take on cover-ups of any complexity — often without lengthy laser removal, when the design is chosen correctly.
+    - heading "How to find us" [level=3] [ref=e584]
+    - paragraph [ref=e585]: Our studio sits in one of Amsterdam's most prestigious and cultural districts — the Museum Quarter (Amsterdam Zuid), at Van Baerlestraat 126H.
+    - paragraph [ref=e586]: We're just a few minutes' walk from Museumplein, the Van Gogh Museum and Vondelpark. On the ground floor (begane grond) and easy to reach by public transport — tram lines run right along Van Baerlestraat — or by car.
+  - contentinfo [ref=e587]:
+    - generic [ref=e588]:
+      - generic [ref=e589]:
+        - generic [ref=e590]:
+          - paragraph [ref=e591]: Discover
+          - list [ref=e592]:
+            - listitem [ref=e593]:
+              - button "Home" [ref=e594]
+            - listitem [ref=e595]:
+              - button "Artists" [ref=e596]
+            - listitem [ref=e597]:
+              - button "Reviews" [ref=e598]
+            - listitem [ref=e599]:
+              - button "Sponsors" [ref=e600]
+        - generic [ref=e601]:
+          - paragraph [ref=e602]: Studio
+          - list [ref=e603]:
+            - listitem [ref=e604]:
+              - button "About" [ref=e605]
+            - listitem [ref=e606]:
+              - button "FAQ" [ref=e607]
+            - listitem [ref=e608]:
+              - button "Guests & Careers" [ref=e609]
+            - listitem [ref=e610]:
+              - button "Contact" [ref=e611]
+        - generic [ref=e612]:
+          - paragraph [ref=e613]: Tattoo styles
+          - list [ref=e614]:
+            - listitem [ref=e615]:
+              - button "All styles" [ref=e616]
+            - listitem [ref=e617]:
+              - button "Realism" [ref=e618]
+            - listitem [ref=e619]:
+              - button "Chicano" [ref=e620]
+            - listitem [ref=e621]:
+              - button "Fine Line" [ref=e622]
+            - listitem [ref=e623]:
+              - button "Anime" [ref=e624]
+        - list [ref=e626]:
+          - listitem [ref=e627]:
+            - button "Fluid Line" [ref=e628]
+          - listitem [ref=e629]:
+            - button "Ornamental" [ref=e630]
+          - listitem [ref=e631]:
+            - button "Freehand" [ref=e632]
+          - listitem [ref=e633]:
+            - button "Minimal" [ref=e634]
+          - listitem [ref=e635]:
+            - button "Botanical" [ref=e636]
+      - generic [ref=e637]:
+        - paragraph [ref=e638]: The Four Deuces
+        - paragraph [ref=e639]:
+          - text: Designed & developed by
+          - link "aerdt" [ref=e640] [cursor=pointer]:
+            - /url: https://aerdt.xyz/
+        - generic [ref=e641]:
+          - button "Terms & Privacy" [ref=e642]
+          - generic [ref=e643]: © 2020–2026 The Four Deuces
+  - generic [ref=e645]:
+    - paragraph [ref=e649]:
+      - text: We use cookies to understand how you use our site. Accept to help us improve.
+      - button "Privacy Policy" [ref=e650]
+    - button "Decline" [ref=e651]
+    - button "Accept" [ref=e652]
+```
+
+# Test source
+
+```ts
+  1  | import { test, expect } from "@playwright/test";
+  2  | 
+  3  | test("booking flow via body map", async ({ page }) => {
+  4  |   await page.goto("/book");
+  5  |   await page.waitForLoadState("networkidle");
+  6  | 
+  7  |   const bodyPath = page.locator("svg path").first();
+  8  |   await bodyPath.click({ force: true });
+  9  | 
+  10 |   await page.getByRole("button", { name: /book this area/i }).click();
+  11 | 
+  12 |   await expect(page.getByPlaceholder(/budget/i)).toBeVisible();
+  13 |   await page.getByPlaceholder(/budget/i).fill("500");
+  14 |   await page.getByRole("button", { name: /next/i }).click();
+  15 | 
+  16 |   await expect(page.getByPlaceholder(/whatsapp/i)).toBeVisible();
+  17 |   await page.getByPlaceholder(/whatsapp/i).fill("+31612345678");
+  18 | });
+  19 | 
+  20 | test("language switcher changes URL prefix", async ({ page }) => {
+  21 |   await page.goto("/");
+  22 |   await page.getByRole("button", { name: "NL" }).click();
+> 23 |   await page.getByText("Nederlands").click();
+     |                                      ^ Error: locator.click: Test timeout of 30000ms exceeded.
+  24 |   await expect(page).toHaveURL(/\/nl/);
+  25 | });
+```
