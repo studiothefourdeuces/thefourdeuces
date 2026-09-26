@@ -3067,6 +3067,18 @@ function ArtistShowcase({
               >
                 {t("ui.seePortfolio")}
               </button>
+                            <div className="flex w-full flex-col items-center gap-2 md:w-auto md:contents">
+                <p className="text-[13px] text-white/45 md:hidden">{t("book.notsure")}</p>
+                <a
+                  href={WHATSAPP_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-cursor="pointer"
+                  className={PILL(false)}
+                >
+                  {t("book.freeconsult")}
+                </a>
+              </div>
             </div>
           </motion.div>
         </Reveal>
