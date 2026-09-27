@@ -673,6 +673,12 @@ const DICT: Record<string, Entry> = {
     de: "Von unseren Künstlern",
     ua: "Роблять наші майстри",
   },
+    "ui.otherArtists": {
+    en: "Other artists",
+    nl: "Andere artiesten",
+    de: "Weitere Künstler",
+    ua: "Інші майстри",
+  },
   "ui.otherStyles": {
     en: "Other styles",
     nl: "Andere stijlen",

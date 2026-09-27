@@ -15,6 +15,10 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
     {
+      name: "Desktop Firefox",
+      use: { ...devices["Desktop Firefox"] },
+    },
+    {
       name: "Tablet iPad",
       use: { ...devices["iPad Pro 11"] },
     },

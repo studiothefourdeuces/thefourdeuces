@@ -3243,6 +3243,9 @@ function ArtistsPage({
         </motion.div>
         {/* Artist picker — horizontal row of avatars, under the bio/since. */}
         <div className="mt-8 md:hidden">
+          <p className="mb-4 text-center text-[12px] uppercase tracking-[0.25em] text-white/40">
+            {t("ui.otherArtists")}
+          </p>
           <ArtistRow active={active} onSelect={onSelect} />
         </div>
 

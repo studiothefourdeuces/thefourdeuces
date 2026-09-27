@@ -38,6 +38,7 @@ test("tab order reaches primary interactive elements", async ({ page }) => {
   const acceptCookies = page.getByRole("button", { name: /accept/i });
   if (await acceptCookies.isVisible().catch(() => false)) {
     await acceptCookies.click();
+    await expect(acceptCookies).not.toBeVisible({ timeout: 5000 });
   }
 
   let reachedBookButton = false;
