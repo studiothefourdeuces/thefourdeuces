@@ -1282,6 +1282,8 @@ function Carousel({
               src={a.img}
               alt={ARTISTS[a.artistIdx].name}
               draggable={false}
+              loading="lazy"
+              decoding="async"
               className="pointer-events-none h-full w-full select-none object-cover grayscale"
             />
             {i === center && a.video && (
@@ -1485,6 +1487,8 @@ function Smooth3DSlideshow({
                 src={slide.img}
                 alt={ARTISTS[slide.artistIdx].name}
                 draggable={false}
+                loading="lazy"
+                decoding="async"
                 className="grayscale"
                 style={{
                   position: "absolute",
@@ -5387,8 +5391,12 @@ function Loader({ onDone }: { onDone: () => void }) {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
+    // Only wait on what's actually visible on first paint (artist portraits
+    // shown in the home carousel + hero), not every work image across all
+    // artists — that's what was causing the multi-second blank load.
+    const firstArtistWorks = WORKS_BY_ARTIST[0]?.slice(0, 4).map((w) => w.img) ?? [];
     const urls = Array.from(
-      new Set([...ARTISTS.map((a) => a.img), ...WORKS.map((w) => w.img)]),
+      new Set([...ARTISTS.map((a) => a.img), ...firstArtistWorks]),
     );
     let finished = false;
     const finish = () => {
