@@ -3328,6 +3328,7 @@ function ArtistsPage({
                       type="button"
                       onClick={() => onOpenWorks(active, i)}
                       data-cursor="pointer"
+                      aria-label={`${artist.name} — work ${i + 1}`}
                       className="group relative block aspect-square w-full overflow-hidden rounded-xl ring-1 ring-white/10 outline-none"
                     >
                       {w.video ? (
