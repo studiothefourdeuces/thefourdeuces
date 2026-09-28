@@ -772,9 +772,9 @@ function Smooth3DSlideshow({
   // card decelerates as it settles into the centre — the natural coverflow
   // feel). HOLD is the full cadence: the 0.6s move, then a ~1s rest so each
   // photo stays on screen long enough to take in before the next advance.
-  const DUR = 0.6;
+  const DUR = 0.9;
   const EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
-  const HOLD = 1600;
+  const HOLD = 2400;
 
   const step = useCallback(
     (dir: number) => {
