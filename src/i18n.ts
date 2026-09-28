@@ -935,9 +935,9 @@ const DICT: Record<string, Entry> = {
   // --- Cookie banner ---
   "cookie.text": {
     en: "We use cookies to understand how you use our site. Accept to help us improve.",
-    nl: "We gebruiken cookies om te begrijpen hoe je onze site gebruikt. Accepteer om ons te helpen verbeteren.",
-    de: "Wir verwenden Cookies, um zu verstehen, wie du unsere Seite nutzt. Akzeptiere, um uns zu helfen.",
-    ua: "Ми використовуємо кукі, щоб розуміти, як ти користуєшся сайтом. Прийми, щоб допомогти нам покращитись.",
+    nl: "We gebruiken cookies om onze site te begrijpen. Accepteer om te helpen.",
+    de: "Wir nutzen Cookies, um unsere Seite zu verstehen. Akzeptiere, um zu helfen.",
+    ua: "Ми використовуємо кукі, щоб аналізувати вашу активність. Прйміть, щоб допомогти.",
   },
   "cookie.privacy": {
     en: "Privacy Policy",

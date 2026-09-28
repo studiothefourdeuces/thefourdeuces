@@ -3274,32 +3274,29 @@ export default function App() {
             transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
             className="fixed inset-x-0 bottom-4 z-40 flex justify-center px-4"
           >
-            <div className="flex w-full max-w-[560px] items-center gap-3 rounded-full border border-white/10 bg-white/[0.06] py-2 pl-3 pr-2 backdrop-blur-xl">
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10">
-                <Cookie className="h-4 w-4 text-white/70" strokeWidth={2} />
-              </span>
-              <p className="flex-1 text-[11px] leading-tight text-white/60">
-                {tr("cookie.text")}{" "}
+            <div className="flex w-full max-w-[560px] flex-col gap-3 rounded-[28px] border border-white/10 bg-white/[0.06] p-4 backdrop-blur-xl md:flex-row md:items-center md:gap-3 md:rounded-[28px] md:p-2 md:pl-3">
+              <div className="flex items-center gap-3">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10">
+                  <Cookie className="h-4 w-4 text-white/70" strokeWidth={2} />
+                </span>
+                <p className="flex-1 text-[11px] leading-tight text-white/60 md:flex-1">
+                  {tr("cookie.text")}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 md:justify-end md:gap-3">
                 <button
-                  onClick={() => navigate("/terms")}
-                  data-cursor="pointer"
-                  className="text-white/80 underline underline-offset-2"
+                  onClick={() => decideConsent("declined")}
+                  className="flex-1 rounded-full px-4 py-2 text-[12px] text-white/70 transition hover:text-white md:flex-none"
                 >
-                  {tr("cookie.privacy")}
+                  {tr("cookie.decline")}
                 </button>
-              </p>
-              <button
-                onClick={() => decideConsent("declined")}
-                className="rounded-full px-4 py-2 text-[12px] text-white/70 transition hover:text-white"
-              >
-                {tr("cookie.decline")}
-              </button>
-              <button
-                onClick={() => decideConsent("accepted")}
-                className="rounded-full bg-white px-5 py-2 text-[12px] font-medium text-black transition hover:bg-white/90"
-              >
-                {tr("cookie.accept")}
-              </button>
+                <button
+                  onClick={() => decideConsent("accepted")}
+                  className="flex-1 rounded-full bg-white px-5 py-2 text-[12px] font-medium text-black transition hover:bg-white/90 md:flex-none"
+                >
+                  {tr("cookie.accept")}
+                </button>
+              </div>
             </div>
           </motion.div>
         )}
