@@ -7,7 +7,7 @@ import milaImg from "./img/artists/mila.jpg";
 import selcukImg from "./img/artists/selcuk.jpg";
 import gianlucaImg from "./img/artists/gianluca.jpg";
 import daryaImg from "./img/artists/darya.jpg";
-import { STYLES } from "./content";
+import { STYLES, ARTISTS_SEO } from "./content";
 
 export type Artist = {
   name: string;
@@ -79,6 +79,18 @@ export const ARTISTS: Artist[] = [
 
 // Cap on how many works to show per artist on the /artists grid.
 export const MAX_PORTFOLIO = 21;
+
+// Per-artist URL slug (e.g. "Selçuk" → "selcuk"), matched by name so it stays
+// aligned with ARTISTS regardless of order.
+export const artistSlug = (name: string): string =>
+  ARTISTS_SEO.find((a) => a.name === name)?.slug ?? name.toLowerCase();
+
+// Slugs aligned to the ARTISTS array order (ARTIST_SLUGS[i] ↔ ARTISTS[i]).
+export const ARTIST_SLUGS: string[] = ARTISTS.map((a) => artistSlug(a.name));
+
+// Resolve a URL slug back to an artist index (-1 when unknown).
+export const artistIndexBySlug = (slug: string): number =>
+  ARTIST_SLUGS.indexOf(slug);
 
 // Works live in a per-artist folder: src/img/works/<slug>/<anything>.jpg
 // (e.g. src/img/works/max/1.jpg). The folder name is the artist slug, so to

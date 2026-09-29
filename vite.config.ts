@@ -10,7 +10,14 @@ import {
 } from "node:fs";
 import { resolve } from "node:path";
 import { type FaqItem, getFaq } from "./src/faq";
-import { STYLES, getAbout, getStyles } from "./src/content";
+import {
+  STYLES,
+  getAbout,
+  getStyles,
+  ARTISTS_SEO,
+  artistSeoTitle,
+  artistSeoDescription,
+} from "./src/content";
 import { LANGS, langPath, htmlLangFor, t } from "./src/i18n";
 
 const SITE = "https://thefourdeuces.nl";
@@ -35,6 +42,7 @@ const faqSchemaFrom = (items: FaqItem[]) =>
 // Language-agnostic list of prerendered pages ("" = home). Per language, the
 // title / description / FAQ schema are resolved from the localised data.
 const STYLE_SLUGS = STYLES.map((s) => s.slug.replace(/^\//, ""));
+const ARTIST_SLUGS = ARTISTS_SEO.map((a) => `artists/${a.slug}`);
 const BASE_SLUGS = [
   "",
   "book",
@@ -45,12 +53,21 @@ const BASE_SLUGS = [
   "about",
   "guests",
   "styles",
+  ...ARTIST_SLUGS,
   ...STYLE_SLUGS,
 ];
 
 type Meta = { title: string; description: string; faqSchema?: string };
 
 function metaFor(slug: string, lang: string): Meta {
+  if (slug.startsWith("artists/")) {
+    const a = ARTISTS_SEO.find((x) => x.slug === slug.slice("artists/".length));
+    if (a)
+      return {
+        title: artistSeoTitle(lang, a.name),
+        description: artistSeoDescription(lang, a.name),
+      };
+  }
   switch (slug) {
     case "":
       return { title: t(lang, "title.home"), description: t(lang, "desc.home") };

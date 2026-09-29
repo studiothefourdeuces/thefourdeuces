@@ -27,7 +27,7 @@ import {
 import tattoolandLogo from "./img/partners/tattooland.png";
 import killerinkLogo from "./img/partners/killerink.png";
 import dashaLogo from "./img/partners/tattoodasha.png";
-import { getAbout, getStyles, getArtistText } from "./content";
+import { getAbout, getStyles, getArtistText, artistSeoTitle } from "./content";
 import {
   initAnalytics,
   grantConsent,
@@ -44,6 +44,8 @@ import {
   WORKS_BY_ARTIST,
   CAROUSEL_WORKS,
   HERO_SLIDES,
+  ARTIST_SLUGS,
+  artistIndexBySlug,
 } from "./artists-data";
 import {
   PILL,
@@ -2221,10 +2223,7 @@ function ArtistShowcase({
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  onSelect(active);
-                  onNavigate("/artists");
-                }}
+                onClick={() => onNavigate(`/artists/${ARTIST_SLUGS[active]}`)}
                 data-cursor="pointer"
                 className={PILL(false)}
               >
@@ -2985,6 +2984,9 @@ export default function App() {
   // Localised style list for the current language (slug lookup is unchanged).
   const localizedStyles = useMemo(() => getStyles(lang), [lang]);
   const stylePage = localizedStyles.find((s) => s.slug === path);
+  // Per-artist route: /artists/<slug> (e.g. /artists/max). -1 = not this route.
+  const artistMatch = path.match(/^\/artists\/([^/]+)$/);
+  const artistRouteIdx = artistMatch ? artistIndexBySlug(artistMatch[1]) : -1;
   const page =
     path === "/"
       ? "home"
@@ -2994,7 +2996,7 @@ export default function App() {
           ? "contact"
           : path === "/book" || path === "/guide"
             ? "book"
-            : path === "/artists"
+            : path === "/artists" || artistRouteIdx >= 0
               ? "artists"
               : path === "/faq"
                 ? "faq"
@@ -3017,6 +3019,10 @@ export default function App() {
       document.title = stylePage.seoTitle;
       return;
     }
+    if (page === "artists" && artistRouteIdx >= 0) {
+      document.title = artistSeoTitle(lang, ARTISTS[artistRouteIdx].name);
+      return;
+    }
     const titles: Record<string, string> = {
       home: tr("title.home"),
       about: getAbout(lang).seoTitle,
@@ -3029,7 +3035,13 @@ export default function App() {
       notfound: tr("title.notfound"),
     };
     document.title = titles[page] ?? titles.home;
-  }, [page, stylePage, lang]);
+  }, [page, stylePage, artistRouteIdx, lang]);
+
+  // Keep the shared active-artist state in sync with the /artists/<slug> URL
+  // (so the home showcase and back/forward navigation stay consistent).
+  useEffect(() => {
+    if (artistRouteIdx >= 0) setActiveArtist(artistRouteIdx);
+  }, [artistRouteIdx]);
 
   // SPA navigation → GA4 page_view (fires after the title updates above).
   useEffect(() => {
@@ -3041,10 +3053,10 @@ export default function App() {
     smoothScrollToId("artists", 950);
   };
 
-  // From a style page → open that artist on the /artists page.
+  // From a style page → open that artist's own /artists/<slug> page.
   const openArtist = (i: number) => {
     setActiveArtist(i);
-    navigate("/artists");
+    navigate(`/artists/${ARTIST_SLUGS[i]}`);
   };
 
   const openBooking = (
@@ -3218,8 +3230,8 @@ export default function App() {
         <FaqPage onNavigate={navigate} onConsult={() => openConsult("faq")} />
       ) : page === "artists" ? (
         <ArtistsPage
-          active={activeArtist}
-          onSelect={setActiveArtist}
+          active={artistRouteIdx >= 0 ? artistRouteIdx : activeArtist}
+          onSelect={(i) => navigate(`/artists/${ARTIST_SLUGS[i]}`)}
           onOpenWorks={openWorks}
           onBook={openBooking}
           onNavigate={navigate}

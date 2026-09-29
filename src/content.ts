@@ -1837,6 +1837,50 @@ export function getArtistText(lang: string, name: string): ArtistText | null {
   return ARTIST_TEXT_BY_LANG[lang]?.[name] ?? null;
 }
 
+// Public per-artist URL slugs + names, in the same order as the ARTISTS array
+// (artists-data). Used for the /artists/<slug> routes, the client router and the
+// prerendered per-artist pages. English role is the fallback for meta; other
+// languages come from getArtistText(). No image imports here, so this stays
+// importable from vite.config (Node) as well as the app.
+export const ARTISTS_SEO: { slug: string; name: string; role: string }[] = [
+  { slug: "max", name: "Max", role: "Chicano, Realism, Portraits" },
+  { slug: "eugene", name: "Eugene", role: "Chicano, Realism, Blackwork" },
+  { slug: "daria", name: "Daria", role: "Fine Line, Minimal, Botanical" },
+  { slug: "darya", name: "Darya", role: "Anime, Manga, Realism" },
+  { slug: "mila", name: "Mila", role: "Freehand, Fluid Line, Abstract" },
+  { slug: "gianluca", name: "Gianluca", role: "Ornamental, Blackwork, Geometric" },
+  { slug: "selcuk", name: "Selçuk", role: "Minimal, Fine Line, Botanical" },
+];
+
+const ARTIST_TITLE_SUFFIX: Record<string, string> = {
+  en: "Tattoo Artist | The Four Deuces Amsterdam",
+  nl: "Tattoo-artiest | The Four Deuces Amsterdam",
+  de: "Tattoo-Künstler | The Four Deuces Amsterdam",
+  ua: "Тату-майстер | The Four Deuces Амстердам",
+};
+
+// Per-artist SEO title/description — shared by the client (tab title) and the
+// build-time prerender so the two always match.
+export function artistSeoTitle(lang: string, name: string): string {
+  return `${name} — ${ARTIST_TITLE_SUFFIX[lang] ?? ARTIST_TITLE_SUFFIX.en}`;
+}
+
+export function artistSeoDescription(lang: string, name: string): string {
+  const meta = ARTISTS_SEO.find((a) => a.name === name);
+  const role = (getArtistText(lang, name)?.role ?? meta?.role ?? "").toLowerCase();
+  const tpl: Record<string, (n: string, r: string) => string> = {
+    en: (n, r) =>
+      `${n} — ${r} tattoo artist at The Four Deuces in Amsterdam's Museum Quarter. See the portfolio and book a session.`,
+    nl: (n, r) =>
+      `${n} — tattoo-artiest (${r}) bij The Four Deuces in de Amsterdamse Museumwijk. Bekijk het portfolio en boek een sessie.`,
+    de: (n, r) =>
+      `${n} — Tattoo-Künstler (${r}) bei The Four Deuces im Amsterdamer Museumsviertel. Portfolio ansehen und Termin buchen.`,
+    ua: (n, r) =>
+      `${n} — тату-майстер (${r}) у The Four Deuces в Музейному кварталі Амстердама. Дивіться портфоліо та записуйтесь.`,
+  };
+  return (tpl[lang] ?? tpl.en)(name, role);
+}
+
 // ---------------------------------------------------------------------------
 // Body-map region translations. Keyed by the English label / note so the
 // front/back sets share entries where the text is identical. Falls back to
