@@ -295,6 +295,7 @@ function BodyPain({
               </p>
 
               {onBook && (
+                <div className="flex justify-center md:justify-start">
                 <button
                   type="button"
                   onClick={() => onBook({ bodyPart: region.label })}
@@ -303,6 +304,7 @@ function BodyPain({
                 >
                   {t("body.bookThis")}
                 </button>
+                </div>
               )}
             </div>
           </div>
