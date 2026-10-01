@@ -9,7 +9,7 @@ export type Faq = { q: string; a: string };
 // page for SEO. Plain, honest business description — no keyword stuffing.
 // ---------------------------------------------------------------------------
 export const ABOUT = {
-  seoTitle: "About | The Four Deuces Tattoo Studio Amsterdam",
+  seoTitle: "About the Studio | The Four Deuces",
   seoDescription:
     "Custom, highly detailed tattoos in Amsterdam's Museum Quarter — realism, microrealism, fine line, chicano, anime, abstract and cover-ups. Van Baerlestraat 126H.",
   kicker: "About the studio",
@@ -55,7 +55,7 @@ export const ABOUT = {
 type AboutText = typeof ABOUT;
 
 const ABOUT_NL: AboutText = {
-  seoTitle: "Over ons | The Four Deuces Tattoostudio Amsterdam",
+  seoTitle: "Over ons | The Four Deuces",
   seoDescription:
     "Maatwerk, zeer gedetailleerde tattoos in de Museumwijk van Amsterdam — realisme, microrealisme, fine line, chicano, anime, abstract en cover-ups. Van Baerlestraat 126H.",
   kicker: "Over de studio",
@@ -98,7 +98,7 @@ const ABOUT_NL: AboutText = {
 };
 
 const ABOUT_DE: AboutText = {
-  seoTitle: "Studio | The Four Deuces Tattoo-Studio Amsterdam",
+  seoTitle: "Über uns | The Four Deuces",
   seoDescription:
     "Individuelle, hochdetaillierte Tattoos im Museumsviertel von Amsterdam — Realismus, Mikrorealismus, Fine Line, Chicano, Anime, Abstrakt und Cover-ups. Van Baerlestraat 126H.",
   kicker: "Über das Studio",
@@ -141,7 +141,7 @@ const ABOUT_DE: AboutText = {
 };
 
 const ABOUT_UA: AboutText = {
-  seoTitle: "Про нас | Тату-студія The Four Deuces Амстердам",
+  seoTitle: "Про нас | The Four Deuces",
   seoDescription:
     "Індивідуальні, деталізовані татуювання в Музейному кварталі Амстердама — реалізм, мікрореалізм, fine line, чикано, аніме, абстракція та кавер-апи. Van Baerlestraat 126H.",
   kicker: "Про студію",
@@ -224,7 +224,7 @@ export const STYLES: StylePage[] = [
     slug: "/realism",
     name: "Realism & Microrealism",
     nav: "Realism",
-    seoTitle: "Realism & Microrealism Tattoo Amsterdam | The Four Deuces",
+    seoTitle: "Realism & Microrealism | The Four Deuces",
     seoDescription:
       "Realistic and microrealism tattoos in Amsterdam — portraits, pets and fine detail built on soft gradients and true depth. Book a consultation at The Four Deuces.",
     kicker: "Style",
@@ -274,7 +274,7 @@ export const STYLES: StylePage[] = [
     slug: "/chicano",
     name: "Chicano & Lettering",
     nav: "Chicano",
-    seoTitle: "Chicano Tattoo Amsterdam | Black & Grey | The Four Deuces",
+    seoTitle: "Chicano | The Four Deuces",
     seoDescription:
       "Chicano and lettering tattoos in Amsterdam — black & grey, grey wash, fine lettering and cover-ups. Book a consultation at The Four Deuces studio.",
     kicker: "Style",
@@ -321,7 +321,7 @@ export const STYLES: StylePage[] = [
     slug: "/fine-line",
     name: "Fine Line",
     nav: "Fine Line",
-    seoTitle: "Fine Line & Watercolour Tattoo Amsterdam | The Four Deuces",
+    seoTitle: "Fine Line & Watercolour | The Four Deuces",
     seoDescription:
       "Fine line, watercolour and abstract tattoos in Amsterdam — airy, delicate, painterly work with jeweller's precision. Book a consultation at The Four Deuces.",
     kicker: "Style",
@@ -364,7 +364,7 @@ export const STYLES: StylePage[] = [
     slug: "/anime",
     name: "Anime & Manga",
     nav: "Anime",
-    seoTitle: "Anime & Manga Tattoo Amsterdam | The Four Deuces",
+    seoTitle: "Anime & Manga | The Four Deuces",
     seoDescription:
       "Anime and manga tattoos in Amsterdam by real fans of the medium — accurate characters, colour and manga-style black & grey. Book at The Four Deuces.",
     kicker: "Style",
@@ -415,7 +415,7 @@ export const STYLES: StylePage[] = [
     slug: "/fluid-line",
     name: "Fluid Line",
     nav: "Fluid Line",
-    seoTitle: "Fluid Line Tattoo Amsterdam | Signature Style | The Four Deuces",
+    seoTitle: "Fluid Line | The Four Deuces",
     seoDescription:
       "A signature 'fluid line' tattoo style in Amsterdam — portraits and animals built from flowing, water-like lines that move with the body. Book at The Four Deuces.",
     kicker: "Signature style",
@@ -457,7 +457,7 @@ export const STYLES: StylePage[] = [
     slug: "/ornamental",
     name: "Ornamental, Geometric & Engraving",
     nav: "Ornamental",
-    seoTitle: "Ornamental & Geometric Tattoo Amsterdam | The Four Deuces",
+    seoTitle: "Ornamental & Geometric | The Four Deuces",
     seoDescription:
       "Geometric, optical (Op-Art) and engraving-style ornamental tattoos in Amsterdam — mandalas, dotwork and etching-inspired detail. Book at The Four Deuces.",
     kicker: "Style",
@@ -503,7 +503,7 @@ export const STYLES: StylePage[] = [
     slug: "/freehand",
     name: "Freehand",
     nav: "Freehand",
-    seoTitle: "Freehand Tattoo Amsterdam | Drawn on the Skin | The Four Deuces",
+    seoTitle: "Freehand | The Four Deuces",
     seoDescription:
       "Freehand tattoos in Amsterdam — designs drawn straight onto the body with markers so every line follows your anatomy. Book a consultation at The Four Deuces.",
     kicker: "Style",
@@ -538,7 +538,7 @@ export const STYLES: StylePage[] = [
     slug: "/minimal",
     name: "Minimal & Small Tattoos",
     nav: "Minimal",
-    seoTitle: "Minimal & Small Tattoos Amsterdam | Fine Line | The Four Deuces",
+    seoTitle: "Minimal & Small Tattoos | The Four Deuces",
     seoDescription:
       "Minimal, small fine-line tattoos in Amsterdam — restrained, elegant designs built to stay clean and readable for years. Book at The Four Deuces.",
     kicker: "Style",
@@ -573,7 +573,7 @@ export const STYLES: StylePage[] = [
     slug: "/botanical",
     name: "Botanical & Floral",
     nav: "Botanical",
-    seoTitle: "Botanical & Floral Tattoo Amsterdam | Fine Line | The Four Deuces",
+    seoTitle: "Botanical & Floral | The Four Deuces",
     seoDescription:
       "Botanical and floral tattoos in Amsterdam — delicate fine-line flowers, leaves and plants drawn to flow with the body. Book at The Four Deuces.",
     kicker: "Style",
@@ -633,7 +633,7 @@ const STYLE_TEXT_NL: Record<string, Partial<StyleText>> = {
     nav: "Realisme",
     kicker: "Stijl",
     title: "Realisme & microrealisme",
-    seoTitle: "Realisme & microrealisme tattoo Amsterdam | The Four Deuces",
+    seoTitle: "Realisme & microrealisme | The Four Deuces",
     seoDescription:
       "Realistische en microrealisme-tattoos in Amsterdam — portretten, dieren en fijn detail met zachte gradiënten en echte diepte. Boek een consult bij The Four Deuces.",
     lead: [
@@ -646,7 +646,7 @@ const STYLE_TEXT_NL: Record<string, Partial<StyleText>> = {
     nav: "Chicano",
     kicker: "Stijl",
     title: "Chicano & lettering",
-    seoTitle: "Chicano tattoo Amsterdam | Zwart-grijs | The Four Deuces",
+    seoTitle: "Chicano | The Four Deuces",
     seoDescription:
       "Chicano- en letteringtattoos in Amsterdam — zwart-grijs, grey wash, fijn lettering en cover-ups. Boek een consult bij The Four Deuces.",
     lead: [
@@ -659,7 +659,7 @@ const STYLE_TEXT_NL: Record<string, Partial<StyleText>> = {
     nav: "Fine line",
     kicker: "Stijl",
     title: "Fine line",
-    seoTitle: "Fine line & aquarel tattoo Amsterdam | The Four Deuces",
+    seoTitle: "Fine line & aquarel | The Four Deuces",
     seoDescription:
       "Fine line-, aquarel- en abstracte tattoos in Amsterdam — luchtig, fijn en schilderachtig werk met de precisie van een juwelier. Boek een consult bij The Four Deuces.",
     lead: [
@@ -672,7 +672,7 @@ const STYLE_TEXT_NL: Record<string, Partial<StyleText>> = {
     nav: "Anime",
     kicker: "Stijl",
     title: "Anime & manga",
-    seoTitle: "Anime & manga tattoo Amsterdam | The Four Deuces",
+    seoTitle: "Anime & manga | The Four Deuces",
     seoDescription:
       "Anime- en mangatattoos in Amsterdam door echte fans — kloppende personages, kleur en manga-zwart-grijs. Boek bij The Four Deuces.",
     lead: [
@@ -685,7 +685,7 @@ const STYLE_TEXT_NL: Record<string, Partial<StyleText>> = {
     nav: "Fluid line",
     kicker: "Signatuurstijl",
     title: "Fluid line",
-    seoTitle: "Fluid line tattoo Amsterdam | Signatuurstijl | The Four Deuces",
+    seoTitle: "Fluid line | The Four Deuces",
     seoDescription:
       "Een signatuur-'fluid line'-tattoostijl in Amsterdam — portretten en dieren uit vloeiende, waterachtige lijnen die met het lichaam meebewegen. Boek bij The Four Deuces.",
     lead: [
@@ -698,7 +698,7 @@ const STYLE_TEXT_NL: Record<string, Partial<StyleText>> = {
     nav: "Ornamenteel",
     kicker: "Stijl",
     title: "Ornamenteel, geometrisch & engraving",
-    seoTitle: "Ornamenteel & geometrisch tattoo Amsterdam | The Four Deuces",
+    seoTitle: "Ornamenteel & geometrisch | The Four Deuces",
     seoDescription:
       "Geometrische, optische (Op-Art) en engraving-tattoos in Amsterdam — mandala's, dotwork en ets-detail. Boek bij The Four Deuces.",
     lead: [
@@ -711,7 +711,7 @@ const STYLE_TEXT_NL: Record<string, Partial<StyleText>> = {
     nav: "Freehand",
     kicker: "Stijl",
     title: "Freehand",
-    seoTitle: "Freehand tattoo Amsterdam | Op de huid getekend | The Four Deuces",
+    seoTitle: "Freehand | The Four Deuces",
     seoDescription:
       "Freehand-tattoos in Amsterdam — ontwerpen direct met markers op het lichaam getekend, zodat elke lijn je anatomie volgt. Boek een consult bij The Four Deuces.",
     lead: [
@@ -724,7 +724,7 @@ const STYLE_TEXT_NL: Record<string, Partial<StyleText>> = {
     nav: "Minimal",
     kicker: "Stijl",
     title: "Minimalistisch & klein",
-    seoTitle: "Minimalistische & kleine tattoos Amsterdam | Fine line | The Four Deuces",
+    seoTitle: "Minimalistische & kleine tattoos | The Four Deuces",
     seoDescription:
       "Minimalistische, kleine fine-line-tattoos in Amsterdam — ingetogen, elegant en gemaakt om jarenlang strak te blijven. Boek bij The Four Deuces.",
     lead: [
@@ -737,7 +737,7 @@ const STYLE_TEXT_NL: Record<string, Partial<StyleText>> = {
     nav: "Botanisch",
     kicker: "Stijl",
     title: "Botanisch & bloemen",
-    seoTitle: "Botanische & bloementattoo Amsterdam | Fine line | The Four Deuces",
+    seoTitle: "Botanische & bloementattoo | The Four Deuces",
     seoDescription:
       "Botanische en bloementattoos in Amsterdam — fijne fine-line bloemen, bladeren en planten die met het lichaam meebewegen. Boek bij The Four Deuces.",
     lead: [
@@ -753,7 +753,7 @@ const STYLE_TEXT_DE: Record<string, Partial<StyleText>> = {
     nav: "Realismus",
     kicker: "Stil",
     title: "Realismus & Mikrorealismus",
-    seoTitle: "Realismus & Mikrorealismus Tattoo Amsterdam | The Four Deuces",
+    seoTitle: "Realismus & Mikrorealismus | The Four Deuces",
     seoDescription:
       "Realistische und Mikrorealismus-Tattoos in Amsterdam — Porträts, Tiere und feine Details aus weichen Verläufen und echter Tiefe. Buche eine Beratung bei The Four Deuces.",
     lead: [
@@ -766,7 +766,7 @@ const STYLE_TEXT_DE: Record<string, Partial<StyleText>> = {
     nav: "Chicano",
     kicker: "Stil",
     title: "Chicano & Lettering",
-    seoTitle: "Chicano Tattoo Amsterdam | Schwarz-Grau | The Four Deuces",
+    seoTitle: "Chicano | The Four Deuces",
     seoDescription:
       "Chicano- und Lettering-Tattoos in Amsterdam — Schwarz-Grau, Grey Wash, feines Lettering und Cover-ups. Buche eine Beratung bei The Four Deuces.",
     lead: [
@@ -779,7 +779,7 @@ const STYLE_TEXT_DE: Record<string, Partial<StyleText>> = {
     nav: "Fine Line",
     kicker: "Stil",
     title: "Fine Line",
-    seoTitle: "Fine Line & Aquarell Tattoo Amsterdam | The Four Deuces",
+    seoTitle: "Fine Line & Aquarell | The Four Deuces",
     seoDescription:
       "Fine-Line-, Aquarell- und abstrakte Tattoos in Amsterdam — luftige, feine, malerische Arbeit mit der Präzision eines Juweliers. Buche eine Beratung bei The Four Deuces.",
     lead: [
@@ -792,7 +792,7 @@ const STYLE_TEXT_DE: Record<string, Partial<StyleText>> = {
     nav: "Anime",
     kicker: "Stil",
     title: "Anime & Manga",
-    seoTitle: "Anime & Manga Tattoo Amsterdam | The Four Deuces",
+    seoTitle: "Anime & Manga | The Four Deuces",
     seoDescription:
       "Anime- und Manga-Tattoos in Amsterdam von echten Fans — originalgetreue Figuren, Farbe und Manga-Schwarz-Grau. Buche bei The Four Deuces.",
     lead: [
@@ -805,7 +805,7 @@ const STYLE_TEXT_DE: Record<string, Partial<StyleText>> = {
     nav: "Fluid Line",
     kicker: "Signature-Stil",
     title: "Fluid Line",
-    seoTitle: "Fluid Line Tattoo Amsterdam | Signature-Stil | The Four Deuces",
+    seoTitle: "Fluid Line | The Four Deuces",
     seoDescription:
       "Ein Signature-'Fluid-Line'-Tattoostil in Amsterdam — Porträts und Tiere aus fließenden, wasserartigen Linien, die sich mit dem Körper bewegen. Buche bei The Four Deuces.",
     lead: [
@@ -818,7 +818,7 @@ const STYLE_TEXT_DE: Record<string, Partial<StyleText>> = {
     nav: "Ornamental",
     kicker: "Stil",
     title: "Ornamental, Geometrisch & Engraving",
-    seoTitle: "Ornamentales & geometrisches Tattoo Amsterdam | The Four Deuces",
+    seoTitle: "Ornamentales & geometrisches | The Four Deuces",
     seoDescription:
       "Geometrische, optische (Op-Art) und Gravur-Tattoos in Amsterdam — Mandalas, Dotwork und Stich-Details. Buche bei The Four Deuces.",
     lead: [
@@ -831,7 +831,7 @@ const STYLE_TEXT_DE: Record<string, Partial<StyleText>> = {
     nav: "Freehand",
     kicker: "Stil",
     title: "Freehand",
-    seoTitle: "Freehand Tattoo Amsterdam | Auf der Haut gezeichnet | The Four Deuces",
+    seoTitle: "Freehand | The Four Deuces",
     seoDescription:
       "Freehand-Tattoos in Amsterdam — Designs direkt mit Markern auf den Körper gezeichnet, damit jede Linie deiner Anatomie folgt. Buche eine Beratung bei The Four Deuces.",
     lead: [
@@ -844,7 +844,7 @@ const STYLE_TEXT_DE: Record<string, Partial<StyleText>> = {
     nav: "Minimal",
     kicker: "Stil",
     title: "Minimalistisch & klein",
-    seoTitle: "Minimalistische & kleine Tattoos Amsterdam | Fine Line | The Four Deuces",
+    seoTitle: "Minimalistische & kleine Tattoos | The Four Deuces",
     seoDescription:
       "Minimalistische, kleine Fine-Line-Tattoos in Amsterdam — zurückhaltend, elegant und gemacht, um jahrelang sauber zu bleiben. Buche bei The Four Deuces.",
     lead: [
@@ -857,7 +857,7 @@ const STYLE_TEXT_DE: Record<string, Partial<StyleText>> = {
     nav: "Botanisch",
     kicker: "Stil",
     title: "Botanisch & Floral",
-    seoTitle: "Botanisches & florales Tattoo Amsterdam | Fine Line | The Four Deuces",
+    seoTitle: "Botanisches & florales | The Four Deuces",
     seoDescription:
       "Botanische und florale Tattoos in Amsterdam — feine Fine-Line-Blumen, Blätter und Pflanzen, die mit dem Körper mitgehen. Buche bei The Four Deuces.",
     lead: [
@@ -873,7 +873,7 @@ const STYLE_TEXT_UA: Record<string, Partial<StyleText>> = {
     nav: "Реалізм",
     kicker: "Стиль",
     title: "Реалізм і мікрореалізм",
-    seoTitle: "Реалізм і мікрореалізм тату Амстердам | The Four Deuces",
+    seoTitle: "Реалізм і мікрореалізм | The Four Deuces",
     seoDescription:
       "Реалістичні та мікрореалізм тату в Амстердамі — портрети, тварини й тонкі деталі на мʼяких градієнтах і справжній глибині. Запишись на консультацію в The Four Deuces.",
     lead: [
@@ -886,7 +886,7 @@ const STYLE_TEXT_UA: Record<string, Partial<StyleText>> = {
     nav: "Чикано",
     kicker: "Стиль",
     title: "Чикано та леттеринг",
-    seoTitle: "Чикано тату Амстердам | Чорно-сіре | The Four Deuces",
+    seoTitle: "Чикано | The Four Deuces",
     seoDescription:
       "Чикано та леттеринг тату в Амстердамі — чорно-сіре, grey wash, тонкий леттеринг і кавер-апи. Запишись на консультацію в The Four Deuces.",
     lead: [
@@ -899,7 +899,7 @@ const STYLE_TEXT_UA: Record<string, Partial<StyleText>> = {
     nav: "Fine line",
     kicker: "Стиль",
     title: "Fine line",
-    seoTitle: "Fine line та акварель тату Амстердам | The Four Deuces",
+    seoTitle: "Fine line та акварель | The Four Deuces",
     seoDescription:
       "Fine line, акварель та абстрактні тату в Амстердамі — легкі, тонкі, живописні роботи з ювелірною точністю. Запишись на консультацію в The Four Deuces.",
     lead: [
@@ -912,7 +912,7 @@ const STYLE_TEXT_UA: Record<string, Partial<StyleText>> = {
     nav: "Аніме",
     kicker: "Стиль",
     title: "Аніме та манга",
-    seoTitle: "Аніме та манга тату Амстердам | The Four Deuces",
+    seoTitle: "Аніме та манга | The Four Deuces",
     seoDescription:
       "Аніме та манга тату в Амстердамі від справжніх фанів — точні персонажі, колір і чорно-сіра манга. Запишись у The Four Deuces.",
     lead: [
@@ -925,7 +925,7 @@ const STYLE_TEXT_UA: Record<string, Partial<StyleText>> = {
     nav: "Fluid line",
     kicker: "Фірмовий стиль",
     title: "Fluid line",
-    seoTitle: "Fluid line тату Амстердам | Фірмовий стиль | The Four Deuces",
+    seoTitle: "Fluid line | The Four Deuces",
     seoDescription:
       "Фірмовий стиль тату «fluid line» в Амстердамі — портрети й тварини з плинних водоподібних ліній, що рухаються з тілом. Запишись у The Four Deuces.",
     lead: [
@@ -938,7 +938,7 @@ const STYLE_TEXT_UA: Record<string, Partial<StyleText>> = {
     nav: "Орнаментал",
     kicker: "Стиль",
     title: "Орнаментал, геометрія та гравюра",
-    seoTitle: "Орнаментал і геометрія тату Амстердам | The Four Deuces",
+    seoTitle: "Орнаментал і геометрія | The Four Deuces",
     seoDescription:
       "Геометричні, оптичні (Op-Art) та гравюрні тату в Амстердамі — мандали, dotwork і деталі в стилі гравюри. Запишись у The Four Deuces.",
     lead: [
@@ -951,7 +951,7 @@ const STYLE_TEXT_UA: Record<string, Partial<StyleText>> = {
     nav: "Freehand",
     kicker: "Стиль",
     title: "Freehand",
-    seoTitle: "Freehand тату Амстердам | Малюнок по шкірі | The Four Deuces",
+    seoTitle: "Freehand | The Four Deuces",
     seoDescription:
       "Freehand тату в Амстердамі — ескізи малюють маркерами прямо на тілі, щоб кожна лінія йшла за анатомією. Запишись на консультацію в The Four Deuces.",
     lead: [
@@ -964,7 +964,7 @@ const STYLE_TEXT_UA: Record<string, Partial<StyleText>> = {
     nav: "Мінімал",
     kicker: "Стиль",
     title: "Мінімалізм і маленькі",
-    seoTitle: "Мінімалізм і маленькі тату Амстердам | Fine line | The Four Deuces",
+    seoTitle: "Мінімалізм і маленькі | The Four Deuces",
     seoDescription:
       "Мінімалістичні, маленькі fine-line тату в Амстердамі — стримані, елегантні й зроблені лишатися чіткими роками. Запишись у The Four Deuces.",
     lead: [
@@ -977,7 +977,7 @@ const STYLE_TEXT_UA: Record<string, Partial<StyleText>> = {
     nav: "Ботаніка",
     kicker: "Стиль",
     title: "Ботаніка та квіти",
-    seoTitle: "Ботанічні та квіткові тату Амстердам | Fine line | The Four Deuces",
+    seoTitle: "Ботанічні та квіткові | The Four Deuces",
     seoDescription:
       "Ботанічні та квіткові тату в Амстердамі — тонкі fine-line квіти, листя й рослини, що рухаються з тілом. Запишись у The Four Deuces.",
     lead: [
@@ -1853,10 +1853,10 @@ export const ARTISTS_SEO: { slug: string; name: string; role: string }[] = [
 ];
 
 const ARTIST_TITLE_SUFFIX: Record<string, string> = {
-  en: "Tattoo Artist | The Four Deuces Amsterdam",
-  nl: "Tattoo-artiest | The Four Deuces Amsterdam",
-  de: "Tattoo-Künstler | The Four Deuces Amsterdam",
-  ua: "Тату-майстер | The Four Deuces Амстердам",
+  en: "Resident Artist | The Four Deuces",
+  nl: "Vaste artiest | The Four Deuces",
+  de: "Resident-Künstler | The Four Deuces",
+  ua: "Резидент-майстер | The Four Deuces",
 };
 
 // Per-artist SEO title/description — shared by the client (tab title) and the
