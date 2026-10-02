@@ -931,6 +931,24 @@ const DICT: Record<string, Entry> = {
     de: ".",
     ua: ".",
   },
+    "contact.partnerships.note": {
+    en: "For collaborations, events and brand partnerships, write to us at:",
+    nl: "Voor samenwerkingen, evenementen en merkpartnerschappen mail je ons op:",
+    de: "Für Kooperationen, Events und Markenpartnerschaften schreib uns an:",
+    ua: "Для співпраці, івентів і партнерств із брендами пиши нам на:",
+  },
+  "contact.location": {
+    en: "Location",
+    nl: "Locatie",
+    de: "Standort",
+    ua: "Локація",
+  },
+  "contact.location.text": {
+    en: "Find us in Amsterdam's Museum Quarter at Van Baerlestraat 126H.",
+    nl: "Je vindt ons in de Amsterdamse Museumbuurt aan de Van Baerlestraat 126H.",
+    de: "Du findest uns im Amsterdamer Museumsviertel an der Van Baerlestraat 126H.",
+    ua: "Ми в Музейному кварталі Амстердама за адресою Van Baerlestraat 126H.",
+  },
 
   // --- Cookie banner ---
   "cookie.text": {

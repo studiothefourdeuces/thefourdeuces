@@ -1,7 +1,7 @@
 import { type FormEvent, useState } from "react";
 import { Check } from "lucide-react";
 import { useT } from "../lang-context";
-import { PILL, Reveal } from "../ui";
+import { PILL, Reveal, STUDIO_MAPS_URL, withAddressLink } from "../ui";
 import { trackLead } from "../analytics";
 
 const FORM_ENDPOINT = import.meta.env.VITE_FORM_ENDPOINT as string | undefined;
@@ -139,42 +139,58 @@ export default function ContactPage({
           </form>
         )}
 
-          <div className="mt-14 border-t border-white/10 pt-6">
-            <p className="mb-1 text-[11px] uppercase tracking-[0.25em] text-white/40">
-              {t("contact.partnerships")}
-            </p>
-            <a
-              href="mailto:studio@thefourdeuces.nl"
-              data-cursor="pointer"
-              className="text-[15px] text-white/80 transition hover:text-white"
-            >
-              studio@thefourdeuces.nl
-            </a>
-          </div>
+          <div className="mt-14 border-t border-white/10 pt-6 text-center md:text-left">
+  <p className="mb-3 text-[11px] uppercase tracking-[0.25em] text-white/40">
+    {t("contact.partnerships")}
+  </p>
+  <p className="text-[15px] leading-relaxed text-white/60">
+    {t("contact.partnerships.note")}
+  </p>
+  <a
+    href="mailto:studio@thefourdeuces.nl"
+    data-cursor="pointer"
+    className="mt-5 inline-block text-[15px] leading-relaxed text-white underline underline-offset-4 transition hover:text-white/70"
+  >
+    studio@thefourdeuces.nl
+  </a>
+</div>
 
-          <div className="mt-8 border-t border-white/10 pt-6">
-            <p className="mb-1 text-[11px] uppercase tracking-[0.25em] text-white/40">
-              {t("contact.careers")}
-            </p>
-            <a
-              href="mailto:studio@thefourdeuces.nl"
-              data-cursor="pointer"
-              className="text-[15px] text-white/80 transition hover:text-white"
-            >
-              studio@thefourdeuces.nl
-            </a>
-            <p className="mt-3 text-[13px] text-white/50">
-              {t("contact.careers.pre")}
-              <button
-                onClick={() => onNavigate("/guests")}
-                data-cursor="pointer"
-                className="text-white/70 underline underline-offset-4 transition hover:text-white"
-              >
-                {t("contact.careers.link")}
-              </button>
-              {t("contact.careers.post")}
-            </p>
-          </div>
+<div className="mt-8 border-t border-white/10 pt-6 text-center md:text-left">
+  <p className="mb-3 text-[11px] uppercase tracking-[0.25em] text-white/40">
+    {t("contact.careers")}
+  </p>
+  <p className="mt-4 text-[15px] leading-relaxed text-white/60">
+    {t("contact.careers.pre")}
+    <button
+      onClick={() => onNavigate("/guests")}
+      data-cursor="pointer"
+      className="text-white underline underline-offset-4 transition hover:text-white/70"
+    >
+      {t("contact.careers.link")}
+    </button>
+    {t("contact.careers.post")}
+  </p>
+</div>
+
+<div className="mt-8 border-t border-white/10 pt-6 text-center md:text-left">
+  <p className="mb-3 text-[11px] uppercase tracking-[0.25em] text-white/40">
+    {t("contact.location")}
+  </p>
+  <p className="text-[15px] leading-relaxed text-white/60">
+    {withAddressLink(t("contact.location.text"))}
+  </p>
+  <div className="mt-6 flex justify-center md:hidden">
+    <a
+      href={STUDIO_MAPS_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      data-cursor="pointer"
+      className={PILL(false)}
+    >
+      {t("about.navigate")}
+    </a>
+  </div>
+</div>
         </Reveal>
       </div>
     </main>
