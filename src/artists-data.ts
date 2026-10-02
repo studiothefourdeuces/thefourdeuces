@@ -7,6 +7,7 @@ import milaImg from "./img/artists/mila.jpg";
 import selcukImg from "./img/artists/selcuk.jpg";
 import gianlucaImg from "./img/artists/gianluca.jpg";
 import daryaImg from "./img/artists/darya.jpg";
+import vitaliiImg from "./img/artists/vitalii.jpg";
 import { STYLES, ARTISTS_SEO } from "./content";
 
 export type Artist = {
@@ -58,6 +59,14 @@ export const ARTISTS: Artist[] = [
     role: "Freehand, Fluid Line, Abstract",
     bio: "Freehand pieces drawn straight onto the skin — fluid-line and abstract shapes made to flow with the body.",
     since: 2018,
+  },
+  {
+    name: "Vitalii",
+    img: vitaliiImg,
+    ig: "https://www.instagram.com/the.four.deuces/",
+    role: "Realism, Portraits, Chicano",
+    bio: "Black-and-grey realism and portrait work with chicano influences — fine detail, smooth gradients and depth that lasts.",
+    since: 2022,
   },
   {
     name: "Gianluca",
@@ -121,8 +130,9 @@ const WORK_ARTIST_INDEX: Record<string, number> = {
   daria: 2,
   darya: 3,
   mila: 4,
-  gianluca: 5,
-  selcuk: 6,
+  vitalii: 5,
+  gianluca: 6,
+  selcuk: 7,
 };
 
 // Optional looping video for a work. Key = "<artistFolder>/<filename>.jpg" (the
@@ -142,6 +152,9 @@ const WORK_VIDEOS: Record<string, string> = {
   "mila/1a.jpg": "mila-1a.mp4",
   "mila/7a.jpg": "mila-7a.mp4",
   "mila/13a.jpg": "mila-13a.mp4",
+  "vitalii/3.jpg": "vitalii-3a.mp4",
+  "vitalii/7.jpg": "vitalii-7a.mp4",
+  "vitalii/13.jpg": "vitalii-13a.mp4",
 };
 
 export type Work = {

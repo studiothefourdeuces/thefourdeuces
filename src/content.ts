@@ -234,7 +234,7 @@ export const STYLES: StylePage[] = [
       "From fingernail-sized microrealism to full sleeves, the goal is the same: detail that stays crisp and believable for years, not just on the day it's done.",
     ],
     aliases: ["realism", "microrealism", "micro-realism", "portrait", "portraits", "realismus", "realisme", "реалізм", "мікрореалізм", "porträt", "portret", "портрет"],
-    artists: ["Max", "Eugene", "Darya"],
+    artists: ["Max", "Eugene", "Darya", "Vitalii"],
     faq: [
       {
         q: "How many sessions does a realistic tattoo take?",
@@ -284,7 +284,7 @@ export const STYLES: StylePage[] = [
       "The craft is in the balance: soft, velvety shading against sharp contrast, so the piece reads as clearly in ten years as it does today.",
     ],
     aliases: ["chicano", "lettering", "чикано", "леттеринг"],
-    artists: ["Max", "Eugene"],
+    artists: ["Max", "Eugene", "Vitalii"],
     photoKey: "eugene/1.jpg",
     faq: [
       {
@@ -1754,6 +1754,10 @@ const ARTIST_TEXT_NL: Record<string, ArtistText> = {
     role: "Freehand, Fluid line, Abstract",
     bio: "Freehand-stukken direct op de huid getekend — fluid-line en abstracte vormen die met het lichaam meebewegen.",
   },
+  Vitalii: {
+    role: "Realisme, Portretten, Chicano",
+    bio: "Zwart-grijs realisme en portretwerk met chicano-invloeden — fijne details, vloeiende gradiënten en diepte die blijft.",
+  },
   Gianluca: {
     role: "Ornamenteel, Blackwork, Geometrisch",
     bio: "Geometrisch, optisch en ornamenteel blackwork met elementen van abstracte kalligrafie, dotwork en engraving-detail.",
@@ -1785,6 +1789,10 @@ const ARTIST_TEXT_DE: Record<string, ArtistText> = {
     role: "Freehand, Fluid Line, Abstrakt",
     bio: "Freehand-Stücke direkt auf die Haut gezeichnet — Fluid-Line- und abstrakte Formen, die mit dem Körper mitgehen.",
   },
+  Vitalii: {
+    role: "Realismus, Porträts, Chicano",
+    bio: "Schwarz-Grau-Realismus und Porträtarbeit mit Chicano-Einflüssen — feine Details, weiche Verläufe und Tiefe, die bleibt.",
+  },
   Gianluca: {
     role: "Ornamental, Blackwork, Geometrisch",
     bio: "Geometrisches, optisches und ornamentales Blackwork mit Elementen abstrakter Kalligrafie, Dotwork und Gravur-Detail.",
@@ -1815,6 +1823,10 @@ const ARTIST_TEXT_UA: Record<string, ArtistText> = {
   Mila: {
     role: "Freehand, Fluid line, Абстракція",
     bio: "Freehand-роботи, намальовані прямо на шкірі — fluid-line та абстрактні форми, що рухаються з тілом.",
+  },
+  Vitalii: {
+    role: "Реалізм, Портрети, Чикано",
+    bio: "Чорно-сірий реалізм і портрети з впливом чикано — тонка деталізація, плавні градієнти та глибина, що лишається надовго.",
   },
   Gianluca: {
     role: "Орнаментал, Blackwork, Геометрія",
@@ -1848,6 +1860,7 @@ export const ARTISTS_SEO: { slug: string; name: string; role: string }[] = [
   { slug: "daria", name: "Daria", role: "Fine Line, Minimal, Botanical" },
   { slug: "darya", name: "Darya", role: "Anime, Manga, Realism" },
   { slug: "mila", name: "Mila", role: "Freehand, Fluid Line, Abstract" },
+  { slug: "vitalii", name: "Vitalii", role: "Realism, Portraits, Chicano" },
   { slug: "gianluca", name: "Gianluca", role: "Ornamental, Blackwork, Geometric" },
   { slug: "selcuk", name: "Selçuk", role: "Minimal, Fine Line, Botanical" },
 ];
