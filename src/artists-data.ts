@@ -66,7 +66,7 @@ export const ARTISTS: Artist[] = [
     ig: "https://www.instagram.com/the.four.deuces/",
     role: "Realism, Portraits, Chicano",
     bio: "Black-and-grey realism and portrait work with chicano influences — fine detail, smooth gradients and depth that lasts.",
-    since: 2022,
+    since: 2019,
   },
   {
     name: "Gianluca",
