@@ -77,7 +77,11 @@ const TERMS: LegalSection[] = [
     items: [
       "4.1. The Studio does not tattoo anyone under the age of 12. Clients aged 12 to 17 can only be tattooed with the explicit consent of a parent or legal guardian, who must sign the consent form, show valid identification and be present during the entire session. The Studio checks the age of every client and may ask for valid identification.",
       "4.2. Clients must tell the artist before the session about any medical conditions, allergies, medication and skin sensitivities that could affect the procedure or healing. The client may be asked to complete a health questionnaire.",
-      "4.3. The Studio follows the hygiene protocols of NEN-EN 17169. Needles and other single-use materials are sterile and disposed of after each client.",
+      <>
+        4.3. The Studio follows the hygiene protocols of {" "}
+        <Link href="https://www.rivm.nl/hygienerichtlijnen/EU-norm-toelichting-tatoeeren">NEN-EN 17169</Link>. 
+        Needles and other single-use materials are sterile and disposed of after each client.
+      </>,
       "4.4. Pregnant or nursing clients may be refused service. Written confirmation from a doctor may be required before the Studio agrees to proceed.",
       "4.5. The Studio does not use or provide local anaesthetics. Clients should expect some pain and are responsible for deciding whether they are comfortable with that.",
       "4.6. An artist may refuse or stop a tattoo if the risks are high or hard to assess, for example because of skin condition, medical history or the chosen placement. A refusal on these grounds is made in the interest of the client's safety.",
@@ -131,7 +135,10 @@ const TERMS: LegalSection[] = [
     title: "9. Guest Artists",
     items: [
       "9.1. Guest artists are independent professionals. They are not employees or representatives of the Studio.",
-      "9.2. While working at the Studio, guest artists must comply with the Studio rules, Dutch law and the hygiene protocols of NEN-EN 17169.",
+      <>
+        9.2. While working at the Studio, guest artists must comply with the Studio rules, 
+        Dutch law and the hygiene protocols of <Link href="https://www.rivm.nl/hygienerichtlijnen/EU-norm-toelichting-tatoeeren">NEN-EN 17169</Link>.
+      </>,
       "9.3. Booking, deposit and payment arrangements for guest artists may differ from the standard Studio arrangements. The client will be informed of these before the appointment is confirmed.",
       "9.4. The Studio's complimentary touch-up policy does not apply to guest artists. Any touch-up arrangement is agreed directly with the guest artist.",
       "9.5. The Studio is not liable for health complications caused by a medical condition, allergy or skin sensitivity that the client did not disclose to a guest artist before the session. Guest artists are responsible for their own work and for the services they provide.",
