@@ -2170,7 +2170,20 @@ function ArtistShowcase({
           className="w-full max-w-[300px] shrink-0 md:max-w-md"
           y={24}
         >
-          <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl ring-1 ring-white/10">
+          <div
+            role="link"
+            tabIndex={0}
+            aria-label={`${t("ui.seePortfolio")}: ${artist.name}`}
+            data-cursor="pointer"
+            onClick={() => onNavigate(`/artists/${ARTIST_SLUGS[active]}`)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onNavigate(`/artists/${ARTIST_SLUGS[active]}`);
+              }
+            }}
+            className="relative aspect-[4/5] w-full cursor-pointer overflow-hidden rounded-xl ring-1 ring-white/10"
+          >
             <motion.img
               key={active}
               src={artist.img}

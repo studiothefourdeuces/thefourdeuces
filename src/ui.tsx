@@ -15,7 +15,7 @@ import { ARTISTS } from "./artists-data";
 import { stylePathForToken } from "./content";
 
 export const PILL = (solid: boolean) =>
-  `inline-flex w-full max-w-[300px] items-center justify-center gap-2 whitespace-nowrap rounded-full border px-6 py-3.5 text-[15px] transition-colors md:w-auto md:max-w-none md:py-3 md:text-[14px] ${
+  `inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-full border px-6 py-3.5 text-[15px] transition-colors md:w-auto md:py-3 md:text-[14px] ${
     solid
       ? "border-white/25 bg-white/10 text-white backdrop-blur hover:border-white/50 hover:bg-white/15"
       : "border-white/25 text-white/85 hover:border-white/50 hover:bg-white/5"
