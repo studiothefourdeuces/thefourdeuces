@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import { imagetools } from "vite-imagetools";
 import {
   copyFileSync,
   existsSync,
@@ -240,5 +241,5 @@ function prerenderRoutes() {
 }
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), prerenderRoutes()],
+  plugins: [react(), tailwindcss(), imagetools(), prerenderRoutes()],
 });

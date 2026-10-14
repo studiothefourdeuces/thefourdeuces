@@ -709,6 +709,8 @@ function Carousel({
           >
             <img
               src={a.img}
+              srcSet={a.srcset}
+              sizes="(max-width: 640px) 80vw, 420px"
               alt={ARTISTS[a.artistIdx].name}
               draggable={false}
               loading="lazy"
@@ -914,6 +916,8 @@ function Smooth3DSlideshow({
             >
               <img
                 src={slide.img}
+                srcSet={slide.srcset}
+                sizes="90vw"
                 alt={ARTISTS[slide.artistIdx].name}
                 draggable={false}
                 loading="lazy"
@@ -2086,6 +2090,8 @@ function WorksLightbox({
                 ) : (
                   <FadeImg
                     src={w.img}
+                    srcSet={w.srcset}
+                    sizes="(max-width: 1200px) 95vw, 1200px"
                     alt={`${artist.name} — work ${i + 1}`}
                     draggable={false}
                     className="max-h-full max-w-full rounded-xl object-contain"

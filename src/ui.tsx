@@ -499,12 +499,16 @@ export function ArtistRow({
 /* Image that fades in once it has loaded (handles cached images too). */
 export function FadeImg({
   src,
+  srcSet,
+  sizes,
   alt,
   className = "",
   draggable,
   loading,
 }: {
   src: string;
+  srcSet?: string;
+  sizes?: string;
   alt: string;
   className?: string;
   draggable?: boolean;
@@ -530,6 +534,8 @@ export function FadeImg({
     <img
       ref={ref}
       src={src}
+      srcSet={srcSet}
+      sizes={sizes}
       alt={alt}
       draggable={draggable}
       loading={loading}

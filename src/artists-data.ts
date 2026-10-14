@@ -105,9 +105,21 @@ export const artistIndexBySlug = (slug: string): number =>
 // (e.g. src/img/works/max/1.jpg). The folder name is the artist slug, so to
 // add works just drop .jpg files into that artist's folder. Folders that don't
 // map to an artist (e.g. guest/) are skipped.
+//
+// vite-imagetools transcodes every work to WebP at build time, so whatever an
+// admin uploads (even a huge phone photo) ships compressed and size-capped:
+//  - `workUrls`     → one WebP capped at 1200px wide (the fallback `src`/poster)
+//  - `workSrcsets`  → a responsive WebP srcset (480/768/1200w) so phones fetch
+//                     a smaller file than desktops.
 const workUrls = import.meta.glob("./img/works/*/*.jpg", {
   eager: true,
-  query: "?url",
+  query: { format: "webp", quality: "72", w: "1200" },
+  import: "default",
+}) as Record<string, string>;
+
+const workSrcsets = import.meta.glob("./img/works/*/*.jpg", {
+  eager: true,
+  query: { format: "webp", quality: "72", w: "480;768;1200", as: "srcset" },
   import: "default",
 }) as Record<string, string>;
 
@@ -159,6 +171,7 @@ const WORK_VIDEOS: Record<string, string> = {
 
 export type Work = {
   img: string;
+  srcset?: string; // responsive WebP srcset (480/768/1200w)
   artistIdx: number;
   video?: string;
   key: string;
@@ -185,6 +198,7 @@ export const WORKS: Work[] = (() => {
     const videoFile = WORK_VIDEOS[key];
     byArtist[idx].push({
       img: url,
+      srcset: workSrcsets[path],
       artistIdx: idx,
       video: videoFile ? VIDEO_BY_FILE[videoFile] : undefined,
       key,

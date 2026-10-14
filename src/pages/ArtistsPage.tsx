@@ -228,6 +228,8 @@ export default function ArtistsPage({
                       ) : (
                         <FadeImg
                           src={w.img}
+                          srcSet={w.srcset}
+                          sizes="(max-width: 768px) 45vw, 300px"
                           alt={`${artist.name} — work ${i + 1}`}
                           draggable={false}
                           loading={eagerImg ? "eager" : "lazy"}
