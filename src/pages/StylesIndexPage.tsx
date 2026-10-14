@@ -51,7 +51,7 @@ export default function StylesIndexPage({
                         src={img}
                         alt={`${s.name} tattoo — The Four Deuces Amsterdam`}
                         draggable={false}
-                        className="h-full w-full object-cover grayscale transition duration-500 group-hover:scale-105"
+                        className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                       />
                     )}
                   </div>

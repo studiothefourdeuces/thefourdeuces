@@ -30,6 +30,8 @@ jobs:
           # variables ▸ Actions ▸ Variables). Not secret — public IDs/URLs.
           VITE_FORM_ENDPOINT: ${{ vars.VITE_FORM_ENDPOINT }}
           VITE_CLARITY_ID: ${{ vars.VITE_CLARITY_ID }}
+          # Google Ads tag (public id). Loaded via gtag.js with Consent Mode v2.
+          VITE_GADS_ID: AW-18478951570
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

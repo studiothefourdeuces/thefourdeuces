@@ -78,7 +78,7 @@ export default function StylePage({
                   src={photo}
                   alt={`${style.name} tattoo — The Four Deuces Amsterdam`}
                   draggable={false}
-                  className="absolute inset-0 h-full w-full object-cover grayscale"
+                  className="absolute inset-0 h-full w-full object-cover"
                 />
               ) : null}
             </div>

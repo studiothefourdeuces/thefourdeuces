@@ -15,7 +15,6 @@ import {
 import {
   Check,
   Cookie,
-  Instagram,
   ArrowUpRight,
   ChevronDown,
   Smartphone,
@@ -24,6 +23,7 @@ import {
   Globe,
   Search,
 } from "lucide-react";
+import logoImg from "./img/logo.webp";
 import tattoolandLogo from "./img/partners/tattooland.png";
 import killerinkLogo from "./img/partners/killerink.png";
 import dashaLogo from "./img/partners/tattoodasha.png";
@@ -713,13 +713,13 @@ function Carousel({
               draggable={false}
               loading="lazy"
               decoding="async"
-              className="pointer-events-none h-full w-full select-none object-cover grayscale"
+              className="pointer-events-none h-full w-full select-none object-cover"
             />
             {i === center && a.video && (
               <LazyVideo
                 src={a.video}
                 poster={a.img}
-                className="pointer-events-none absolute inset-0 h-full w-full select-none object-cover grayscale"
+                className="pointer-events-none absolute inset-0 h-full w-full select-none object-cover"
               />
             )}
           </div>
@@ -918,7 +918,6 @@ function Smooth3DSlideshow({
                 draggable={false}
                 loading="lazy"
                 decoding="async"
-                className="grayscale"
                 style={{
                   position: "absolute",
                   inset: 0,
@@ -933,7 +932,6 @@ function Smooth3DSlideshow({
                 <LazyVideo
                   src={slide.video}
                   poster={slide.img}
-                  className="grayscale"
                   style={{
                     position: "absolute",
                     inset: 0,
@@ -2851,10 +2849,13 @@ function SiteFooter({
 
         {/* Brand + credit */}
         <div className="border-t border-white/10 pt-10 text-center">
-          <p className="font-serif text-[24px] leading-none tracking-tight text-white/70">
-            The Four <span className="italic">Deuces</span>
-          </p>
-          <p className="mt-3 text-[13px] leading-relaxed text-white/40">
+          <img
+            src={logoImg}
+            alt="The Four Deuces"
+            draggable={false}
+            className="mx-auto h-auto w-32"
+          />
+          <p className="mt-5 text-[13px] leading-relaxed text-white/40">
             {t("footer.designed")}{" "}
             <a
               href="https://aerdt.xyz/"
@@ -3100,28 +3101,17 @@ export default function App() {
       </AnimatePresence>
 
       {/* ===================== HEADER ===================== */}
-      <header className="fixed inset-x-0 top-0 z-40 flex items-start justify-between px-4 py-4 md:px-6 md:py-5">
+      <header className="fixed inset-x-0 top-[9px] z-40 flex h-12 items-center px-4 md:h-14 md:px-6">
         <div className="flex items-center gap-3 overflow-hidden">
-          <a
-            href="https://instagram.com/the.four.deuces"
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            type="button"
+            onClick={() => navigate("/")}
             data-cursor="pointer"
-            className="flex shrink-0 items-center gap-2 rounded-full border border-white/10 bg-white/5 py-1 pl-1 pr-3 backdrop-blur transition hover:bg-white/10"
+            aria-label="The Four Deuces — home"
+            className="shrink-0 font-serif text-[18px] leading-none tracking-tight text-white/90 transition-colors hover:text-white"
           >
-            <span
-              className="flex h-6 w-6 items-center justify-center rounded-full"
-              style={{
-                background:
-                  "linear-gradient(45deg,#feda75,#fa7e1e,#d62976,#962fbf,#4f5bd5)",
-              }}
-            >
-              <Instagram className="h-3.5 w-3.5 text-white" strokeWidth={2.25} />
-            </span>
-            <span className="text-[11px] font-medium text-white/80">
-              @the.four.deuces
-            </span>
-          </a>
+            The Four <span className="italic">Deuces</span>
+          </button>
           <div className="relative hidden h-4 w-[46vw] max-w-[560px] overflow-hidden [mask-image:linear-gradient(to_right,transparent,#000_8%,#000_82%,transparent)] sm:block">
             <motion.div
               className="absolute whitespace-nowrap text-[11px] tracking-wide text-white/45"
