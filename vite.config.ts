@@ -241,5 +241,14 @@ function prerenderRoutes() {
 }
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), imagetools(), prerenderRoutes()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    // Case-insensitive include so phone/camera exports (e.g. "IMG_1234.JPG")
+    // are transcoded too — imagetools' default regex is lowercase-only.
+    imagetools({
+      include: /^[^?]+\.(avif|gif|heif|jpe?g|png|tiff|webp)(\?.*)?$/i,
+    }),
+    prerenderRoutes(),
+  ],
 });
