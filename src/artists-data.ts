@@ -17,9 +17,10 @@ export type Artist = {
   role: string;
   bio: string;
   since?: number; // year they started tattooing (shown only when set)
+  archived?: boolean; // hidden from the site (roster/carousel/routes) when true
 };
 
-export const ARTISTS: Artist[] = [
+const ALL_ARTISTS: Artist[] = [
   {
     name: "Max",
     img: maxImg,
@@ -83,8 +84,13 @@ export const ARTISTS: Artist[] = [
     role: "Minimal, Fine Line, Botanical",
     bio: "Minimal fine-line and botanical designs — restrained, elegant, and built to last.",
     since: 2011,
+    archived: true, // temporarily hidden — remove this flag to restore him
   },
 ];
+
+// Archived artists stay in the data (easy to restore) but are hidden from every
+// part of the UI the roster drives (artists page, carousel, per-artist routes).
+export const ARTISTS: Artist[] = ALL_ARTISTS.filter((a) => !a.archived);
 
 // Per-artist URL slug (e.g. "Selçuk" → "selcuk"), matched by name so it stays
 // aligned with ARTISTS regardless of order.
@@ -144,7 +150,7 @@ const WORK_ARTIST_INDEX: Record<string, number> = {
   mila: 4,
   vitalii: 5,
   gianluca: 6,
-  selcuk: 7,
+  // selcuk: archived — leave unmapped so his works folder is skipped.
 };
 
 // Optional looping video for a work. Key = "<artistFolder>/<filename>.jpg" (the
@@ -235,15 +241,24 @@ export function styleImage(style: (typeof STYLES)[number]): string {
   return idxs.length ? ARTISTS[idxs[0]].img : "";
 }
 
-// Hero carousels (desktop + mobile) show a compact, curated set rather than the
-// full portfolio: each artist's first TWO photos and first video (in artist
-// order). Artists with no video just contribute their photos. Both carousels
-// share it.
-const HERO_PICKS: Work[] = WORKS_BY_ARTIST.flatMap((list) => {
-  const photos = list.filter((w) => !w.video).slice(0, 2);
-  const video = list.find((w) => w.video);
-  return video ? [...photos, video] : photos;
-});
+// Hero carousels (desktop + mobile): step through the artists in order and
+// alternate photo / video each slot — Max photo, Eugene video, Daria photo,
+// Darya video, … then wrap so the type flips (Max video, Eugene photo, …).
+// Each artist contributes one photo and one video; slots whose media doesn't
+// exist (e.g. an artist with no video) are skipped.
+const HERO_PICKS: Work[] = (() => {
+  const n = WORKS_BY_ARTIST.length;
+  const out: Work[] = [];
+  for (let i = 0; i < n * 2; i++) {
+    const list = WORKS_BY_ARTIST[i % n] || [];
+    const pick =
+      i % 2 === 1
+        ? list.find((w) => w.video) // odd slot → video
+        : list.find((w) => !w.video); // even slot → photo
+    if (pick) out.push(pick);
+  }
+  return out;
+})();
 
 export const CAROUSEL_WORKS: Work[] = HERO_PICKS;
 export const HERO_SLIDES: Work[] = HERO_PICKS;

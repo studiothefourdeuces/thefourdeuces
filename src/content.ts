@@ -331,7 +331,7 @@ export const STYLES: StylePage[] = [
       "These styles demand a jeweller's control of the needle and a painter's eye for colour — light on the skin, and built to last.",
     ],
     aliases: ["fine line", "fineline", "thin line", "watercolour", "watercolor", "abstract", "aquarel", "aquarell", "акварель", "abstrakt", "абстракц"],
-    artists: ["Daria", "Selçuk", "Mila"],
+    artists: ["Daria", "Mila"],
     photoKey: "daria/6.jpg",
     faq: [
       {
@@ -548,7 +548,7 @@ export const STYLES: StylePage[] = [
       "The discipline is in the details — line weight, spacing and placement — so a quiet piece reads clearly and never crowds itself as it ages.",
     ],
     aliases: ["minimal", "minimalist", "minimalism", "small", "мінімал"],
-    artists: ["Selçuk", "Mila", "Daria"],
+    artists: ["Mila", "Daria"],
     photoKey: "mila/11.jpg",
     faq: [
       {
@@ -583,7 +583,7 @@ export const STYLES: StylePage[] = [
       "From a single stem to a wrapping bouquet, the work stays soft and elegant while built to keep its structure and stay readable for years.",
     ],
     aliases: ["botanical", "floral", "flower", "flowers", "plants", "botanisch", "ботаніка", "ботанічн", "квіт"],
-    artists: ["Selçuk", "Mila", "Daria"],
+    artists: ["Mila", "Daria"],
     photoKey: "daria/18.jpg",
     faq: [
       {
@@ -1862,7 +1862,7 @@ export const ARTISTS_SEO: { slug: string; name: string; role: string }[] = [
   { slug: "mila", name: "Mila", role: "Freehand, Fluid Line, Abstract" },
   { slug: "vitalii", name: "Vitalii", role: "Realism, Portraits, Chicano" },
   { slug: "gianluca", name: "Gianluca", role: "Ornamental, Blackwork, Geometric" },
-  { slug: "selcuk", name: "Selçuk", role: "Minimal, Fine Line, Botanical" },
+  // Selçuk archived — keep this out so /artists/selcuk isn't prerendered.
 ];
 
 const ARTIST_TITLE_SUFFIX: Record<string, string> = {
