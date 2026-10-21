@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { useLang, useT } from "../lang-context";
 import { ArtistButtons, ArtistRow, FadeImg, FaqList, LazyVideo, PILL, Reveal, RoleLinks, WHATSAPP_URL } from "../ui";
-import { ARTISTS, MAX_PORTFOLIO, WORKS_BY_ARTIST } from "../artists-data";
+import { ARTISTS, WORKS_BY_ARTIST } from "../artists-data";
 import { getArtistText, getStyles } from "../content";
 
 export default function ArtistsPage({
@@ -25,7 +25,7 @@ export default function ArtistsPage({
   const at = getArtistText(lang, artist.name);
   const role = at?.role ?? artist.role;
   const bio = at?.bio ?? artist.bio;
-  const works = (WORKS_BY_ARTIST[active] || []).slice(0, MAX_PORTFOLIO);
+  const works = WORKS_BY_ARTIST[active] || [];
 
   // On mobile the works grid sits well below the fold, so the first two are
   // shown/loaded eagerly (they appear with the heading) instead of waiting for
@@ -33,10 +33,10 @@ export default function ArtistsPage({
   const [isMobile, setIsMobile] = useState(
     () =>
       typeof window !== "undefined" &&
-      window.matchMedia("(max-width: 767px)").matches,
+      window.matchMedia("(max-width: 639px)").matches,
   );
   useEffect(() => {
-    const mq = window.matchMedia("(max-width: 767px)");
+    const mq = window.matchMedia("(max-width: 639px)");
     const on = () => setIsMobile(mq.matches);
     mq.addEventListener("change", on);
     return () => mq.removeEventListener("change", on);
@@ -54,10 +54,10 @@ export default function ArtistsPage({
     prevRef.current = active;
   }, [active, M]);
 
-  // On mobile the works grid always shows an even number of tiles (a lone
-  // trailing tile on the last row looks unbalanced) — drop the last if odd.
-  const worksToShow =
-    isMobile && works.length % 2 === 1 ? works.slice(0, -1) : works;
+  // Trim trailing tiles so the last grid row is always full (no lone orphan):
+  // mobile = 2 columns → even count; desktop = 3 columns → multiple of 3.
+  const cols = isMobile ? 2 : 3;
+  const worksToShow = works.slice(0, works.length - (works.length % cols));
 
   // FAQ pulled from the style pages this artist works in (deduped by question).
   const artistFaq = useMemo(() => {

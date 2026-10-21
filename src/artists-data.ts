@@ -86,9 +86,6 @@ export const ARTISTS: Artist[] = [
   },
 ];
 
-// Cap on how many works to show per artist on the /artists grid.
-export const MAX_PORTFOLIO = 21;
-
 // Per-artist URL slug (e.g. "Selçuk" → "selcuk"), matched by name so it stays
 // aligned with ARTISTS regardless of order.
 export const artistSlug = (name: string): string =>
