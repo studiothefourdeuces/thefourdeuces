@@ -235,53 +235,14 @@ export function styleImage(style: (typeof STYLES)[number]): string {
   return idxs.length ? ARTISTS[idxs[0]].img : "";
 }
 
-// Spread the video-works evenly among the photos rather than letting them
-// cluster (used by both carousels so photos and videos always alternate).
-function interleaveVideos(list: Work[], everyN: number): Work[] {
-  const vids = list.filter((w) => w.video);
-  const pics = list.filter((w) => !w.video);
-  if (!vids.length) return list;
-  const out: Work[] = [];
-  let vi = 0;
-  pics.forEach((p, i) => {
-    out.push(p);
-    if ((i + 1) % everyN === 0 && vi < vids.length) out.push(vids[vi++]);
-  });
-  while (vi < vids.length) out.push(vids[vi++]); // leftovers (shouldn't happen)
-  return out;
-}
+// Hero carousels (desktop + mobile) show a compact, curated set rather than the
+// full portfolio: each artist's FIRST photo and FIRST video (in artist order).
+// Artists with no video just contribute their photo. Both carousels share it.
+const HERO_PICKS: Work[] = WORKS_BY_ARTIST.flatMap((list) => {
+  const photo = list.find((w) => !w.video);
+  const video = list.find((w) => w.video);
+  return [photo, video].filter((w): w is Work => Boolean(w));
+});
 
-// Desktop carousel: all works, videos spread evenly across the whole set so
-// they don't bunch up (and the looping carousel has no long video-less gap).
-export const CAROUSEL_WORKS: Work[] = (() => {
-  const nv = WORKS.filter((w) => w.video).length;
-  const np = WORKS.length - nv;
-  return interleaveVideos(WORKS, nv ? Math.max(1, Math.floor(np / nv)) : 1);
-})();
-
-// The specific videos to feature in the mobile hero coverflow (by work key).
-const HERO_VIDEO_KEYS = [
-  "daria/7a.jpg", // daria-7a
-  "max/13a.jpg", // max-13a
-  "eugene/13a.jpg", // eugene-13a
-  "darya/1a.jpg", // darya-1a
-  "mila/7a.jpg", // mila-7a
-];
-
-// Mobile hero coverflow: strictly alternating photo/video, one photo per hero
-// video so the counts are equal. The mila photo slot shows gianluca's 3rd work.
-export const HERO_SLIDES: Work[] = (() => {
-  const heroVids = HERO_VIDEO_KEYS.map((k) => WORK_BY_KEY.get(k)).filter(
-    (w): w is Work => Boolean(w),
-  );
-  const swap: Record<string, string> = { "mila/1.jpg": "gianluca/3.jpg" };
-  const pics = WORKS.filter((w) => !w.video).map(
-    (w) => WORK_BY_KEY.get(swap[w.key]) ?? w,
-  );
-  const out: Work[] = [];
-  heroVids.forEach((v, i) => {
-    if (pics.length) out.push(pics[i % pics.length]); // one photo…
-    out.push(v); // …then one video
-  });
-  return out;
-})();
+export const CAROUSEL_WORKS: Work[] = HERO_PICKS;
+export const HERO_SLIDES: Work[] = HERO_PICKS;
