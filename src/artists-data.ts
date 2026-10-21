@@ -236,12 +236,13 @@ export function styleImage(style: (typeof STYLES)[number]): string {
 }
 
 // Hero carousels (desktop + mobile) show a compact, curated set rather than the
-// full portfolio: each artist's FIRST photo and FIRST video (in artist order).
-// Artists with no video just contribute their photo. Both carousels share it.
+// full portfolio: each artist's first TWO photos and first video (in artist
+// order). Artists with no video just contribute their photos. Both carousels
+// share it.
 const HERO_PICKS: Work[] = WORKS_BY_ARTIST.flatMap((list) => {
-  const photo = list.find((w) => !w.video);
+  const photos = list.filter((w) => !w.video).slice(0, 2);
   const video = list.find((w) => w.video);
-  return [photo, video].filter((w): w is Work => Boolean(w));
+  return video ? [...photos, video] : photos;
 });
 
 export const CAROUSEL_WORKS: Work[] = HERO_PICKS;
