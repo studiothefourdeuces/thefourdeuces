@@ -12,7 +12,10 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  # Let an in-progress Pages deploy finish instead of cancelling it. Cancelling
+  # mid-deploy during rapid pushes can leave an older build live (GitHub's
+  # recommended setting for Pages). Queued runs still deploy newest-last.
+  cancel-in-progress: false
 
 jobs:
   build:
