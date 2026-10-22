@@ -509,6 +509,12 @@ const DICT: Record<string, Entry> = {
     de: "Bitte mit Ländervorwahl — z. B. +31 6 12345678",
     ua: "Вкажи код країни — напр. +31 6 12345678",
   },
+  "form.minBudget": {
+    en: "Minimum tattoo budget — €150",
+    nl: "Minimaal tattoobudget — €150",
+    de: "Mindest-Tattoo-Budget — 150 €",
+    ua: "Мінімальний бюджет на тату — 150 €",
+  },
   "form.consult.a": { en: "Free", nl: "Gratis", de: "Kostenlose", ua: "Безкоштовна" },
   "form.consult.b": {
     en: "consultation",

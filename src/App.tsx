@@ -1005,6 +1005,7 @@ function BookingForm({
 
   const [stepIdx, setStepIdx] = useState(0);
   const [budget, setBudget] = useState("");
+  const [budgetError, setBudgetError] = useState(false);
   const [whatsapp, setWhatsapp] = useState("");
   const artist = context.artist || "";
   const bodyPart = context.bodyPart || "";
@@ -1019,6 +1020,9 @@ function BookingForm({
   // Require a country code (leading +) and a plausible length.
   const waDigits = whatsapp.replace(/\D/g, "");
   const waValid = /^\s*\+/.test(whatsapp) && waDigits.length >= 8;
+  // Tattoos start at €150 — reject anything lower (empty counts as too low).
+  const MIN_BUDGET = 150;
+  const budgetValid = Number(budget) >= MIN_BUDGET;
 
   // Lock scroll + Escape.
   useEffect(() => {
@@ -1066,6 +1070,10 @@ function BookingForm({
   };
 
   const advance = () => {
+    if (cur === "budget" && !budgetValid) {
+      setBudgetError(true);
+      return doShake();
+    }
     if (cur === "whatsapp" && !waValid) return doShake();
     if (isLast) {
       setSent(true);
@@ -1138,13 +1146,16 @@ function BookingForm({
             data-cursor="text"
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
-            onChange={(e) =>
-              isBudget
-                ? setBudget(e.target.value.replace(/\D/g, "").slice(0, 6))
-                : setWhatsapp(
-                    e.target.value.replace(/[^\d+\s()-]/g, "").slice(0, 24),
-                  )
-            }
+            onChange={(e) => {
+              if (isBudget) {
+                setBudget(e.target.value.replace(/\D/g, "").slice(0, 6));
+                setBudgetError(false);
+              } else {
+                setWhatsapp(
+                  e.target.value.replace(/[^\d+\s()-]/g, "").slice(0, 24),
+                );
+              }
+            }}
             onKeyDown={(e) => {
               if (e.key === "Enter") advance();
             }}
@@ -1279,6 +1290,15 @@ function BookingForm({
             {fieldGroup}
             {cur === "whatsapp" && (
               <p className="mt-4 text-[12px] text-white/40">{t("form.hint")}</p>
+            )}
+            {cur === "budget" && (
+              <p
+                className={`mt-4 text-[12px] transition-colors ${
+                  budgetError ? "text-red-400" : "text-white/40"
+                }`}
+              >
+                {t("form.minBudget")}
+              </p>
             )}
             <div className="mt-8 flex h-12 items-start justify-center">
               <button
