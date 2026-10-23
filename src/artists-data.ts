@@ -170,7 +170,7 @@ const WORK_VIDEOS: Record<string, string> = {
   "mila/1a.jpg": "mila-1a.mp4",
   "mila/7a.jpg": "mila-7a.mp4",
   "mila/13a.jpg": "mila-13a.mp4",
-  "vitalii/3.jpg": "vitalii-3a.mp4",
+  "vitalii/3a.jpg": "vitalii-3a.mp4",
   "vitalii/7.jpg": "vitalii-7a.mp4",
   "vitalii/13.jpg": "vitalii-13a.mp4",
 };
