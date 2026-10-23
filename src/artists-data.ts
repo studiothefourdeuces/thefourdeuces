@@ -260,5 +260,60 @@ const HERO_PICKS: Work[] = (() => {
   return out;
 })();
 
-export const CAROUSEL_WORKS: Work[] = HERO_PICKS;
-export const HERO_SLIDES: Work[] = HERO_PICKS;
+// ---------------------------------------------------------------------------
+// Hand-picked carousel (home hero carousel + mobile slideshow).
+//
+// Drop files into  src/img/carousel/  and they BECOME the carousel, shown in
+// filename order. Name them so they sort the way you want: 01.jpg, 02.jpg, …
+//
+//  • A photo:  add  01.jpg            (jpg/jpeg/png — auto-compressed to WebP)
+//  • A video:  add  02.mp4  together with  02.jpg  (same name = its cover).
+//              The cover shows in the strip; the video plays when centred.
+//
+// Leave the folder empty to fall back to the automatic order (one photo + one
+// video per artist, alternating). Cards sourced from this folder aren't tied
+// to an artist, so clicking one just centres it (it won't open a profile).
+const carouselImgUrls = import.meta.glob(
+  "./img/carousel/*.{jpg,JPG,jpeg,JPEG,png,PNG}",
+  { eager: true, query: { format: "webp", quality: "72", w: "1200" }, import: "default" },
+) as Record<string, string>;
+const carouselSrcsets = import.meta.glob(
+  "./img/carousel/*.{jpg,JPG,jpeg,JPEG,png,PNG}",
+  {
+    eager: true,
+    query: { format: "webp", quality: "72", w: "480;768;1200", as: "srcset" },
+    import: "default",
+  },
+) as Record<string, string>;
+const carouselVideoUrls = import.meta.glob("./img/carousel/*.{mp4,MP4}", {
+  eager: true,
+  query: "?url",
+  import: "default",
+}) as Record<string, string>;
+
+// "./img/carousel/02.jpg" → "02" (filename without extension, lower-cased)
+const baseName = (p: string) =>
+  (p.split("/").pop() || "").replace(/\.[^.]+$/, "").toLowerCase();
+
+const CAROUSEL_FOLDER: Work[] = (() => {
+  const vidByBase: Record<string, string> = {};
+  for (const [p, url] of Object.entries(carouselVideoUrls))
+    vidByBase[baseName(p)] = url;
+  return Object.entries(carouselImgUrls)
+    .sort(([a], [b]) =>
+      baseName(a).localeCompare(baseName(b), undefined, { numeric: true }),
+    )
+    .map(([p, img]) => ({
+      img,
+      srcset: carouselSrcsets[p],
+      video: vidByBase[baseName(p)], // paired NN.mp4, if present
+      artistIdx: -1, // folder cards aren't tied to an artist
+      key: `carousel/${p.split("/").pop()}`,
+    }));
+})();
+
+// Hand-picked folder wins when it has files; otherwise the automatic order.
+const CAROUSEL: Work[] = CAROUSEL_FOLDER.length ? CAROUSEL_FOLDER : HERO_PICKS;
+
+export const CAROUSEL_WORKS: Work[] = CAROUSEL;
+export const HERO_SLIDES: Work[] = CAROUSEL;

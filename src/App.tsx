@@ -632,7 +632,9 @@ function Carousel({
       if (best < 0) return;
 
       centerOn(best);
-      openRef.current(items[best].artistIdx); // single click → open artist
+      // Folder-sourced cards aren't tied to an artist (artistIdx < 0) — a click
+      // just centres them; only artist works open a profile.
+      if (items[best].artistIdx >= 0) openRef.current(items[best].artistIdx);
     };
 
     // Drag to scroll the carousel (touch + mouse). A tap with no real movement
@@ -711,7 +713,7 @@ function Carousel({
               src={a.img}
               srcSet={a.srcset}
               sizes="(max-width: 640px) 80vw, 420px"
-              alt={ARTISTS[a.artistIdx].name}
+              alt={ARTISTS[a.artistIdx]?.name ?? "The Four Deuces"}
               draggable={false}
               loading="lazy"
               decoding="async"
@@ -890,8 +892,11 @@ function Smooth3DSlideshow({
                   return;
                 }
                 pause();
-                if (isActive) onOpenProfile(slide.artistIdx);
-                else step(rel);
+                // Folder-sourced slides aren't tied to an artist — tapping the
+                // centre one does nothing; only artist works open a profile.
+                if (isActive) {
+                  if (slide.artistIdx >= 0) onOpenProfile(slide.artistIdx);
+                } else step(rel);
               }}
               data-cursor="pointer"
               style={{
@@ -918,7 +923,7 @@ function Smooth3DSlideshow({
                 src={slide.img}
                 srcSet={slide.srcset}
                 sizes="90vw"
-                alt={ARTISTS[slide.artistIdx].name}
+                alt={ARTISTS[slide.artistIdx]?.name ?? "The Four Deuces"}
                 draggable={false}
                 loading="lazy"
                 decoding="async"
