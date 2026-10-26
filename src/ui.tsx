@@ -3,6 +3,7 @@
 // import them without pulling the whole app into each route chunk.
 import {
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -636,10 +637,13 @@ export function RoleLinks({
 // Compact FAQ accordion (question + answer), reused on the artists page for the
 // styles each artist works in.
 export function FaqList({ items }: { items: { q: string; a: string }[] }) {
+  // A shared `name` turns these into an exclusive accordion — opening one
+  // question closes the previously open one. Unique per instance via useId.
+  const group = useId();
   return (
     <div className="divide-y divide-white/10 border-y border-white/10">
       {items.map((item, i) => (
-        <details key={i} className="group py-4">
+        <details key={i} name={group} className="group py-4">
           <summary
             data-cursor="pointer"
             className="flex cursor-pointer list-none items-center justify-between gap-4 text-[14px] text-white/90 md:text-[15px] [&::-webkit-details-marker]:hidden"

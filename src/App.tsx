@@ -9,6 +9,7 @@ import {
 } from "react";
 import {
   AnimatePresence,
+  LayoutGroup,
   motion,
   useAnimationControls,
 } from "motion/react";
@@ -87,7 +88,6 @@ const TICKER =
   "Follow @the.four.deuces on Instagram — Fresh ink, flash drops, and behind-the-chair moments — Tap through to see our latest work — ";
 
 const MENU: { tkey: string; target: string }[] = [
-  { tkey: "nav.home", target: "top" },
   { tkey: "nav.artists", target: "/artists" },
   { tkey: "nav.stylesMenu", target: "/styles" },
   { tkey: "nav.reviews", target: "#reviews" },
@@ -998,9 +998,11 @@ type BookingField = "whatsapp" | "budget";
 function BookingForm({
   context,
   onClose,
+  onHome,
 }: {
   context: LeadContext;
   onClose: () => void;
+  onHome: () => void;
 }) {
   const t = useT();
   const isConsult = context.type === "consultation";
@@ -1198,19 +1200,7 @@ function BookingForm({
       transition={{ duration: 0.25 }}
       className="fixed inset-0 z-[100] flex flex-col bg-[#050505]"
     >
-      <div className="flex items-center justify-between px-5 pb-3 pt-5">
-        <span className="font-serif text-[15px] tracking-tight text-white/60">
-          The Four <span className="italic">Deuces</span>
-        </span>
-        <button
-          onClick={onClose}
-          aria-label="Close"
-          data-cursor="pointer"
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 transition hover:bg-white/20"
-        >
-          <X className="h-5 w-5" />
-        </button>
-      </div>
+      <OverlayHeader onClose={onClose} onHome={onHome} />
 
       <div className="flex flex-1 flex-col items-center justify-center px-6 pb-[12vh] text-center">
         {honeypot}
@@ -1486,6 +1476,46 @@ function MenuButton({
   );
 }
 
+// Site-style header for the full-screen overlays (search / language): the
+// studio wordmark on the left (→ home) and a close button where the burger
+// sits — so an open overlay reads like the rest of the site, not a separate UI.
+function OverlayHeader({
+  onClose,
+  onHome,
+}: {
+  onClose: () => void;
+  onHome: () => void;
+}) {
+  // Positioned to line up exactly with the site header logo (left-4/md:left-6)
+  // and the burger button box (right-4/md:right-6), so the overlay reads as the
+  // same header and the X sits where the burger's X was.
+  return (
+    <>
+      <div className="fixed left-4 top-[9px] z-[130] flex h-12 items-center md:left-6 md:h-14">
+        <button
+          type="button"
+          onClick={onHome}
+          data-cursor="pointer"
+          aria-label="The Four Deuces — home"
+          className="shrink-0 font-serif text-[18px] leading-none tracking-tight text-white transition hover:text-white/70"
+        >
+          The Four <span className="italic">Deuces</span>
+        </button>
+      </div>
+      <button
+        type="button"
+        onClick={onClose}
+        data-cursor="pointer"
+        aria-label="Close"
+        className="fixed right-4 top-[9px] z-[130] flex h-12 w-12 items-center justify-center text-white transition hover:text-white/70 md:right-6 md:h-14 md:w-14"
+      >
+        <span className="absolute h-[2px] w-5 rotate-45 rounded-full bg-white md:w-6" />
+        <span className="absolute h-[2px] w-5 -rotate-45 rounded-full bg-white md:w-6" />
+      </button>
+    </>
+  );
+}
+
 // Language switcher — current language label + chevron, opening a small
 // dropdown. Sits just left of the burger.
 function LanguageSwitcher({
@@ -1555,13 +1585,13 @@ function MobileLangMenu({
   onSelect,
   open,
   onOpenChange,
-  disabled = false,
+  onNavigate,
 }: {
   current: Lang;
   onSelect: (l: Lang) => void;
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  disabled?: boolean;
+  onNavigate: (path: string) => void;
 }) {
   const t = useT();
 
@@ -1580,41 +1610,46 @@ function MobileLangMenu({
     };
   }, [open, onOpenChange]);
 
+  // The trigger lives inside the burger menu now (see Menu); this component
+  // just renders the full-screen language panel, opened via `open`.
   return (
     <>
-      {/* Globe trigger — mobile only, just left of the burger. Greyed out and
-          non-clickable while the burger menu is open. */}
-      <button
-        type="button"
-        disabled={disabled}
-        data-cursor={disabled ? undefined : "pointer"}
-        aria-label="Change language"
-        aria-expanded={open}
-        onClick={() => onOpenChange(!open)}
-        className={`fixed right-16 top-[9px] z-[70] flex h-12 w-12 items-center justify-center text-white transition-opacity duration-300 md:hidden ${
-          disabled ? "pointer-events-none opacity-30" : "mix-blend-difference"
-        }`}
-      >
-        <Globe className="h-6 w-6" strokeWidth={1.6} />
-      </button>
-
       <AnimatePresence>
         {open && (
           <motion.div
-            initial={{ opacity: 0 }}
+            // Opaque from the first frame so the menu closing behind it never
+            // flashes the page; the content still eases in via the stagger below.
+            initial={false}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
             role="dialog"
             aria-modal="true"
             aria-label={t("lang.title")}
-            className="fixed inset-0 z-[55] flex flex-col items-center justify-center bg-black/70 px-8 backdrop-blur-xl md:hidden"
+            className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#050505] px-8 md:hidden"
             onClick={() => onOpenChange(false)}
           >
+            <OverlayHeader
+              onClose={() => onOpenChange(false)}
+              onHome={() => {
+                onOpenChange(false);
+                onNavigate("/");
+              }}
+            />
             <motion.div
               variants={{
-                hidden: {},
-                show: { transition: { staggerChildren: 0.06, delayChildren: 0.08 } },
+                hidden: { opacity: 0, y: 26, scale: 0.98 },
+                show: {
+                  opacity: 1,
+                  y: 0,
+                  scale: 1,
+                  transition: {
+                    duration: 0.5,
+                    ease: [0.22, 1, 0.36, 1],
+                    staggerChildren: 0.06,
+                    delayChildren: 0.12,
+                  },
+                },
               }}
               initial="hidden"
               animate="show"
@@ -1731,54 +1766,67 @@ function SearchOverlay({
     <AnimatePresence>
       {open && (
         <motion.div
-          initial={{ opacity: 0 }}
+          // Background is opaque from the first frame (initial={false}) so that
+          // when this opens straight from the menu, the closing menu behind it
+          // is never visible — no flash of the underlying page. Fades out on close.
+          initial={false}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.25 }}
           className="fixed inset-0 z-[100] flex flex-col bg-[#050505]"
         >
-          <div className="flex items-center justify-between px-5 pb-3 pt-5">
-            <span className="font-serif text-[15px] tracking-tight text-white/60">
-              The Four <span className="italic">Deuces</span>
-            </span>
-            <button
-              onClick={onClose}
-              aria-label="Close"
-              data-cursor="pointer"
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 transition hover:bg-white/20"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
+          <OverlayHeader
+            onClose={onClose}
+            onHome={() => {
+              onClose();
+              onNavigate("/");
+            }}
+          />
 
-          <div className="flex flex-1 flex-col items-center overflow-y-auto px-6 pb-10">
-                        <motion.div
-              className="w-full max-w-md shrink-0"
-              animate={{ marginTop: showResults ? "6vh" : "22vh" }}
-              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-            >
-              {!showResults && (
-                <div className="mb-6 text-center">
-                  <h2 className="font-serif text-[2rem] leading-tight">
-                    {t("search.title")}
-                  </h2>
-                  <p className="mx-auto mt-3 max-w-xs text-[14px] leading-relaxed text-white/50">
-                    {t("search.desc")}
-                  </p>
-                </div>
-              )}
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
+          <div className="flex flex-1 flex-col items-center overflow-y-auto px-6 pb-10 pt-20">
+            {/* The field sits near the top from the start and never moves — it
+                stays put whether the overlay is empty or showing results. */}
+            <div className="relative mx-auto mt-[3vh] w-full max-w-md shrink-0">
+              {/* Underline input with the magnifier on the right — the same look
+                  as the search field in the menu. */}
+              <div className="flex items-center gap-3">
                 <input
                   ref={inputRef}
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder={t("search.placeholder")}
                   data-cursor="text"
-                  className="w-full rounded-full border border-white/15 bg-white/[0.04] py-3 pl-11 pr-4 text-[16px] text-white outline-none transition focus:border-white/40 md:text-[14px]"
+                  className="min-w-0 flex-1 bg-transparent py-2 text-[18px] text-white outline-none md:text-[16px]"
                 />
+                <motion.span
+                  layoutId="search-icon"
+                  transition={{ layout: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } }}
+                  className="shrink-0 text-white/70"
+                >
+                  <Search className="h-5 w-5" strokeWidth={1.75} />
+                </motion.span>
               </div>
-            </motion.div>
+              <motion.div
+                layoutId="search-line"
+                transition={{ layout: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } }}
+                className="mt-2 h-px w-full bg-white/40"
+              />
+              <AnimatePresence>
+                {!showResults && (
+                  <motion.p
+                    key="search-desc"
+                    layoutId="search-desc"
+                    exit={{ opacity: 0 }}
+                    transition={{
+                      layout: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
+                      opacity: { duration: 0.2 },
+                    }}
+                    className="pointer-events-none absolute inset-x-0 top-full mx-auto mt-4 max-w-xs text-center text-[13px] leading-relaxed text-white/40"
+                  >
+                    {t("search.desc")}
+                  </motion.p>
+                )}
+              </AnimatePresence>
+            </div>
 
             {showResults && (
               <div className="mt-6 w-full max-w-md">
@@ -1822,10 +1870,16 @@ function Menu({
   open,
   onClose,
   onNavigate,
+  current,
+  onOpenSearch,
+  onOpenLang,
 }: {
   open: boolean;
   onClose: () => void;
   onNavigate: (path: string) => void;
+  current: Lang;
+  onOpenSearch: () => void;
+  onOpenLang: () => void;
 }) {
   const t = useT();
   const [hovered, setHovered] = useState<number | null>(null);
@@ -1834,22 +1888,7 @@ function Menu({
   const line =
     "block font-display font-normal leading-[0.9] tracking-[-0.03em] text-[14vw] md:text-[7rem]";
   const sections = MENU;
-
-  // Live Amsterdam local time (shown in the mobile menu footer).
-  const [amsTime, setAmsTime] = useState("");
-  useEffect(() => {
-    const update = () =>
-      setAmsTime(
-        new Date().toLocaleTimeString("en-GB", {
-          timeZone: "Europe/Amsterdam",
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      );
-    update();
-    const id = setInterval(update, 30000);
-    return () => clearInterval(id);
-  }, []);
+  const cur = LANGS.find((l) => l.code === current) ?? LANGS[0];
 
   // Close on Escape + lock background scroll while the menu is open.
     useEffect(() => {
@@ -1952,19 +1991,69 @@ function Menu({
             })}
           </nav>
 
-          {/* Address + local time — mobile only, under the menu links */}
-          <div className="border-t border-white/10 px-6 py-6 text-center text-[12px] leading-relaxed text-white/45 md:hidden">
-            <a
-              href="https://www.google.com/maps/search/?api=1&query=The%20Four%20Deuces%20Van%20Baerlestraat%20126H%201071%20BD%20Amsterdam"
-              target="_blank"
-              rel="noopener noreferrer"
+          {/* Search + language — mobile only, moved here from the header. */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{
+              duration: 0.5,
+              delay: open ? 0.08 + sections.length * 0.06 : 0,
+              ease: [0.22, 1, 0.36, 1],
+            }}
+            className="px-8 pb-10 md:hidden"
+          >
+            {/* Search — tapping opens the full search overlay. The icon, the
+                underline and the caption carry layoutId's so they glide up into
+                place in the search overlay (shared-element transition). */}
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onOpenSearch();
+              }}
+              aria-label={t("search.title")}
               data-cursor="pointer"
-              className="transition hover:text-white/70"
+              className="group block w-full pt-1"
             >
-              Van Baerlestraat 126 H, 1071 BD Amsterdam
-            </a>
-            <p className="mt-1.5 text-white/35">Local time · {amsTime}</p>
-          </div>
+              <div className="flex items-center justify-end pb-3">
+                <motion.span
+                  layoutId="search-icon"
+                  className="text-white/70 transition group-hover:text-white"
+                >
+                  <Search className="h-5 w-5" strokeWidth={1.75} />
+                </motion.span>
+              </div>
+              <motion.div
+                layoutId="search-line"
+                className="h-px w-full bg-white/20 transition group-hover:bg-white/40"
+              />
+            </button>
+            <motion.p
+              layoutId="search-desc"
+              className="mx-auto mt-4 max-w-xs text-center text-[13px] leading-relaxed text-white/40"
+            >
+              {t("search.desc")}
+            </motion.p>
+
+            {/* Language — tapping opens the language panel; the globe + code
+                glides up into the panel (shared-element transition). */}
+            <div className="mt-8 flex justify-center">
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onOpenLang();
+                }}
+                aria-label="Change language"
+                data-cursor="pointer"
+                className="group flex items-center gap-2 text-white/80 transition hover:text-white"
+              >
+                <Globe className="h-5 w-5" strokeWidth={1.6} />
+                <span className="text-[15px] tracking-wide">{cur.label}</span>
+              </button>
+            </div>
+          </motion.div>
         </motion.div>
       )}
     </AnimatePresence>
@@ -3168,44 +3257,40 @@ export default function App() {
       >
         <Search className="h-5 w-5" strokeWidth={1.75} />
       </button>
-      <button
-        type="button"
-        disabled={langMenuOpen || menuOpen}
-        onClick={() => setSearchOpen(true)}
-        aria-label="Search"
-        data-cursor={langMenuOpen || menuOpen ? undefined : "pointer"}
-        className={`fixed right-28 top-[9px] z-[70] flex h-12 w-12 items-center justify-center text-white transition-opacity duration-300 md:hidden ${
-          langMenuOpen || menuOpen ? "pointer-events-none opacity-30" : "mix-blend-difference"
-        }`}
-      >
-        <Search className="h-6 w-6" strokeWidth={1.6} />
-      </button>
       <LanguageSwitcher current={lang} onSelect={setLang} />
-      <MobileLangMenu
-        current={lang}
-        onSelect={setLang}
-        open={langMenuOpen}
-        disabled={menuOpen}
-        onOpenChange={(v) => {
-          if (v) setMenuOpen(false);
-          setLangMenuOpen(v);
-        }}
-      />
+      {/* The burger shows its X whenever ANY overlay is open, so it never flips
+          back to a hamburger while handing off between menu → search / language. */}
       <MenuButton
-        open={menuOpen}
+        open={menuOpen || searchOpen || langMenuOpen || booking !== null}
         onClick={() => setMenuOpen((o) => !o)}
-        disabled={langMenuOpen}
       />
-      <Menu
-        open={menuOpen}
-        onClose={() => setMenuOpen(false)}
-        onNavigate={navigate}
-      />
-      <SearchOverlay
-        open={searchOpen}
-        onClose={() => setSearchOpen(false)}
-        onNavigate={navigate}
-      />
+      {/* Menu, search and language share layoutId'd elements so the search
+          field / language chip glide between them — keep them in one group. */}
+      <LayoutGroup>
+        <MobileLangMenu
+          current={lang}
+          onSelect={setLang}
+          open={langMenuOpen}
+          onNavigate={navigate}
+          onOpenChange={(v) => {
+            if (v) setMenuOpen(false);
+            setLangMenuOpen(v);
+          }}
+        />
+        <Menu
+          open={menuOpen}
+          onClose={() => setMenuOpen(false)}
+          onNavigate={navigate}
+          current={lang}
+          onOpenSearch={() => setSearchOpen(true)}
+          onOpenLang={() => setLangMenuOpen(true)}
+        />
+        <SearchOverlay
+          open={searchOpen}
+          onClose={() => setSearchOpen(false)}
+          onNavigate={navigate}
+        />
+      </LayoutGroup>
 
       <Suspense fallback={<div className="min-h-screen" />}>
       {isHome ? (
@@ -3306,6 +3391,10 @@ export default function App() {
             key="booking"
             context={booking}
             onClose={() => setBooking(null)}
+            onHome={() => {
+              setBooking(null);
+              navigate("/");
+            }}
           />
         )}
       </AnimatePresence>

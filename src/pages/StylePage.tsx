@@ -157,7 +157,7 @@ export default function StylePage({
             </h2>
             <div className="mt-8 divide-y divide-white/10 border-y border-white/10">
               {style.faq.map((item, i) => (
-                <details key={i} className="group py-5">
+                <details key={i} name="faq-style" className="group py-5">
                   <summary
                     data-cursor="pointer"
                     className="flex cursor-pointer list-none items-center justify-between gap-4 text-[16px] text-white/90 md:text-[18px] [&::-webkit-details-marker]:hidden"

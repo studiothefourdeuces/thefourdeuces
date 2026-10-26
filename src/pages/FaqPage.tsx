@@ -56,7 +56,7 @@ export default function FaqPage({
         <Reveal>
         <div className="mx-auto mt-12 max-w-3xl divide-y divide-white/10 border-y border-white/10">
           {getFaq(lang).map((item, i) => (
-            <details key={i} className="group py-5">
+            <details key={i} name="faq-page" className="group py-5">
               <summary
                 data-cursor="pointer"
                 className="flex cursor-pointer list-none items-center justify-between gap-4 text-[16px] text-white/90 md:text-[18px] [&::-webkit-details-marker]:hidden"
