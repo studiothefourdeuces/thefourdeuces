@@ -35,6 +35,8 @@ jobs:
           VITE_CLARITY_ID: ${{ vars.VITE_CLARITY_ID }}
           # Google Ads tag (public id). Loaded via gtag.js with Consent Mode v2.
           VITE_GADS_ID: AW-18478951570
+          # Google Ads conversion label for WhatsApp-link clicks.
+          VITE_GADS_WHATSAPP_LABEL: AW-18478951570/rDSUCKLD8bIdEJLZuetE
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

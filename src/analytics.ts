@@ -4,6 +4,7 @@
 //   VITE_GA4_ID          GA4 measurement id           e.g. "G-XXXXXXXXXX"
 //   VITE_GADS_ID         Google Ads tag id            e.g. "AW-XXXXXXXXX"
 //   VITE_GADS_LEAD_LABEL Ads conversion "send_to"     e.g. "AW-XXXXXXXXX/AbC-D_efG"
+//   VITE_GADS_WHATSAPP_LABEL  Ads "send_to" for a WhatsApp-link click
 //
 // Consent Mode: we set every storage type to "denied" by default and only
 // flip to "granted" once the visitor accepts in the cookie banner — required
@@ -12,6 +13,7 @@
 const GA4_ID = import.meta.env.VITE_GA4_ID as string | undefined;
 const GADS_ID = import.meta.env.VITE_GADS_ID as string | undefined;
 const LEAD_LABEL = import.meta.env.VITE_GADS_LEAD_LABEL as string | undefined;
+const WA_LABEL = import.meta.env.VITE_GADS_WHATSAPP_LABEL as string | undefined;
 
 const ENABLED = Boolean(GA4_ID || GADS_ID);
 let started = false;
@@ -45,6 +47,23 @@ export function initAnalytics() {
   s.async = true;
   s.src = "https://www.googletagmanager.com/gtag/js?id=" + (GA4_ID || GADS_ID);
   document.head.appendChild(s);
+
+  // Count clicks on any WhatsApp link (wa.me / api.whatsapp.com) as a
+  // conversion. The links open in a new tab, so the page stays alive and the
+  // tag has time to send. One delegated listener covers every button, now and
+  // future.
+  document.addEventListener(
+    "click",
+    (e) => {
+      const el = e.target as HTMLElement | null;
+      if (
+        el?.closest?.('a[href*="wa.me"], a[href*="api.whatsapp.com"]')
+      ) {
+        trackWhatsAppClick();
+      }
+    },
+    true,
+  );
 }
 
 export function grantConsent() {
@@ -162,5 +181,15 @@ export function trackLead(params: { value?: number; source?: string } = {}) {
       value,
       currency: "EUR",
     });
+  }
+}
+
+// Secondary conversion: the visitor clicked a WhatsApp link to chat with the
+// studio. Fires a GA4 "contact" event plus the Google Ads conversion.
+export function trackWhatsAppClick() {
+  if (!ENABLED) return;
+  gtag("event", "contact", { method: "whatsapp" });
+  if (WA_LABEL) {
+    gtag("event", "conversion", { send_to: WA_LABEL });
   }
 }
