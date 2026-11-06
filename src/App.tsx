@@ -23,6 +23,7 @@ import {
   X,
   Globe,
   Search,
+  Calendar,
 } from "lucide-react";
 import logoImg from "./img/logo.webp";
 import tattoolandLogo from "./img/partners/tattooland.png";
@@ -1418,7 +1419,7 @@ function MobileHero({
           target="_blank"
           rel="noopener noreferrer"
           data-cursor="pointer"
-          className="group block text-center text-[13px] text-white/50 transition hover:text-white"
+          className="group block text-center text-[16px] text-white/50 transition hover:text-white"
         >
           {t("book.freeconsult")}
           <ArrowUpRight
@@ -2036,9 +2037,21 @@ function Menu({
               {t("search.desc")}
             </motion.p>
 
-            {/* Language — tapping opens the language panel; the globe + code
-                glides up into the panel (shared-element transition). */}
-            <div className="mt-8 flex justify-center">
+            {/* Book + language — two pills side by side. Tapping the language
+                pill opens the language panel. */}
+            <div className="mt-8 flex items-stretch gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onNavigate("/book");
+                }}
+                data-cursor="pointer"
+                className="group inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-white/25 px-5 py-3 text-[15px] text-white/85 transition-colors hover:border-white/50 hover:bg-white/5"
+              >
+                <Calendar className="h-[18px] w-[18px]" strokeWidth={1.6} />
+                {t("nav.book")}
+              </button>
               <button
                 type="button"
                 onClick={() => {
@@ -2047,10 +2060,10 @@ function Menu({
                 }}
                 aria-label="Change language"
                 data-cursor="pointer"
-                className="group flex items-center gap-2 text-white/80 transition hover:text-white"
+                className="group inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-white/25 px-5 py-3 text-[15px] text-white/85 transition-colors hover:border-white/50 hover:bg-white/5"
               >
                 <Globe className="h-5 w-5" strokeWidth={1.6} />
-                <span className="text-[15px] tracking-wide">{cur.label}</span>
+                {cur.label}
               </button>
             </div>
           </motion.div>
@@ -3221,14 +3234,14 @@ export default function App() {
       </AnimatePresence>
 
       {/* ===================== HEADER ===================== */}
-      <header className="fixed inset-x-0 top-[9px] z-40 flex h-12 items-center px-4 md:h-14 md:px-6">
+      <header className="fixed inset-x-0 top-[9px] z-40 flex h-12 items-center px-4 mix-blend-difference md:h-14 md:px-6">
         <div className="flex items-center gap-3 overflow-hidden">
           <button
             type="button"
             onClick={() => navigate("/")}
             data-cursor="pointer"
             aria-label="The Four Deuces — home"
-            className="shrink-0 font-serif text-[18px] leading-none tracking-tight text-white/90 transition-colors hover:text-white"
+            className="shrink-0 font-serif text-[18px] leading-none tracking-tight text-white transition-colors"
           >
             The Four <span className="italic">Deuces</span>
           </button>
