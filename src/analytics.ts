@@ -19,8 +19,15 @@ const ENABLED = Boolean(GA4_ID || GADS_ID);
 let started = false;
 
 // gtag shim — pushes each command onto the dataLayer for gtag.js to process.
-function gtag(...args: unknown[]) {
-  ((window as unknown as { dataLayer: unknown[] }).dataLayer ||= []).push(args);
+// IMPORTANT: gtag.js only acts on dataLayer entries that are the native
+// `arguments` object. A plain array (e.g. `push([...])`) is silently ignored,
+// so events and consent updates never reach Google — the tag loads and the
+// dataLayer looks populated, but nothing is sent. Push `arguments`, exactly
+// like Google's official gtag snippet (`function gtag(){dataLayer.push(arguments);}`).
+// eslint-disable-next-line @typescript-eslint/no-unused-vars, prefer-rest-params
+function gtag(..._args: unknown[]) {
+  // eslint-disable-next-line prefer-rest-params
+  ((window as unknown as { dataLayer: unknown[] }).dataLayer ||= []).push(arguments);
 }
 
 // Load gtag.js and register consent defaults (denied). Safe to call once, early
