@@ -29,7 +29,9 @@ export default function ContactPage({
     }
     setError("");
     setSent(true);
-    trackLead({ source: "contact" });
+    // GA4 lead event only — the /contact form is intentionally NOT counted as
+    // the Google Ads booking conversion (booking form submissions are).
+    trackLead({ source: "contact", adsConversion: false });
     if (FORM_ENDPOINT) {
       fetch(FORM_ENDPOINT, {
         method: "POST",

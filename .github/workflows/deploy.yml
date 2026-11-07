@@ -37,6 +37,8 @@ jobs:
           VITE_GADS_ID: AW-18478951570
           # Google Ads conversion label for WhatsApp-link clicks.
           VITE_GADS_WHATSAPP_LABEL: AW-18478951570/rDSUCKLD8bIdEJLZuetE
+          # Google Ads conversion label for booking-form submissions (not /contact).
+          VITE_GADS_LEAD_LABEL: AW-18478951570/0Of0CL7Hj7QdEJLZuetE
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

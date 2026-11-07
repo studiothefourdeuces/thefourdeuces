@@ -173,8 +173,12 @@ export function getAttribution(): Attribution | null {
   }
 }
 
-// Primary conversion: a booking / lead was submitted.
-export function trackLead(params: { value?: number; source?: string } = {}) {
+// Primary conversion: a booking / lead was submitted. `adsConversion` defaults
+// to true; pass false (e.g. the /contact form) to still log the GA4 lead event
+// but NOT count it as the Google Ads booking conversion.
+export function trackLead(
+  params: { value?: number; source?: string; adsConversion?: boolean } = {},
+) {
   if (!ENABLED) return;
   const value = params.value ?? 0;
   gtag("event", "generate_lead", {
@@ -182,7 +186,7 @@ export function trackLead(params: { value?: number; source?: string } = {}) {
     value,
     source: params.source,
   });
-  if (LEAD_LABEL) {
+  if (LEAD_LABEL && params.adsConversion !== false) {
     gtag("event", "conversion", {
       send_to: LEAD_LABEL,
       value,
