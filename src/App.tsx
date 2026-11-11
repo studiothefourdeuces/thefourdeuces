@@ -58,6 +58,7 @@ import {
   ArtistButtons,
   ArtistRow,
   RoleLinks,
+  STUDIO_MAPS_URL,
 } from "./ui";
 import {
   LANGS,
@@ -2899,7 +2900,8 @@ function SiteFooter({
   return (
     <footer className="px-6 py-14 md:px-16">
       <div className="mx-auto w-full max-w-6xl">
-        {/* Nav columns — Discover · Studio · Tattoo styles */}
+        {/* Nav columns — row 1: Discover · Studio · Tattoo styles (×2);
+            row 2: Visit us · Get in touch (mobile: same pairs, 2 per row) */}
         <div className="grid grid-cols-2 gap-x-8 gap-y-10 pb-12 text-center sm:text-left md:grid-cols-4 md:gap-x-10">
           <div>
             <p className={headCls}>{t("footer.discover")}</p>
@@ -2978,6 +2980,54 @@ function SiteFooter({
               </div>
             ));
           })()}
+
+          {/* Visit us — studio address, opens Google Maps. Desktop: spans
+              columns 1–2 so the address fits on one line; mobile: two lines. */}
+          <div className="md:col-span-2">
+            <p className={headCls}>{t("footer.visit")}</p>
+            <a
+              href={STUDIO_MAPS_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-cursor="pointer"
+              className={`${linkCls} inline-flex flex-col gap-2.5 whitespace-nowrap md:inline`}
+            >
+              <span>Van Baerlestraat 126H</span>
+              <span className="hidden md:inline">, </span>
+              <span>1071 BD Amsterdam</span>
+            </a>
+          </div>
+
+          {/* Get in touch — WhatsApp (counted as an Ads conversion by the
+              delegated wa.me click listener) + email. Desktop: spans columns
+              3–4 with an inner 2-col grid matching the outer one, so WhatsApp
+              and email sit on one line in separate columns (like the two
+              Tattoo-styles columns); mobile: stacked in one column. */}
+          <div className="md:col-span-2 md:grid md:grid-cols-2 md:gap-x-10">
+            <p className={`${headCls} md:col-span-2`}>{t("footer.touch")}</p>
+            <ul className="flex flex-col gap-2.5 md:contents">
+              <li>
+                <a
+                  href={WHATSAPP_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-cursor="pointer"
+                  className={linkCls}
+                >
+                  WhatsApp
+                </a>
+              </li>
+              <li>
+                <a
+                  href="mailto:studio@thefourdeuces.nl"
+                  data-cursor="pointer"
+                  className={linkCls}
+                >
+                  Email
+                </a>
+              </li>
+            </ul>
+          </div>
         </div>
 
         {/* Brand + credit */}

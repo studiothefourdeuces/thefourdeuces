@@ -1001,6 +1001,18 @@ const DICT: Record<string, Entry> = {
     de: "Tattoo-Stile",
     ua: "Стилі тату",
   },
+  "footer.visit": {
+    en: "Visit us",
+    nl: "Bezoek ons",
+    de: "Besuch uns",
+    ua: "Як нас знайти",
+  },
+  "footer.touch": {
+    en: "Get in touch",
+    nl: "Contact",
+    de: "Kontakt",
+    ua: "Звʼязатися",
+  },
   "footer.designed": {
     en: "Designed & developed by",
     nl: "Ontworpen & ontwikkeld door",
